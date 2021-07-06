@@ -1,0 +1,39 @@
+7E:0A42 - 7E:0A43    Pointer to code to run every frame, normally E695. Very high level. Handles Samus's size, controller input, elevator status, button transitions, pallete, gravity, overlapping blocks, weapon selecting/firing/cooldown, and sound management(?).	
+7E:0A44 - 7E:0A45    Pointer to code to run every frame, normally E725. Seems to change for different game modes (7E:0998). Very high level. Handles Samus's contact damage, movement, animation, hurt, block collision reaction, automatic transitions, pausing, and minimap	
+7E:0A58 - 7E:0A59    Pointer to code to run (JMP from 90:E94B) (Once every frame, depending on 7E:0A44) Seems to affect Samus's movement type.	
+7E:0A5A - 7E:0A5B    Pointer to code to run (JMP from 90:E097) (Once every frame, depending on 7E:0A44). Special instructions for things like when Ridley runs away from Ceres. (E0E6 = handle timer code)	
+7E:0A5C - 7E:0A5D    Pointer to code to run (JMP from 90:EB4E) (Once every frame?) Displays Samus and certain graphics (e.g. grapple)?	
+7E:0A60 - 7E:0A61    Pointer to code to run (JMP from 90:E90F) (Once every frame, depending on 7E:0A42) Looks like it handles controller input for Samus's poses.	
+7E:0A7A - 7E:0A7B    Pointer to routine for use when game is controlling controller input. Not sure what the routine is for.	
+
+7E:0A76 - 7E:0A77    Hyper Beam
+
+7E:0DE0 - 7E:0DE1    Only debug use, I think. 07 = uber invincibility.	
+
+7E:18A8 - 7E:18A9    Samus's invincibility timer when hurt	
+
+7E:1A03 - 7E:1A26    Run-This-First-Every-Frame for enemy/room projectiles	
+
+7E:1E7D - 7E:1E8C    Pointer to code to run. F761 is heat check + damage	
+
+7E:1EF1 - 7E:1EF2    Flag, disables misc. animations if positive (spikes, FX1)	
+
+7E:3800 - 7E:3EFF    Tilemap for part of layer 3? Cleared during message boxes.	
+
+7E:C608 - 7E:C6C7    Status bar tilemap	
+
+
+7E:D820 - 7E:D86F    Event bit array. 30-6F are never used	
+7E:D828 - 7E:D82F    Boss bits. 1 byte per area (C-B-N-W-M-T-C-D)	
+
+7E:D8F8 - 7E:D907    Used elevator(Odd bytes) and save point(Even bytes) array, indexed by area.	
+7E:D908 - 7E:D90F    Map Station byte array	
+
+7E:CD52 - 7E:CE51    Explored map for Area 0 (Crateria)	
+7E:CE52 - 7E:CF51    Explored map for Area 1 (Brinstar)	
+7E:CF52 - 7E:D051    Explored map for Area 2 (Norfair)	
+7E:D052 - 7E:D151    Explored map for Area 3 (Wrecked Ship)	
+7E:D152 - 7E:D251    Explored map for Area 4 (Maridia)	
+7E:D252 - 7E:D351    Explored map for Area 5 (Tourian)	
+7E:D352 - 7E:D451    Explored map for Area 6 (Ceres)	
+7E:D452 - 7E:D551    Explored map for Area 7 (Debug Unused)	

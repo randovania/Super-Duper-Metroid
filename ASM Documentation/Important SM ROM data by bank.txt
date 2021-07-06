@@ -1,0 +1,41 @@
+ROM stuff
+Bank 80:
+-Boot
+-Soft Reset
+-Game Initialization
+-Set/Clear current area boss bits
+-Get current area map exploration
+-Check boss bits against A
+-HUD in general
+-Draw Hud Digits
+-NTSC/PAL and SRAM mapping check
+-Door Transition Code. Different code for different directions (up, down, left, right).
+-Elevator/Save Station bits. What could this mean?
+
+Bank 81:
+-ASCII, apparently.
+
+Bank 82:
+-Region Tilemaps
+-Region Names
+-Map Data
+
+Bank 83:
+-Room FX1/FX1 Misc/DDB 
+-Palettes for regions
+-Door Data
+
+Bank 84:
+-PLMs
+
+Bank 85:
+-Message Boxes
+
+Bank 89:
+-Item Gfx
+
+Bank 8F:
+-Room PLM/Door Scroll ASM/MDb/BGi/Room State Selects/GFX table/Music Table/some random crap
+
+Bank 90:
+-Region Indexed JSR Table

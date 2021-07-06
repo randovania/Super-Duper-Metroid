@@ -1,0 +1,15 @@
+NEW ROUTINE BETA:                              |
+JSR $GMMA // ROUTINE GAMMA                     |20 -gma
+LDA #$0020                                     |A9 20 00
+STA $16                                        |85 16
+											   |
+LBL LOOP2HEAD                                  |
+LDA $0000, Y                                   |B9 00 00
+STA $7E3200, X                                 |9F 00 32 7E
+INY                                            |C8
+INY                                            |C8
+INX                                            |E8
+INX                                            |E8
+DEC $16                                        |C6 16
+BNE LOOP2HEAD                                  |D0 F1
+RTS                                            |60

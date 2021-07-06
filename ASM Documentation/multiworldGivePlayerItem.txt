@@ -1,0 +1,12 @@
+// SET A TO 1C1F               |
+LDA $1C1F                      | AD 1F 1C
+// GIVE PLAYER AN ITEM.        | 
+JSL $858080                    | 22 80 80 85
+// RESET STATE.                | 
+LDA #$0000                     | A9 00 00
+// RESET ITEM RECEIVED WORD    | 
+STA $7FFF74                    | 8F 74 FF 7F
+// RESET FUNCTION POINTER WORD | 
+LDA $7FFF80                    | AF 80 FF 7F
+STA $0A42                      | 8D 42 0A
+RTL                            | 6B

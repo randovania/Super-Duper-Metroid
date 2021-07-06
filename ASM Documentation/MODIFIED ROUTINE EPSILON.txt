@@ -1,0 +1,15 @@
+MODIFIED FUNCTION EPSILON
+WRITTEN OVER 8FE652
+
+CRATERIA WAKES UP ON FIRST ITEM COLLECT:
+LENGTH AVAILABLE: 25 BYTES
+LDA $7ED873 // LOAD SOME WORLD PICKUP BITS  |AF 73 D8 7E
+AND #$0004                                  |29 04 00
+BEQ SKIP                                    |F0 07
+LDA $0000, X                                |BD 00 00
+TAX                                         |AA
+JMP $E5E6                                   |4C E6 E5
+LBL SKIP                                    |
+INX                                         |E8
+INX                                         |E8
+RTS                                         |60

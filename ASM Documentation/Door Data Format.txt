@@ -1,0 +1,32 @@
+Door Format:
+F8 91 Destination Room Id
+
+	  (40 for entering new area)
+	  (80 for elevator between two locations in the same region)
+	  (C0 for elevator between two locations in different regions)
+00    Bitflag
+
+	  00 Right
+	  01 Left
+	  02 Down
+	  03 Up
+	  04 Right, and door closes behind Samus.
+	  05 Left, and door closes behind Samus.
+	  06 Down, and door closes behind Samus.
+	  07 Up, and door closes behind Samus.
+04    Destination Direction 
+01    Door cap X
+26    Door cap Y
+00    Screen X
+02    Screen Y
+00 80 Distance to spawn
+
+	  0000 by default
+97 B9 Door ASM pointer
+
+Elevators count as doors. An elevator room has two doors associated with the elevator:
+-Entry door
+-Exit door
+
+Entry door has dest 0000, and is used when we come into an elevator room.
+Exit door has actual dest, and is used to go down the elevator to somewhere else.

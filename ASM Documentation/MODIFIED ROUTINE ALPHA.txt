@@ -1,0 +1,16 @@
+MODIFIED ROUTINE ALPHA:   |
+JSR $970C // GAMMA        |20 07 97
+LDX #$0000                |A2 00 00
+LBL LOOPHEAD1             |
+LDA $0000, Y              |B9 00 00
+STA $7E3200, X            |9F 00 32 7E
+INX                       |E8
+INX                       |E8
+INY                       |C8
+INY                       |C8
+CPX #$0040                |E0 40 00
+BNE LOOPHEAD1             |D0 F0
+LDY #$0000                |A0 00 00
+JSR $82B8                 |20 B8 82
+JSR $96F4 // BETA         |20 F4 96
+RTS                       |60

@@ -1,0 +1,15 @@
+// RAW JUMP, AS WE WANT TO RETURN TO THE ORIGINAL     
+// ROUTINE AFTER MESSAGE BOX IS DONE.                 
+// TAKES UP 14 BYTES, CANNOT EXCEED 16 BYTES IN LENGTH
+
+SEP #$00100000                                 | E2 20
+LDA #$83                                       | A9 83
+PHA                                            | 48
+REP #$00100000                                 | C2 20
+// ADDRESS WITH FUNCTION POINTER               | 
+LDA $7FFF72                                    | AF 72 FF 7F
+// A LITTLE CHEAT FOR AN INTERBANK JUMP.       | 
+// PUSH THE ADDRESS WE WANT TO GO TO TO STACK, | 
+// THEN PRETEND WE'RE RETURNING TO IT.         | 
+PHA                                            | 48
+RTL                                            | 6B

@@ -1,0 +1,31 @@
+LDA #$0020        |A2 20 00
+STA $16           |85 16
+LDY #$0000        |A0 00 00
+LOOPPOINTB        |-----------
+LDA $8000, Y      |B9 00 80
+STA $7E3200, X    |9F 00 32 7E
+INY               |C8
+INY               |C8
+INX               |E8
+INX               |E8
+DEC $16           |C6 16
+BNE LOOPPOINTB    |D0 F1
+RTS               |60
+
+A220008516A00000B900809F00327EC8C8E8E8C616D0F160
+
+LDA #$0020        |A2 20 00
+STA $16           |85 16
+LDY #$0000        |A0 00 00
+LOOPPOINTB        |-----------
+LDA $8040, Y      |B9 40 80
+STA $7E3200, X    |9F 00 32 7E
+INY               |C8
+INY               |C8
+INX               |E8
+INX               |E8
+DEC $16           |C6 16
+BNE LOOPPOINTB    |D0 F1
+RTS               |60
+
+A220008516A00000B940809F00327EC8C8E8E8C616D0F160

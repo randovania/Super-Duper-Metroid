@@ -1,0 +1,158 @@
+NEW ROUTINE ALPHA:                                                                      | 
+// SHOULD BE DONE, FINGERS CROSSED.                                                     | 
+// A is WHAT $1C1F WOULD ORDINARILY BE.                                                 | 
+STA $1C1F                                                                               | 8D 1F 1C
+CMP #$001C                                                                              | C9 1C 00
+BEQ ENDFUNC                                                                             | F0 0A
+CMP #$0014 // 20 DEC, MAP STATION INDEX.                                                | C9 14 00
+BCC CALCFROMITEMLIST                                                                    | 90 06
+CMP #$0019                                                                              | C9 19 00
+BCS CALCFROMITEMLIST                                                                    | B0 01
+// IF WE'RE HERE, WE LEAVE $1C1F AS IS.                                                 | 
+// WE NEEDN'T CONCERN OURSELVES GREATLY WITH ITEM TABLE.                                | 
+RTS                                                                                     | 60
+																						| 
+																						| 
+LBL CALCFROMITEMLIST                                                                    | 
+// FIRST CHECK TO SEE IF ITEM WAS GIVEN VIA MULTIWORLD EVENT.                           | 
+// IT MAY BE THEORETICALLY POSSIBLE TO CAUSE AN ORDER FUCKUP IF ITEM IS RECEIVED AT SAME| 
+// TIME AS PLAYER PICKS UP AN ITEM IN-GAME, BUT THIS IS UNLIKELY AND                    | 
+// CONSEQUENCES WOULD LIKELY BE MINIMAL.                                                | 
+LDA $7FFF74                                                                             | AF 74 FF 7F
+CMP #$0001                                                                              | C9 01 00
+BNE ITEMINGAME                                                                          | D0 1C
+																						| 
+// GET ITEM ID AND STORE IT.                                                            | 
+LDA $7FFF7C                                                                             | AF 7C FF 7F
+STA $1C1F                                                                               | 8D 1F 1C
+																						| 
+// GET FUNC POINTER AND JUMP LONG                                                       | 
+// THIS GIVES PLAYER SOME SHIT                                                          | 
+LDA $00                                                                                 | A5 00
+PHX                                                                                     | DA
+PHA                                                                                     | 48
+LDA #$7FFF7E                                                                            | AF 7E FF 7F
+STA $00                                                                                 | 85 00
+PLA                                                                                     | 68
+LDX #$0000                                                                              | A2 00 00
+JSR ($0000, X)                                                                          | FC 00 00
+PLX                                                                                     | FA
+STA $00                                                                                 | 85 00
+RTS                                                                                     | 60
+																						| 
+																						| 
+																						| 
+LBL ITEMINGAME                                                                          | 
+// COPY CURRENT ITEM ARRAY TO HERE.                                                     |  
+PHY                                                                                     | 5A
+PHX                                                                                     | DA
+LDX #$0020                                                                              | A2 20 00
+LBL COPY ITEM ARRAY                                                                     | 
+LDA $7ED86E, X                                                                          | BF 6E D8 7E
+STA $7FFFCE, X                                                                          | 9F CE FF 7F
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+CPX #$0000                                                                              | E0 00 00
+BNE COPY ITEM ARRAY                                                                     | D0 F1
+																						| 
+// CHECK IF THIS MEMORY CONTAINS HORSESHIT OR NOT.                                      | 
+LDA $7FFFD0                                                                             | AF D0 FF 7F
+SEC                                                                                     | 38
+SBC $7FFFB0                                                                             | EF B0 FF 7F
+// IF DATA IS NON-BUGGERED, DIFFERENCE BETWEEN THESE TWO VALUES SHOULD BE A POWER OF 2. | 
+CMP #$0000                                                                              | C9 00 00
+BEQ SKIP DATA CLEAR                                                                     | F0 27
+STA $7FFF8E                                                                             | 8F 8E FF 7F
+LDA #$0001                                                                              | A9 01 00
+LBL DATA CHECK LOOP HEAD                                                                | 
+CMP $7FFF8E                                                                             | CF 8E FF 7F
+BEQ SKIP DATA CLEAR                                                                     | F0 1A
+CMP #$8000                                                                              | C9 00 80
+PHP                                                                                     | 08
+ASL                                                                                     | 0A
+PLP                                                                                     | 28
+BNE DATA CHECK LOOP HEAD                                                                | D0 F2
+																						| 
+																						| 
+// REPLACE DATA WITH ZEROES                                                             | 
+LDX #$0020                                                                              | A2 20 00
+LBL RESET DATA LOOP                                                                     | 
+LDA #$0000                                                                              | A9 00 00
+NOP																						| EA
+STA $7FFFAE, X                                                                          | 9F AE FF 7F
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+CPX #$0000                                                                              | E0 00 00
+BNE RESET DATA LOOP                                                                     | D0 F1
+																						| 
+																						| 
+																						| 
+LBL SKIP DATA CLEAR                                                                     | 
+																						| 
+// MAKE EVERY BIT OTHER THAN THE NEW ITEM EQUAL TO ZERO.                                | 
+// STORE RESULTANT TO PROCESSED ITEM ARRAY.                                             | 
+LDX #$0020                                                                              | A2 20 00
+LBL ISOLATEBITLOOP                                                                      | 
+LDA $7FFFCE, X                                                                          | BF CE FF 7F
+SEC                                                                                     | 38
+SBC $7FFFAE, X                                                                          | FF AE FF 7F
+STA $7FFF8E, X                                                                          | 9F 8E FF 7F
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+CPX #$0000                                                                              | E0 00 00
+BNE ISOLATEBITLOOP                                                                      | D0 EC
+																						| 
+// NOW LOOK FOR THE ONE THAT'S NOT EQUAL TO 0.                                          | 
+// FOR EACH THAT IS EQUAL TO 0, ADD 8 TO FINAL ADDRESS.                                 | 
+LDY #$00F0 // THIS WILL BE HOLDING THE CALCULATED ADDRESS.                              | A0 F0 00
+LDX #$0020                                                                              | A2 20 00
+LBL GETITEMOFFSETLOOP                                                                   | 
+LDA $7FFF8E, X                                                                          | BF 8E FF 7F
+CMP #$0000                                                                              | C9 00 00
+BNE FOUNDITEMBIT                                                                        | D0 0A
+// DECREMENT Y BY 16                                                                    | 
+TYA                                                                                     | 98
+SEC                                                                                     | 38
+SBC #$0010                                                                              | E9 10 00
+TAY                                                                                     | A8
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+BRA GETITEMOFFSETLOOP                                                                   | 80 ED
+																						| 
+// CALCULATE OFFSET BY BIT POSITION                                                     | 
+// NOTE: POINTER TABLE STARTS WITH LSB (I.E. 00000001) AND ENDS AT MSB (I.E. 10000000)  | 
+// CALCULATE THIS BY NUMBER OF TIMES WE HAVE TO SHIFT THE BIT FOR IT TO BE EQUAL TO 1.  | 
+																						| 
+LBL FOUNDITEMBIT                                                                        | 
+																						| 
+// UPDATE LAST ITEM ARRAY.                                                              | 
+LDA $7FFFCE, X                                                                          | BF CE FF 7F
+STA $7FFFAE, X                                                                          | 9F AE FF 7F
+LDA $7FFF8E, X                                                                          | BF 8E FF 7F
+LBL FIND BIT OFFSET                                                                     | 
+CMP #$0001                                                                              | C9 01 00
+BEQ FOUND BIT OFFSET                                                                    | F0 04
+INY                                                                                     | C8
+LSR A                                                                                   | 4A
+BRA FIND BIT OFFSET                                                                     | 80 F7
+																						| 
+// WE HAVE OUR OFFSET. IT'S IN Y.                                                       | 
+LBL FOUND BIT OFFSET                                                                    | 
+																						| 
+TYA                                                                                     | 98
+ASL A // DOUBLE OUR OFFSET BECAUSE VALUES IN TABLES ARE TWO BYTES LONG.                 | 0A
+STA $7FFF8E                                                                             | 8F 8E FF 7F
+																						| 
+// GET ITEM ID AND STORE IT.                                                            | 
+TAX                                                                                     | AA
+LDA $A000, X                                                                            | BD 00 A0
+STA $1C1F                                                                               | 8D 1F 1C
+																						|
+// GET FUNC POINTER AND JUMP LONG                                                       |
+// THIS GIVES PLAYER SOME SHIT                                                          |
+JSR ($A200, X)                                                                          | FC 00 A2
+																						|
+// RETURN OUR ASSES                                                                     |
+PLX                                                                                     | FA
+PLY                                                                                     | 7A
+RTS                                                                                     | 60

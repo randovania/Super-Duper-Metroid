@@ -1,0 +1,34 @@
+NEW ROUTINE GAMMA.                                                    | 
+// GET MESSAGE BOX HEADER.                                            | 
+// FIRST CONSULT $1C1F IN CASE OUR BOX ISN'T AN ITEM BOX.             | 
+LDA $1C1F                                                             | AD 1F 1C
+CMP #$001C                                                            | C9 1C 00
+BEQ ENDFUNC                                                           | F0 0A
+CMP #$0014 // 20 DEC, MAP STATION INDEX.                              | C9 14 00
+BCC CALCFROMITEMLIST                                                  | 90 09
+CMP #$0019                                                            | C9 19 00
+BCS CALCFROMITEMLIST                                                  | B0 04
+																	  | 
+// WE DO NOT HAVE AN ITEM BOX. THERE'S ONLY ONE POSSIBLE VALUE FOR Y. | 
+LBL CALCVANILLA
+LDY #$8040                                                            | A0 40 80
+RTS                                                                   | 60
+
+LBL CALCFROMITEMLIST
+// CHECK IF ITEM IS A MULTI ITEM.
+// IF ITEM IS MULTIWORLD, CALC NORMALLY.                              | 
+LDA $7FFF74                                                           | AF 74 FF 7F
+CMP #$0001                                                            | C9 01 00
+BNE CALCOVERWORLD                                                     | D0 06
+LDA $7FFF76                                                           | AF 76 FF 7F
+TAY                                                                   | A8
+RTS                                                                   | 60
+
+LBL CALCOVERWORLD
+PHX                                                                   | DA
+LDA $7FFF8E                                                           | AF 8E FF 7F
+TAX                                                                   | AA
+LDA $859A00, X                                                        | BF 00 9A 85
+TAY                                                                   | A8
+PLX                                                                   | FA
+RTS                                                                   | 60

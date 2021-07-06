@@ -1,0 +1,180 @@
+Bitflag notes:
+Items:
+x
+x
+Gravity Suit
+x
+Screw Attack
+Morph Ball
+Spring Ball
+Varia Suit
+-----
+X-Ray Scope
+Grapple Beam
+Speed Booster
+Bombs
+x
+x
+Space Jump
+Hi-Jump Boots
+
+
+
+Beams:
+x
+x
+x
+x
+Plasma
+Spazer
+Ice
+Wave
+-----
+x
+x
+x
+Charge
+x
+x
+x
+x
+
+
+
+New functions: Give Samus items and do stuff.
+
+
+# Give missiles
+LDA $09C8                       | AD C8 09     // Get Samus' current max missiles
+CLC                             | 18
+ADC #$05                        | 69 -msl      // Add 5 missiles
+STA $09C8                       | 8D C8 09
+LDA $09C6                       | AD C6 09     // Samus' current missiles
+CLC                             | 18
+ADC #$05                        | 69 -msl      // Add 5
+STA $09C6                       | 8D C6 09
+JSL $8099CF                     | 22 CF 99 80  // Add missile to HUD tilemap. No register dependency.
+RTS                             | 60
+
+# Give supes                      
+LDA $09CC                       | AD CC 09     // Get Samus' current max super missiles
+CLC                             | 18
+ADC #$05                        | 69 -spr      // Add 5 super missiles
+STA $09CC                       | 8D CC 09
+LDA $09CA                       | AD CA 09     // Samus' current super missiles
+CLC                             | 18
+ADC #$05                        | 69 -spr      // Add 5
+STA $09CA                       | 8D CA 09
+JSL $809AOE                     | 22 0E 9A 80  // Add super missile to HUD tilemap. No register dependency.
+RTS                             | 60
+
+# Give PBs                        
+LDA $09D0                       | AD D0 09     // Get Samus' current max PBs
+CLC                             | 18
+ADC #$05                        | 69 -pwb      // Add 5 PBs
+STA $09D0                       | 8D D0 09
+LDA $09CE                       | AD CE 09     // Samus' current PBs
+CLC                             | 18
+ADC #$05                        | 69 -pwb      // Add 5
+STA $09CE                       | 8D CE 09
+JSL $809A1E                     | 22 1E 9A 80  // Add PBs to HUD tilemap. No register dependency.
+RTS                             | 60
+
+# Give ETank
+LDA $09C4                       | AD C4 09    // Get Samus' current max energy
+CLC                             | 18
+ADC #$64                        | 69 -nrg     // Add 100 energy
+STA $09C4                       | 8D C4 09
+STA $09C2                       | 8D C2 09
+RTS                             | 60
+
+# Give Reserves
+LDA $09D4                       | AD D4 09    // Get Samus' current max reserve energy
+CLC                             | 18
+ADC #$64                        | 69 -rsv     // Add 100 energy to reserves
+STA $09D4                       | 8D D4 09
+LDA $09C0                       | AD C0 09
+BNE LBLRSV1                     | D0 03
+INC $09C0                       | EE C0 09    // Changes reserve tank activation mode?
+LBL LBLRSV1                     |
+RTS                             | 60
+
+# Give Grapple
+LDA $09A2                       | AD A2 09    // Load unlocked items to A
+ORA #$4000                      | 09 00 40    // Bitflag for the Grapple Beam
+STA $09A2                       | 8D A2 09
+LDA $09A4                       | AD A4 09    // Load currently equipped items to A
+ORA #$4000                      | 09 00 40    // Bitflag for the Grapple Beam
+STA $09A4                       | 8D A4 09
+JSL 809A2E                      | 22 2E 9A 80
+RTS                             | 60
+
+# Give X-Ray
+LDA $09A2                       | AD A2 09    // Load unlocked items to A
+ORA #$8000                      | 09 00 80    // Bitflag for the X-Ray Scope
+STA $09A2                       | 8D A2 09
+LDA $09A4                       | AD A4 09    // Load currently equipped items to A
+ORA #$8000                      | 09 00 80    // Bitflag for the X-Ray Scope
+STA $09A4                       | 8D A4 09
+JSL 809A3E                      | 22 3E 9A 80
+RTS                             | 60
+
+# Give equipment x
+LDA $09A2                       | AD A2 09    // Load unlocked items to A
+ORA <INSERT 2 BYTES OF BITFLAG> | 09 -eqp
+STA $09A2                       | 8D A2 09
+LDA $09A4                       | AD A4 09    // Load currently equipped items to A
+ORA <INSERT 2 BYTES OF BITFLAG> | 09 -eqp
+STA $09A4                       | 8D A4 09
+RTS                             | 60
+
+# Give beam x
+LDA #$<NEW BEAM BITFLAG>        | A9 -bem
+ORA $09A6                       | 0D A6 09
+STA $09A6                       | 8D A6 09
+LDA #$<NEW BEAM BITFLAG>        | A9 -bem
+ORA $09A8                       | 0D A8 09
+STA $09A8                       | 8D A8 09
+// MAKE SURE SPAZER AND PLASMA  |
+// AREN'T BOTH EQUIPPED         |
+LDA #$<NEW BEAM BITFLAG>        | A9 -bem
+ASL                             | 0A
+AND #$0008                      | 29 08 00
+TRB $09A6                       | 1C A6 09
+LDA #$<NEW BEAM BITFLAG>        | A9 -bem
+LSR                             | 4A
+AND #$0004                      | 29 04 00
+TRB $09A6                       | 1C A6 09
+JSL $90AC8D                     | 22 8D AC 90 // Uhh... I think this adds beam graphics to memory?
+RTS                             | 60
+
+# Progressive Jump
+
+
+# Progressive Spazer
+LDA #$0004                      | 
+AND $09A8                       | 
+CMP #$0004                      | 
+BEQ HAVESPAZER                  | 
+ORA $09A8                       | 
+STA $09A8                       | 
+LDA #$0004                      | 
+ORA $09A6                       | 
+STA $09A6                       | 
+JSL $90AC8D                     | 
+RTS                             | 
+LBL HAVESPAZER                  | 
+// GIVE PLASMA AND              | 
+// UNEQUIP SPAZER               | 
+LDA #$0004                      | 
+TRB #$09A6                      | 
+LDA #$0008                      | 
+ORA $09A8                       | 
+STA $09A8                       | 
+LDA $#0008                      | 
+ORA $09A6                       | 
+STA $09A6                       | 
+JSL $90AC8D                     | 
+RTS                             | 
+
+# Progressive Suits

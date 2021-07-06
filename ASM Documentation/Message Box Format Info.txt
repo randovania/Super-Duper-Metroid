@@ -1,0 +1,33 @@
+Message Box Data Dissection
+Each tile takes 2 bytes
+Tiles are stored sequentially from left to right
+First byte: 	
+	First 4 bits: Row in tilemap
+	Final 4 bits: Column in tilemap
+Second Byte:
+	0010 1000
+	First bit: ? (usually 0)
+	Next bit: X Flip
+	Next bit: ? (usually 1)
+	Next 3 bits: Palette index (000X XX00)
+	Last 2 bits: ? (Usually 00)
+	
+	
+Default palette: 02 (3rd index)
+
+(00, 00) PAL 0| 00 20
+(00, 01) PAL 0| 01 20
+(00, 00) PAL 1| 00 24
+(00, 00) PAL 2| 00 28
+(00, 00) PAL 3| 00 2C
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
+		 PAL 0|
