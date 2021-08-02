@@ -6,9 +6,9 @@ LDA $1C1F                                                             | AD 1F 1C
 CMP #$001C                                                            | C9 1C 00
 BEQ VANILLA                                                           | F0 0A
 CMP #$0014 // 20 DEC, MAP STATION INDEX.                              | C9 14 00
-BCC CALCFROMITEMLIST                                                  | 90 08
+BCC CALCFROMITEMLIST                                                  | 90 2A
 CMP #$0019                                                            | C9 19 00
-BCS CALCFROMITEMLIST                                                  | B0 03
+BCS CALCFROMITEMLIST                                                  | B0 25
 																	  | 
 // WE DON'T HAVE ITEM BOX. NOW CALCULATE MEMORY SHITE W/ VANILLA CODE.| 
 LBL CALCVANILLA                                                       | 
@@ -39,13 +39,14 @@ LBL CALCFROMITEMLIST                                                  |
 // IF ITEM IS MULTIWORLD, CALC NORMALLY.                              | 
 LDA $7FFF74                                                           | AF 74 FF 7F
 CMP #$0001                                                            | C9 01 00
-BNE CALCOVERWORLD                                                     | D0 14
+BNE CALCOVERWORLD                                                     | D0 16
 LDA $7FFF78                                                           | AF 78 FF 7F
 TAY                                                                   | A8
-LDA $7FFF7A                                                           | BF 7A FF 7F
-ASL A                                                                 | 0A
-STA $16                                                               | 85 16
+STY $00                                                               | 84 00
+LDA $7FFF7A                                                           | AF 7A FF 7F
 LSR A                                                                 | 4A
+STA $16                                                               | 85 16
+ASL A                                                                 | 0A
 CLC                                                                   | 18
 ADC #$0080                                                            | 69 80 00
 STA $09                                                               | 85 09
@@ -57,11 +58,11 @@ LDA $7FFF8E                                                           | AF 8E FF
 TAX                                                                   | AA
 LDA $859C00, X                                                        | BF 00 9C 85
 TAY                                                                   | A8
-STX $00                                                               | 86 00
-LDA $859E00                                                           | BF 00 9E 85
-ASL A                                                                 | 0A
-STA $16                                                               | 85 16
+STY $00                                                               | 84 00
+LDA $859E00, X                                                        | BF 00 9E 85
 LSR A                                                                 | 4A
+STA $16                                                               | 85 16
+ASL A                                                                 | 0A
 CLC                                                                   | 18
 ADC #$0080                                                            | 69 80 00
 STA $09                                                               | 85 09

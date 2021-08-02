@@ -1,7 +1,9 @@
 // RAW JUMP, AS WE WANT TO RETURN TO THE ORIGINAL     
 // ROUTINE AFTER MESSAGE BOX IS DONE.                 
-// TAKES UP 14 BYTES, CANNOT EXCEED 16 BYTES IN LENGTH
 
+PHA
+PHX
+PHY
 SEP #$00100000                                 | E2 20
 LDA #$83                                       | A9 83
 PHA                                            | 48

@@ -9,4 +9,7 @@ STA $7FFF74                    | 8F 74 FF 7F
 // RESET FUNCTION POINTER WORD | 
 LDA $7FFF80                    | AF 80 FF 7F
 STA $0A42                      | 8D 42 0A
+PLY                            |
+PLX                            |
+PLA                            |
 RTL                            | 6B

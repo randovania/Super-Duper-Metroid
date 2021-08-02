@@ -25,7 +25,8 @@
 # Breakdown of memory changes:
 # 
 # Message Box code edits are made to 4 minor functions in bank 85.
-# Bank 85 also has 4 more routines appended to the start of free space.
+# Bank 85 also has 4 more routines appended to the start of free space,
+# Along with routines to replace pickup effects for game items.
 # In bank 85, starting at $85:9A00, we write 5 tables to ROM, each 2 pages long.
 # TODO: Shift tables forward to make room for more routines.
 # Each entry in each table is 2 bytes long.
@@ -51,34 +52,10 @@
 # in banks $84 and $89.
 
 import random
+import json
 import sys
-
-# TODO: Refactor more code to use these functions.
-def hexToInt(hexToConvert):
-    return int(hexToConvert, 16)
-
-def intToHex(intToConvert):
-    return (hex(intToConvert)[2:]).upper()
-    
-def hexToData(hexToConvert):
-    return bytes.fromhex(hexToConvert)
-
-def reverseEndianness(hexToReverse):
-    assert (len(hexToReverse) % 2) == 0
-    hexPairs = []
-    for i in range(len(hexToReverse) // 2):
-        hexPairs.append(hexToReverse[2 * i] + hexToReverse[2 * i + 1])
-    reversedHexPairs = hexPairs[::-1]
-    outputString = ""
-    for pair in reversedHexPairs:
-        outputString += pair
-    return outputString
-    
-def padHex(hexToPad, numHexCharacters):
-    returnHex = hexToPad
-    while len(returnHex) < numHexCharacters:   
-        returnHex = "0" + returnHex
-    return returnHex
+import os
+from hexhelper import HexHelper
 
 class MessageBoxGenerator:
     # List of characters that messages are allowed to have.
@@ -181,7 +158,7 @@ class MessageBoxGenerator:
         # If the message is too long, cut it off.
         # We'll also include a warning if this happens.
         if (len(messageText) > maxMessageLengths(messageBoxSize)):
-            print("Warning: Message box text " + messageText + " exceeds maximum length of message box. Message will be cut to first 19 characters.")
+            print(f"Warning: Message box text {messageText} exceeds maximum length of message box. Message will be cut to first 19 characters.")
             messageText = messageText[:maxMessageLengths(messageBoxSize)]
         return messageText
     
@@ -221,18 +198,18 @@ class MessageBoxGenerator:
         elif messageBoxSize == "Large":
             messagHex = (paddingHex * 3) + messageHex + (paddingHex * 3)
         else:
-            print("Warning: You are attempting to create a message with size paramater " + messageBoxSize + ", which is not a supported size.\nSupported sizes are Small and Large")
+            print(f"Warning: You are attempting to create a message with size paramater {messageBoxSize}, which is not a supported size.\nSupported sizes are Small and Large")
             return
         
         # Record our addition of this message.
         if messageBoxSize == "Small":
             if messageText in smallMessagePointerTable.keys():
-                print("Warning: The message " + messageText + " has already been added to this ROM.\nPlease consult the current maintainer of this patcher.")
+                print(f"Warning: The message {messageText} has already been added to this ROM.\nPlease consult the current maintainer of this patcher.")
             else:
                 self.smallMessagePointerTable[messageText] = messageText
         elif messageBoxSize == "Large":
             if messageText in largeMessagePointerTable.keys():
-                print("Warning: The message " + messageText + " has already been added to this ROM.\nPlease consult the current maintainer of this patcher.")
+                print(f"Warning: The message {messageText} has already been added to this ROM.\nPlease consult the current maintainer of this patcher.")
             else:
                 self.largeMessagePointerTable[messageText] = messageText
         
@@ -417,6 +394,13 @@ def generateLogiclessItemPlacement(startingItems = None):
         itemsInOrderList.append(item)
     return itemsInOrderList
 
+# TODO:
+def getCustomSaveStationData(customSaveLocation):
+    
+    regionData = ""
+    saveData   = ""
+    return[regionData, saveData]
+
 # This is just a python function that applies a modified version of
 # Kazuto's More_Efficient_PLM_Items.asm patch without an assembler.
 # Please, send lots of thanks to Kazuto for this, I could not have done
@@ -437,7 +421,7 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     inMemoryPLMHeaderOffset = "026ED7"
     
     # Each item represents two bytes in each table
-    itemGetTableSize = intToHex(len(itemTypesList) * 2)
+    itemGetTableSize = HexHelper.intToHex(len(itemTypesList) * 2)
     itemGFXTableSize = itemGetTableSize
     
     # Calculate addresses of some important things.
@@ -445,65 +429,65 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Next Address     |                  |Offset of prior data |           |Prior Data Size |
     
     # Setup
-    VRAMItemNormalAddr = padHex(intToHex(hexToInt(inMemoryInitialOffset) + hexToInt("04"            )), 4)
-    VRAMItemBallAddr   = padHex(intToHex(hexToInt(VRAMItemNormalAddr   ) + hexToInt("0C"            )), 4)
-    startAddr          = padHex(intToHex(hexToInt(VRAMItemBallAddr     ) + hexToInt("10"            )), 4)
-    GFXAddr            = padHex(intToHex(hexToInt(startAddr            ) + hexToInt("0B"            )), 4)
-    gotoAddr           = padHex(intToHex(hexToInt(GFXAddr              ) + hexToInt("08"            )), 4)
-    VRAMItemBlockAddr  = padHex(intToHex(hexToInt(gotoAddr             ) + hexToInt("08"            )), 4)
-    respawnAddr        = padHex(intToHex(hexToInt(VRAMItemBlockAddr    ) + hexToInt("08"            )), 4)
-    blockLoopAddr      = padHex(intToHex(hexToInt(respawnAddr          ) + hexToInt("04"            )), 4)
-    GFXAddrB           = padHex(intToHex(hexToInt(blockLoopAddr        ) + hexToInt("13"            )), 4)
-    blockGotoAddr      = padHex(intToHex(hexToInt(GFXAddrB             ) + hexToInt("10"            )), 4)
-    getItemAddr        = padHex(intToHex(hexToInt(blockGotoAddr        ) + hexToInt("04"            )), 4)
-    tablePtrAddr       = padHex(intToHex(hexToInt(getItemAddr          ) + hexToInt("05"            )), 4)
+    VRAMItemNormalAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(inMemoryInitialOffset) + HexHelper.hexToInt("04"            )), 4)
+    VRAMItemBallAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemNormalAddr   ) + HexHelper.hexToInt("0C"            )), 4)
+    startAddr          = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBallAddr     ) + HexHelper.hexToInt("10"            )), 4)
+    GFXAddr            = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(startAddr            ) + HexHelper.hexToInt("0B"            )), 4)
+    gotoAddr           = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddr              ) + HexHelper.hexToInt("08"            )), 4)
+    VRAMItemBlockAddr  = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(gotoAddr             ) + HexHelper.hexToInt("08"            )), 4)
+    respawnAddr        = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBlockAddr    ) + HexHelper.hexToInt("08"            )), 4)
+    blockLoopAddr      = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(respawnAddr          ) + HexHelper.hexToInt("04"            )), 4)
+    GFXAddrB           = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockLoopAddr        ) + HexHelper.hexToInt("13"            )), 4)
+    blockGotoAddr      = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddrB             ) + HexHelper.hexToInt("10"            )), 4)
+    getItemAddr        = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockGotoAddr        ) + HexHelper.hexToInt("04"            )), 4)
+    tablePtrAddr       = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(getItemAddr          ) + HexHelper.hexToInt("05"            )), 4)
     
     # ASM Functions
-    tableLoadFuncAddr  = padHex(intToHex(hexToInt(tablePtrAddr         ) + hexToInt("04"            )), 4)
-    lavaRiseFuncAddr   = padHex(intToHex(hexToInt(tableLoadFuncAddr    ) + hexToInt("1D"            )), 4)
+    tableLoadFuncAddr  = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(tablePtrAddr         ) + HexHelper.hexToInt("04"            )), 4)
+    lavaRiseFuncAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(tableLoadFuncAddr    ) + HexHelper.hexToInt("1D"            )), 4)
     
     # Tables
-    itemGetTableAddr   = padHex(intToHex(hexToInt(lavaRiseFuncAddr     ) + hexToInt("07"            )), 4)
-    itemGFXTableAddr   = padHex(intToHex(hexToInt(itemGetTableAddr     ) + hexToInt(itemGetTableSize)), 4)
+    itemGetTableAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(lavaRiseFuncAddr     ) + HexHelper.hexToInt("07"            )), 4)
+    itemGFXTableAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemGetTableAddr     ) + HexHelper.hexToInt(itemGetTableSize)), 4)
     
     # Item Data
-    itemPLMDataAddr    = padHex(intToHex(hexToInt(itemGFXTableAddr     ) + hexToInt(itemGFXTableSize)), 4)
+    itemPLMDataAddr    = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemGFXTableAddr     ) + HexHelper.hexToInt(itemGFXTableSize)), 4)
     
     # Write Data
     # Setup
     # Don't bother reading this, it's a 1 for 1 recreation of the Setup portion of Kazuto's asm file.
     # Or at least it should be.
-    f.seek(hexToInt(inFileInitialOffset))
-    f.write(hexToData(reverseEndianness(tableLoadFuncAddr) + reverseEndianness(itemGFXTableAddr)))
+    f.seek(HexHelper.hexToInt(inFileInitialOffset))
+    f.write(HexHelper.hexToData(HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGFXTableAddr)))
     # VRAMItem_Normal
-    f.write(hexToData("7C88A9DF2E8A"                       + reverseEndianness(inMemoryInitialOffset) + "2487"         + reverseEndianness(startAddr)))
+    f.write(HexHelper.hexToData("7C88A9DF2E8A"                                 + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2487"         + HexHelper.reverseEndianness(startAddr)))
     # VRAMItem_Ball
-    f.write(hexToData("7C88A9DF2E8A"                       + reverseEndianness(inMemoryInitialOffset) + "2E8AAFDF2E8AC7DF"))
+    f.write(HexHelper.hexToData("7C88A9DF2E8A"                                 + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2E8AAFDF2E8AC7DF"))
     # Start
-    f.write(hexToData("248A"                               + reverseEndianness(gotoAddr)              + "C18689DF4E8716"))
+    f.write(HexHelper.hexToData("248A"                                         + HexHelper.reverseEndianness(gotoAddr)              + "C18689DF4E8716"))
     # .Gfx (1)
-    f.write(hexToData("4FE067E02487"                       + reverseEndianness(GFXAddr)))
+    f.write(HexHelper.hexToData("4FE067E02487"                                 + HexHelper.reverseEndianness(GFXAddr)))
     # Goto
-    f.write(hexToData("248AA9DF2487"                       + reverseEndianness(getItemAddr)))
+    f.write(HexHelper.hexToData("248AA9DF2487"                                 + HexHelper.reverseEndianness(getItemAddr)))
     # VRAMItem_Block
-    f.write(hexToData("2E8A"                               + reverseEndianness(inMemoryInitialOffset) + "2487"         + reverseEndianness(blockLoopAddr)))
+    f.write(HexHelper.hexToData("2E8A"                                         + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2487"         + HexHelper.reverseEndianness(blockLoopAddr)))
     # Respawn
-    f.write(hexToData("2E8A32E0"))
+    f.write(HexHelper.hexToData("2E8A32E0"))
     # BlockLoop
-    f.write(hexToData("2E8A07E07C88"                       + reverseEndianness(respawnAddr)           + "248A"         + reverseEndianness(blockGotoAddr) + "C18689DF4E8716"))
+    f.write(HexHelper.hexToData("2E8A07E07C88"                                 + HexHelper.reverseEndianness(respawnAddr)           + "248A"         + HexHelper.reverseEndianness(blockGotoAddr) + "C18689DF4E8716"))
     # .Gfx (2)
-    f.write(hexToData("4FE067E03F87"                       + reverseEndianness(GFXAddrB)              + "2E8A20E02487" + reverseEndianness(blockLoopAddr)))
+    f.write(HexHelper.hexToData("4FE067E03F87"                                 + HexHelper.reverseEndianness(GFXAddrB)              + "2E8A20E02487" + HexHelper.reverseEndianness(blockLoopAddr)))
     # BlockGoto
-    f.write(hexToData("248A"                               + reverseEndianness(respawnAddr)))
+    f.write(HexHelper.hexToData("248A"                                         + HexHelper.reverseEndianness(respawnAddr)))
     # GetItem
-    f.write(hexToData("9988DD8B02"))
-    f.write(hexToData(reverseEndianness(tableLoadFuncAddr) + reverseEndianness(itemGetTableAddr)))
+    f.write(HexHelper.hexToData("9988DD8B02"))
+    f.write(HexHelper.hexToData(HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGetTableAddr)))
     
     # ASM Functions
     # LoadItemTable
-    f.write(hexToData("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
+    f.write(HexHelper.hexToData("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
     # LavaRise
-    f.write(hexToData("A9E0FF8D7C1960"))
+    f.write(HexHelper.hexToData("A9E0FF8D7C1960"))
     
     # Item Tables
     # Initial item table hexstrings.
@@ -513,24 +497,24 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Size of the data pointed to for each entry.
     itemGetLength   = "07"
     itemGFXLength   = "0E"
-    itemTotalLength = intToHex(hexToInt(itemGetLength) + hexToInt(itemGFXLength))
+    itemTotalLength = HexHelper.intToHex(HexHelper.hexToInt(itemGetLength) + HexHelper.hexToInt(itemGFXLength))
 
     # Pointers to next item PLM data
     itemNextGetData = itemPLMDataAddr
-    itemNextGFXData = padHex(intToHex(hexToInt(itemPLMDataAddr) + hexToInt(itemGetLength)), 4)
+    itemNextGFXData = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemPLMDataAddr) + HexHelper.hexToInt(itemGetLength)), 4)
     
     # Get table bytes one item at a time.
     for itemType in itemTypesList:
         # Add bytes to tables
-        itemTableBytes += reverseEndianness(itemNextGetData)
-        GFXTableBytes  += reverseEndianness(itemNextGFXData)
+        itemTableBytes += HexHelper.reverseEndianness(itemNextGetData)
+        GFXTableBytes  += HexHelper.reverseEndianness(itemNextGFXData)
         # Increment Data Pointers
-        itemNextGetData = padHex(intToHex(hexToInt(itemNextGetData) + hexToInt(itemTotalLength)), 4)
-        itemNextGFXData = padHex(intToHex(hexToInt(itemNextGFXData) + hexToInt(itemTotalLength)), 4)
+        itemNextGetData = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemNextGetData) + HexHelper.hexToInt(itemTotalLength)), 4)
+        itemNextGFXData = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemNextGFXData) + HexHelper.hexToInt(itemTotalLength)), 4)
     
     # Write tables to file
-    f.write(hexToData(itemTableBytes))
-    f.write(hexToData(GFXTableBytes ))
+    f.write(HexHelper.hexToData(itemTableBytes))
+    f.write(HexHelper.hexToData(GFXTableBytes ))
     
     # Item PLM Data
     # This acquire data should do nothing but display a message box.
@@ -552,34 +536,31 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
             currentItemGFXData += paletteByte
         currentItemGFXData += "3A8A"
         try:
-            assert (len(currentItemGFXData) // 2) == hexToInt(itemGFXLength)
+            assert (len(currentItemGFXData) // 2) == HexHelper.hexToInt(itemGFXLength)
         except:
-            errorMsg  = "ERROR: Invalid-size graphics data supplied for item type "
-            errorMsg += itemType.itemName
-            errorMsg += ":\n"
-            errorMsg += currentItemGFXData
-            errorMsg += " should be only 14(0x0E) bytes, is instead "
-            errorMsg += str(len(currentItemGFXData))
-            errorMsg += "(0x"
-            errorMsg += padHex(intToHex(len(currentItemGFXData)), 2)
-            errorMsg += ")."
+            errorMsg  = f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}(0x{HexHelper.padHex(HexHelper.intToHex(len(currentItemGFXData)), 2)})."
             print(errorMsg)
             return
         # Write to file
-        f.write(hexToData(genericAcquireData))
-        f.write(hexToData(currentItemGFXData))
+        f.write(HexHelper.hexToData(genericAcquireData))
+        f.write(HexHelper.hexToData(currentItemGFXData))
     
     # Now we write out the PLM Header Data
-    f.seek(hexToInt(inMemoryPLMHeaderOffset))
-    normalItemHex = "64EE" + reverseEndianness(VRAMItemNormalAddr)
-    ballItemHex = "64EE" + reverseEndianness(VRAMItemBallAddr)
-    blockItemHex = "8EEE" + reverseEndianness(VRAMItemBlockAddr)
+    f.seek(HexHelper.hexToInt(inMemoryPLMHeaderOffset))
+    normalItemHex = "64EE" + HexHelper.reverseEndianness(VRAMItemNormalAddr)
+    ballItemHex   = "64EE" + HexHelper.reverseEndianness(VRAMItemBallAddr)
+    blockItemHex  = "8EEE" + HexHelper.reverseEndianness(VRAMItemBlockAddr)
     for itemType in itemTypesList:
-        f.write(hexToData(normalItemHex))
+        f.write(HexHelper.hexToData(normalItemHex))
     for itemType in itemTypesList:
-        f.write(hexToData(ballItemHex))
+        f.write(HexHelper.hexToData(ballItemHex))
     for itemType in itemTypesList:
-        f.write(hexToData(blockItemHex))
+        f.write(HexHelper.hexToData(blockItemHex))
+    # Write Graphics
+    # TODO:
+    f.seek(HexHelper.hexToInt("049100"))
+    with open("C:\\Users\\Dood\\Dropbox\\SM Modding\\Publish\\VramItems.bin", "rb") as f2:
+        f.write(f2.read())
     return
         
 
@@ -949,15 +930,15 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
     for i in range(100):
         item = itemsInOrderList[i]
         # Write PLM Data.
-        f.seek(int(itemPLMLocationList[i], 16))
+        f.seek(HexHelper.hexToInt(itemPLMLocationList[i]))
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
         if (item == "No Item"):
-            PLMID = int(itemPLMIDs[item], 16)
+            PLMID = HexHelper.hexToInt(itemPLMIDs[item])
             PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
             f.write(PLMHexadecimalID)
             continue
-        PLMID = int(itemPLMIDs[item], 16) + (int(itemPLMBlockTypeMultiplier, 16) * itemPLMBlockTypeList[i])
+        PLMID = HexHelper.hexToInt(itemPLMIDs[item]) + (HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * itemPLMBlockTypeList[i])
         PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
         f.write(PLMHexadecimalID)
         
@@ -973,29 +954,29 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
         # See documentation on memory alterations at the top of this document.
         
         # Each table entry is two bytes wide, hence the doubling.
-        memoryBaseLocation = int("029A00", 16) + (int(itemLocationList[i], 16) * 2) 
+        memoryBaseLocation = HexHelper.hexToInt("029A00") + (HexHelper.hexToInt(itemLocationList[i]) * 2) 
         f.seek(memoryBaseLocation)
         # TODO: Handle width and height separately.
         if item in itemMessageNonstandardSizes:
             f.write(bytes.fromhex("8000")[::-1])
-            f.seek(memoryBaseLocation + int("400", 16))
+            f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
             f.write(bytes.fromhex(itemMessageNonstandardSizes[item])[::-1])
         else:
             f.write(bytes.fromhex("8040")[::-1])
-            f.seek(memoryBaseLocation + int("400", 16))
+            f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
             f.write(bytes.fromhex("0040")[::-1])
-        f.seek(memoryBaseLocation + int("200", 16))
+        f.seek(memoryBaseLocation + HexHelper.hexToInt("200"))
         f.write(bytes.fromhex(itemMessageAddresses[item])[::-1])
-        f.seek(memoryBaseLocation + int("600", 16))
+        f.seek(memoryBaseLocation + HexHelper.hexToInt("600"))
         f.write(bytes.fromhex(itemMessageIDs[item])[::-1])
-        f.seek(memoryBaseLocation + int("800", 16))
+        f.seek(memoryBaseLocation + HexHelper.hexToInt("800"))
         # If item is meant for a different player, it will do nothing at all.
         # This is not the same as there not being an item in this position - 
         # The item will be there, it will just have no effect for the SM player.
         if itemHoldersInOrderList is not None and itemHoldersInOrderList[i] != playerName:
-            f.write(hexToData(itemGetRoutineAddressesDict["No Item"]))
+            f.write(HexHelper.hexToData(itemGetRoutineAddressesDict["No Item"]))
         else:
-            f.write(hexToData(itemGetRoutineAddressesDict[item]))
+            f.write(HexHelper.hexToData(itemGetRoutineAddressesDict[item]))
             
     # Write spoiler log
     spoilerPath = filePath[:filePath.rfind(".")] + "_SPOILER.txt"
@@ -1005,9 +986,13 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
         spoilerFile.write(locationNamesList[i] + ": " + itemsInOrderList[i] + "\n")
     spoilerFile.close()
 
-def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", startingItems = None, recipientList = None):
+def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     # Open ROM File
     f = open(ROMFilePath, 'r+b', buffering = 0)
+    # Open Patcher Data Output File
+    patcherOutputPath = filePath[:filePath.rfind(".")] + "_PatcherData.json"
+    patcherOutput = open(patcherOutputPath, 'w')
+    patcherOutputJson = {"patcherData" : []}
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
@@ -1027,8 +1012,13 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     baseRoutineWritingAddress = "029643"
 
     # Routines stored as hexadecimal.
+    #
+    # We handle writing these in the program itself instead of as static patches,
+    # Because I write them myself and don't want to manually recalculate addresses
+    # Each time I test changes.
+    #
     # Keyphrases starting in - will be substituted with addresses.
-    # These must be of appropriate length or size calculations will fail.
+    # These must be of appropriate length or size calculations might fail.
     # routineAlpha = -alp
     # routineBeta  = -bta
     # routineGamma = -gma
@@ -1036,25 +1026,25 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     routineAlpha = "8D1F1CC91C00F00AC914009006C91900B00160AF74FF7FC90100D01CAF7CFF7F8D1F1CA500DA48AF7EFF7F850068A20000FC0000FA8500605ADAA22000BF6ED87E9FCEFF7FCACAE00000D0F1AFD0FF7F38EFB0FF7FC90000F0278F8EFF7FA90100CF8EFF7FF01AC90080080A28D0F2A22000A90000EA9FAEFF7FCACAE00000D0F1A22000BFCEFF7F38FFAEFF7F9F8EFF7FCACAE00000D0ECA0F000A22000BF8EFF7FC90000D00A9838E91000A8CACA80EDBFCEFF7F9FAEFF7FBF8EFF7FC90100F004C84A80F7980A8F8EFF7FAABD00A08D1F1CFC00A2FA7A60"
     routineBeta  = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
     routineGamma = "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
-    routineDelta = "AD1F1CC91C00F00AC914009008C91900B003AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D014AF78FF7FA8BF7AFF7F0A85164A18698000850960DAAF8EFF7FAABF009C85A88600BF009E850A85164A186980008509FA60"
+    routineDelta = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
 
     routines = [routineAlpha, routineBeta, routineGamma, routineDelta]
     routineAddresses = []
     routineAddressRefs = ["-alp", "-bta", "-gma", "-dlt"]
-    currentAddress = hexToInt(baseRoutineWritingAddress)
+    currentAddress = HexHelper.hexToInt(baseRoutineWritingAddress)
     inGameAddress = "9643"
     f.seek(currentAddress)
     # Calculate routine addresses
     for i in range(len(routines)):
-        routineAddresses.append(reverseEndianness(inGameAddress))
-        inGameAddress   = intToHex(hexToInt(inGameAddress) + (len(routines[i]) // 2))
+        routineAddresses.append(HexHelper.reverseEndianness(inGameAddress))
+        inGameAddress   = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routines[i]) // 2))
         currentAddress += int(len(routines[i]) // 2)
     
     # Replace subroutine references with their addresses and write them to the ROM file.
     for i in range(len(routines)):
         for j in range(len(routines)):
             routines[i] = (routines[i]).replace(routineAddressRefs[j], routineAddresses[j])
-        f.write(hexToData(routines[i]))
+        f.write(HexHelper.hexToData(routines[i]))
     
     # Now the dumb part. We create item pickup routines, one for each item in the game.
     # Yes it's dumb, but dumb works. This can probably be optimized later.
@@ -1094,9 +1084,9 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     
     # Create individual routines from ASM templates.
     for i in range(len(equipmentGets)):
-        equipmentGets[i] = (equipmentGets[i]).replace("-eqp", reverseEndianness(equipmentBitFlags[i]))
+        equipmentGets[i] = (equipmentGets[i]).replace("-eqp", HexHelper.reverseEndianness(equipmentBitFlags[i]))
     for i in range(len(beamGets)):
-        beamGets[i] = (beamGets[i]).replace("-bem", reverseEndianness(beamBitFlags[i]))
+        beamGets[i] = (beamGets[i]).replace("-bem", HexHelper.reverseEndianness(beamBitFlags[i]))
     
     
     
@@ -1124,9 +1114,9 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     # Address and file pointer we had from before.
     itemGetRoutineAddresses = []
     for i in range(len(itemGetRoutines)):
-        itemGetRoutineAddresses.append(reverseEndianness(inGameAddress))
-        f.write(hexToData(itemGetRoutines[i]))
-        inGameAddress   = intToHex(hexToInt(inGameAddress) + (len(itemGetRoutines[i]) // 2))
+        itemGetRoutineAddresses.append(HexHelper.reverseEndianness(inGameAddress))
+        f.write(HexHelper.hexToData(itemGetRoutines[i]))
+        inGameAddress   = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(itemGetRoutines[i]) // 2))
         currentAddress += int(len(itemGetRoutines[i]) // 2)
     
     # You shouldn't ever need to expand this, as this only concerns the actual effects
@@ -1156,16 +1146,17 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
         "No Item"                 : itemGetRoutineAddresses[21]
     }
     
-    # TODO:
-    # Output this to a file to be imported by the Interface program.
+    itemRoutinesJsonOutput = []
     for (itemName, routineAddress) in itemGetRoutineAddressesDict.items():
+        itemRoutinesJsonOutput.append({"itemName" : itemName, "routineAddress" : routineAddress})
         print(itemName + " has routine address " + routineAddress)
+    patcherOutputJson["patcherData"].append({"itemRoutines" : itemRoutinesJsonOutput})
     
     # Sanity check.
-    # If this trips I'm in deep shit.
+    # If this trips I'm in deep trouble.
     # We are safe - for now.
     print("Free routine ROM in bank 85 begins at " + inGameAddress)
-    if hexToInt(inGameAddress) > hexToInt("9A00"):
+    if HexHelper.hexToInt(inGameAddress) > HexHelper.hexToInt("9A00"):
         print("ERROR: Routines written overlap with start of pickup tables in bank $85")
         return
     
@@ -1182,20 +1173,24 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     routineOverwriteGamma = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
     routineOverwriteDelta = "205A82"
     
-    # Change Crateria Wake-Up Logic - Always wake up after picking up item on Morph Ball Pedestal and heading up Blue Brinstar Elevator.
-    routineOverwriteEpsilon = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
-    
     # Addresses to write routines to in Headerless ROM file.
     routineOverwriteAlphaAddress = "028086"
     routineOverwriteBetaAddress = "02825A"
     routineOverwriteGammaAddress = "0282E5"
-    routineOverwriteDeltaAddress = "028250"
-    routineOverwriteEpsilonAddress = "07E652"
-    
+    routineOverwriteDeltaAddress = "028250"    
     
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
+    # Default behavior is to skip straight to landing site.
+    introOptionChoice = "Skip Intro And Ceres"
+    if "introOptionChoice" in kwargs:
+        introOptionChoice = kwargs["introOptionChoice"]
+    # Check to make sure intro option choice doesn't conflict with custom start point.
+    if "customSaveStart" in kwargs:
+        if introOptionChoice != "Skip Intro And Ceres":
+            print("ERROR: Cannot set custom start without also skipping Intro and Ceres.")
     if introOptionChoice != "Vanilla":
         if introOptionChoice == "Skip Intro":
+            # TODO: Convert this to static patch.
             routineZeta = "9CE20DADDA09D017A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
             
             routineZetaAddress = "016EB4"
@@ -1204,8 +1199,9 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
             overwriteRoutineAddresses.extend([routineZetaAddress])
         elif introOptionChoice == "Skip Intro And Ceres":
             routineZeta = "9CE20DADDA09D0149C9F079C8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
-            
             routineZetaAddress = "016EB4"
+            if "customSaveStart" in kwargs:
+                pass
         else:
             print("WARNING: Invalid option entered for introOptionChoice. Defaulting to vanilla intro behavior...")
         
@@ -1213,8 +1209,12 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
         overwriteRoutineAddresses.extend([routineZetaAddress])
     
     
-    overwriteRoutines.extend([routineOverwriteAlpha, routineOverwriteBeta, routineOverwriteGamma, routineOverwriteDelta, routineOverwriteEpsilon])
-    overwriteRoutineAddresses.extend([routineOverwriteAlphaAddress, routineOverwriteBetaAddress, routineOverwriteGammaAddress, routineOverwriteDeltaAddress, routineOverwriteEpsilonAddress])
+    overwriteRoutines.extend([routineOverwriteAlpha, routineOverwriteBeta, routineOverwriteGamma, routineOverwriteDelta])
+    overwriteRoutineAddresses.extend([routineOverwriteAlphaAddress, routineOverwriteBetaAddress, routineOverwriteGammaAddress, routineOverwriteDeltaAddress])
+    
+    # Apply static patches.
+    # Many of these patches are provided by community members - 
+    # See top of document for details.
     
     # Replace references with actual addresses.
     for i in range(len(overwriteRoutines)):
@@ -1223,9 +1223,9 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     
     # Write to file
     for i, routine in enumerate(overwriteRoutines):
-        currentAddress = hexToInt(overwriteRoutineAddresses[i])
+        currentAddress = HexHelper.hexToInt(overwriteRoutineAddresses[i])
         f.seek(currentAddress)
-        f.write(hexToData(routine))
+        f.write(HexHelper.hexToData(routine))
     
     # MULTIWORLD ROUTINES:
     # Appended to bank 90. Used to work the game's events in our favor.
@@ -1236,8 +1236,8 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     if len(multiworldExecuteArbitraryFunctionRoutine) // 2 > 16:
         print("ERROR: Multiworld Function Redirect Function exceeds its maximum size.")
     
-    f.seek(hexToInt("087FF0"))
-    f.write(hexToData(multiworldExecuteArbitraryFunctionRoutine))
+    f.seek(HexHelper.hexToInt("087FF0"))
+    f.write(HexHelper.hexToData(multiworldExecuteArbitraryFunctionRoutine))
     
     # Routines to append to bank $83.
     multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
@@ -1245,16 +1245,24 @@ def patchROM(ROMFilePath, itemList = None, introOptionChoice = "Vanilla", starti
     
     multiworldRoutines = [multiworldItemGetRoutine]
     
-    f.seek(hexToInt(multiworldRoutineAddressStart))
+    f.seek(HexHelper.hexToInt(multiworldRoutineAddressStart))
     for routine in multiworldRoutines:
-        f.write(hexToData(routine))
+        f.write(HexHelper.hexToData(routine))
     
+    json.dump(patcherOutputJson, patcherOutput, indent=4, sort_keys=True)
+    patcherOutput.close()
     f.close()
     print("ROM modified successfully.")
 
-# TODO: Remember to make this not assume a file directory when I release this.
-# I do this now because I don't want to type it in each time, but that obviously
-# Is impractical for a released version to do.
+
 if __name__ == "__main__":
-    filePath = "C:\\Users\\Dood\\Dropbox\\SM Modding\\Patcher Test Rom\\Super Metroid (Japan, USA) (En,Ja).sfc" #Temporary file.
-    patchROM(filePath, None, "Skip Intro And Ceres", ["Morph Ball", "Reserve Tank", "Energy Tank"])
+    # Build in this to make it faster to run.
+    # Saves me some time.
+    if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
+        f = open(os.getcwd() + "\\romfilepath.txt", 'r')
+        filePath = f.readline().rstrip()
+        f.close()
+    else:
+        print("Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program.")
+        filePath = input()
+    patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres")
