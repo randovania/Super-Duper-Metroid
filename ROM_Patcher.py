@@ -733,7 +733,7 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
 
             
             # itemTypes.append(ItemType(item, ))
-            # nextPLMId = intToHex(hexToInt(nextPLMId) + 4)
+            # nextPLMId = HexHelper.intToHex(HexHelper.hexToInt(nextPLMId) + 4)
     
     # TODO: Include graphics for common, non VRAM items
     writeKazutoMoreEfficientItemsHack(f, itemTypes)

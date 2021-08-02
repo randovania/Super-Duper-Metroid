@@ -382,7 +382,7 @@ class SuperMetroidInterface:
             self.ws.send(json.dumps(jsonReadDataFromAddressCommand))
             # Send Data
             self.ws.send(HexHelper.hexToData(hexData))
-            print("Write to address " + address + " was successful.")
+            print(f"Write to address {address} was successful.")
         else:
             print("ERROR: Connection was not initialized properly before attempting to set data. Ignoring request...")
     
@@ -432,7 +432,7 @@ class SuperMetroidInterface:
                 self.inGameInvokeEventThread.start()
             self.lock.release()
         else:
-            print("ERROR: Super Metroid player was sent item '" + itemName + "', which is not known to be a valid Super Metroid item.")
+            print(f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item.")
     
     def TestMyLuck(self, itemName, sender, showMessage = True):
         self.__ReceiveItemInternal(itemName, sender, showMessage)
@@ -468,18 +468,18 @@ class SuperMetroidInterface:
             
             # Content.
             # Different for each item - main message for an item pickup.
-            self.SetData("F6FF78", self.ReverseEndianness(self.itemMessageAddresses[itemName]))
+            self.SetData("F6FF78", HexHelper.reverseEndianness(self.itemMessageAddresses[itemName]))
             
             # Message box size, in bytes.
             # Dictates height.
             size = "4000"
             if itemName in self.itemMessageNonstandardSizes:
-                size = self.ReverseEndianness(self.itemMessageNonstandardSizes[itemName])
+                size = HexHelper.reverseEndianness(self.itemMessageNonstandardSizes[itemName])
             self.SetData("F6FF7A", size)
             
             # Message ID. Should be accurate if it can be helped.
             # Also set to Wave Beam.
-            self.SetData("F6FF7C", self.ReverseEndianness(self.itemMessageIDs[itemName]))
+            self.SetData("F6FF7C", HexHelper.reverseEndianness(self.itemMessageIDs[itemName]))
             
             # Get the original routine address and save it to jump to later.
             originalJumpDestination = self.GetData("F50A42", 2)
