@@ -39,36 +39,9 @@ import sys
 import os
 from websocket import create_connection
 from hexhelper import HexHelper
+from SM_Constants import SuperMetroidConstants
 
 class SuperMetroidInterface:
-    # List of ammo items, ordered by ascending Message ID
-    ammoItemList = [
-        "Energy Tank",
-        "Missile Expansion",
-        "Super Missile Expansion",
-        "Power Bomb Expansion",
-        "Reserve Tank"
-    ]
-    
-    # List of toggle items, ordered by ascending Message ID
-    toggleItemList = [
-        "Grapple Beam",
-        "X-Ray Scope",
-        "Varia Suit",
-        "Spring Ball",
-        "Morph Ball",
-        "Screw Attack",
-        "Hi-Jump Boots",
-        "Space Jump",
-        "Speed Booster",
-        "Charge Beam",
-        "Ice Beam",
-        "Wave Beam",
-        "Spazer Beam",
-        "Plasma Beam",
-        "Morph Ball Bombs",
-        "Gravity Suit"
-    ]
     
     # These get imported dynamically from a JSON file created by the patcher.
     # This is necessary because these may not always be in the same place every game.
@@ -97,158 +70,8 @@ class SuperMetroidInterface:
         "No Item"                 : None
     }
     
-    # Dictionary of nonstandard message box sizes
-    # TODO: Replace this with something more elegant? Possibly.
-    itemMessageNonstandardSizes = {
-        "Missile Expansion"       : "0100",
-        "Super Missile Expansion" : "0100",
-        "Power Bomb Expansion"    : "0100",
-        "Morph Ball Bombs"        : "0100",
-        "Speed Booster"           : "0100",
-        "Grapple Beam"            : "0100",
-        "X-Ray Scope"             : "0100"}
-    
-    # Dictionary of item message locations
-    itemMessageAddresses = {
-        "Energy Tank"             : "877F",
-        "Missile Expansion"       : "87BF",
-        "Super Missile Expansion" : "88BF",
-        "Power Bomb Expansion"    : "89BF",
-        "Grapple Beam"            : "8ABF",
-        "X-Ray Scope"             : "8BBF",
-        "Varia Suit"              : "8CBF",
-        "Spring Ball"             : "8CFF",
-        "Morph Ball"              : "8D3F",
-        "Screw Attack"            : "8D7F",
-        "Hi-Jump Boots"           : "8DBF",
-        "Space Jump"              : "8DFF",
-        "Speed Booster"           : "8E3F",
-        "Charge Beam"             : "8F3F",
-        "Ice Beam"                : "8F7F",
-        "Wave Beam"               : "8FBF",
-        "Spazer Beam"             : "8FFF",
-        "Plasma Beam"             : "903F",
-        "Morph Ball Bombs"        : "907F",
-        "Reserve Tank"            : "94FF",
-        "Gravity Suit"            : "953F"}
-    
-    itemMessageIDs = {
-        "Energy Tank"             : "0001",
-        "Missile Expansion"       : "0002",
-        "Super Missile Expansion" : "0003",
-        "Power Bomb Expansion"    : "0004",
-        "Grapple Beam"            : "0005",
-        "X-Ray Scope"             : "0006",
-        "Varia Suit"              : "0007",
-        "Spring Ball"             : "0008",
-        "Morph Ball"              : "0009",
-        "Screw Attack"            : "000A",
-        "Hi-Jump Boots"           : "000B",
-        "Space Jump"              : "000C",
-        "Speed Booster"           : "000D",
-        "Charge Beam"             : "000E",
-        "Ice Beam"                : "000F",
-        "Wave Beam"               : "0010",
-        "Spazer Beam"             : "0011",
-        "Plasma Beam"             : "0012",
-        "Morph Ball Bombs"        : "0013",
-        "Reserve Tank"            : "0019",
-        "Gravity Suit"            : "001A"}
-    
-    # Widths for all messages, either "Small" or "Large".
-    # Small boxes have a width of 19 tiles,
-    # Large boxes have a width of 26 tiles.
-    # This dictates how messages are generated.
-    # If a message type is not in this dict,
-    # It is "Small".
-    # All non-item messages, such as save station menus, recharge stations, etc. are also always small.
-    # This includes unused messages.
-    # Note that messageboxes may have varying heights.
-    itemMessageWidths = {
-        "Energy Tank"             : "Small",
-        "Missile Expansion"       : "Large",
-        "Super Missile Expansion" : "Large",
-        "Power Bomb Expansion"    : "Large",
-        "Grapple Beam"            : "Large",
-        "X-Ray Scope"             : "Large",
-        "Varia Suit"              : "Small",
-        "Spring Ball"             : "Small",
-        "Morph Ball"              : "Small",
-        "Screw Attack"            : "Small",
-        "Hi-Jump Boots"           : "Small",
-        "Space Jump"              : "Small",
-        "Speed Booster"           : "Large",
-        "Charge Beam"             : "Small",
-        "Ice Beam"                : "Small",
-        "Wave Beam"               : "Small",
-        "Spazer Beam"             : "Small",
-        "Plasma Beam"             : "Small",
-        "Morph Ball Bombs"        : "Large",
-        "Reserve Tank"            : "Small",
-        "Gravity Suit"            : "Small"}
-    
-    
-    # Combined list, in order of ascending Message ID
-    itemList = ammoItemList[0:4] + toggleItemList[0:15] + [ammoItemList[4]] + [toggleItemList[15]]
-    
     # TODO: Find a clean way to send dynamically generated item list to interface from patcher, as multiworld will later involve dynamically adding items to the game, and these may be ordered differently for different players.
-    
-    # What address we should look at to find equipment (from SNI's perspective, it's complicated)
-    toggleItemBaseAddress = "F509A2"
-    
-    # Formatted offsets for where to read/write toggleable items.
-    # Stored as a tuple.
-    # First  value: Byte offset.
-    # Second value: Bit offset.
-    # NOTE: Equipped and collected items are stored adjacently in memory.
-    # The item collected flag is always exactly two bytes after the corresponding item equipped flag.
-    # Bit offset is the offset from lsb.
-    # Ex. the 1 in 00000001 has offset 0.
-    toggleItemBitflagOffsets = {
-        "Grapple Beam"     : (1, 6),
-        "X-Ray Scope"      : (1, 7),
-        "Varia Suit"       : (0, 0),
-        "Spring Ball"      : (0, 1),
-        "Morph Ball"       : (0, 2),
-        "Screw Attack"     : (0, 3),
-        "Hi-Jump Boots"    : (1, 0),
-        "Space Jump"       : (1, 1),
-        "Speed Booster"    : (1, 5),
-        "Charge Beam"      : (5, 4),
-        "Ice Beam"         : (4, 1),
-        "Wave Beam"        : (4, 0),
-        "Spazer Beam"      : (4, 2),
-        "Plasma Beam"      : (4, 3),
-        "Morph Ball Bombs" : (1, 4),
-        "Gravity Suit"     : (0, 5)
-    }
-    
-    # Address to current quantity of indicated type.
-    # Max quantity is stored 2 bytes after current quantity in all cases.
-    ammoItemAddresses = {
-        "Energy Tank"             : "F509C2",
-        "Missile Expansion"       : "F509C6",
-        "Super Missile Expansion" : "F509CA",
-        "Power Bomb Expansion"    : "F509CE",
-        "Reserve Tank"            : "F509D4"
-    }
-    
-    itemNameToQuantityName = {
-        "Energy Tank"             : "Energy",
-        "Missile Expansion"       : "Missiles",
-        "Super Missile Expansion" : "Super Missiles",
-        "Power Bomb Expansion"    : "Power Bombs",
-        "Reserve Tank"            : "Reserve Energy"
-    }
-    
-    # TODO: Import this dynamically from the patcher
-    ammoItemToQuantity = {
-        "Energy Tank"             : 100,
-        "Missile Expansion"       : 5,
-        "Super Missile Expansion" : 5,
-        "Power Bomb Expansion"    : 5,
-        "Reserve Tank"            : 100
-    }
+    # TODO: Import ammo per item from the patcher
     
     obtainedToggleItems  = []
     equippedToggleItems  = []
@@ -274,6 +97,7 @@ class SuperMetroidInterface:
     # List of things about the device, such as device type, last known game, and system capabilities.
     deviceInfo = None
     
+    lastLocationsCheckedBitflags = None
     
     lock = threading.Lock()
     inGameInvokeEventThread = None
@@ -368,7 +192,7 @@ class SuperMetroidInterface:
             self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             result = self.webSocket.recv()
             result = HexHelper.dataToHex(result)
-            print(f"Read from address {address} was successful.")
+            #print(f"Read from address {address} was successful.")
             return result
         else:
             print("ERROR: Connection was not initialized properly before attempting to get data. Ignoring request...")
@@ -395,7 +219,7 @@ class SuperMetroidInterface:
             self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             # Send Data
             self.webSocket.send(HexHelper.hexToData(hexData))
-            print(f"Write to address {address} was successful.")
+            #print(f"Write to address {address} was successful.")
         else:
             print("ERROR: Connection was not initialized properly before attempting to set data. Ignoring request...")
     
@@ -436,7 +260,7 @@ class SuperMetroidInterface:
     # Also note that this does not error out if player is not in game. We record entries to our queue even in menus.
     # It is the job of the inGameInvokeEventThread to check whether the state is correct before giving out the items.
     def ReceiveItem(self, itemName, sender, showMessage = True):        
-        if itemName in self.itemList:
+        if itemName in SuperMetroidConstants.itemList:
             # Lock this part to prevent overlapping with the event handling thread.
             print("Trying to queue Receive Item Event...")
             self.lock.acquire()
@@ -452,6 +276,19 @@ class SuperMetroidInterface:
         else:
             print(f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item.")
     
+    # Poll the game to see
+    def __PollGameForChecks(self):
+        # TODO: I'm sure there's better syntax for doing this sort of thing.
+        timeout = 1.0
+        while(True):
+            bitflags = self.GetData("F6FFCE", 32)
+            time.sleep(timeout)
+            if bitflags != self.lastLocationsCheckedBitflags:
+                pass
+    
+    # Run on its own thread.
+    # Polls the game to see when it's ready,
+    # Then executes events in-game.
     def __InvokeInGameEvents(self):
         self.lock.acquire()
         try:
@@ -495,8 +332,8 @@ class SuperMetroidInterface:
             # An empty header/footer of correct width.
             # TODO: Import these dynamically from patcher.
             width = "Small"
-            if itemName in self.itemMessageWidths:
-                width = self.itemMessageWidths[itemName]
+            if itemName in SuperMetroidConstants.itemMessageWidths:
+                width = SuperMetroidConstants.itemMessageWidths[itemName]
             if width == "Small":
                 self.SetData("F6FF76", "4080")
             elif width == "Large":
@@ -505,18 +342,18 @@ class SuperMetroidInterface:
             # Content.
             # Different for each item - main message for an item pickup.
             # TODO: Import these dynamically from patcher.
-            self.SetData("F6FF78", HexHelper.reverseEndianness(self.itemMessageAddresses[itemName]))
+            self.SetData("F6FF78", HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageAddresses[itemName]))
             
             # Message box size, in bytes.
             # Dictates height.
             size = "4000"
-            if itemName in self.itemMessageNonstandardSizes:
-                size = HexHelper.reverseEndianness(self.itemMessageNonstandardSizes[itemName])
+            if itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
+                size = HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageNonstandardSizes[itemName])
             self.SetData("F6FF7A", size)
             
             # Message ID. Should be accurate if it can be helped.
             # Also set to Wave Beam.
-            self.SetData("F6FF7C", HexHelper.reverseEndianness(self.itemMessageIDs[itemName]))
+            self.SetData("F6FF7C", HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageIDs[itemName]))
             
             # Get the original routine address and save it to jump to later.
             originalJumpDestination = self.GetData("F50A42", 2)
@@ -533,12 +370,12 @@ class SuperMetroidInterface:
             
         # Otherwise, directly add the item to their inventory.
         else:
-            if itemName in self.toggleItemList:
+            if itemName in SuperMetroidConstants.toggleItemList:
                 self.GiveToggleItem(itemName)
-            elif itemName in self.ammoItemList:
+            elif itemName in SuperMetroidConstants.ammoItemList:
                 # TODO: Change this part so that this is passed as an argument actually
                 self.IncrementItem(itemName, self.ammoItemToQuantity[itemName])
-            pass
+
     # For displaying an arbitrary message
     # TODO: Figure out how to do this.
     def ReceiveMessage(message, width = "Variable", size = None):
@@ -549,6 +386,7 @@ class SuperMetroidInterface:
     # Always called from within a lock.
     def __ReceiveMessageInternal(message, width = "Variable", size = None):
         pass
+    
     # Increment (or decrement) the amount of an item that a player has.
     # NOTE: This will not work with unique items (ex. Charge Beam, Gravity Suit)
     # These types of items are stored as bitflags, not integers.
@@ -557,64 +395,76 @@ class SuperMetroidInterface:
     # 7E:0A12 - 7E:0A13 Mirror's Samus's health. Used to check to make hurt sound and flash.
     # TODO: Test to see if this introduces errors in HUD graphics.
     def IncrementItem(self, itemName, incrementAmount, maxAmountOnly = False):
-        if itemName in self.ammoItemList:
-            currentAmmoAddress = self.ammoItemAddresses[itemName]
-            maxAmmoAddress = HexHelper.intToHex(HexHelper.hexToInt(currentAmmoAddress) + 2)
-            currentAmmo = HexHelper.reverseEndianness(self.GetData(currentAmmoAddress, 2))
-            maxAmmo     = HexHelper.reverseEndianness(self.GetData(maxAmmoAddress, 2))
-            if maxAmountOnly:
-                newCurrentAmmo = HexHelper.reverseEndianness(currentAmmo)
+        self.VerifyGameLoaded()
+        if self.gameLoaded:
+            if itemName in SuperMetroidConstants.ammoItemList:
+                currentAmmoAddress = SuperMetroidConstants.ammoItemAddresses[itemName]
+                maxAmmoAddress = HexHelper.intToHex(HexHelper.hexToInt(currentAmmoAddress) + 2)
+                currentAmmo = HexHelper.reverseEndianness(self.GetData(currentAmmoAddress, 2))
+                maxAmmo     = HexHelper.reverseEndianness(self.GetData(maxAmmoAddress, 2))
+                if maxAmountOnly:
+                    newCurrentAmmo = HexHelper.reverseEndianness(currentAmmo)
+                else:
+                    newCurrentAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(currentAmmo) + incrementAmount), 4))
+                newMaxAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(maxAmmo) + incrementAmount), 4))
+                self.SetData(currentAmmoAddress, newCurrentAmmo)
+                self.SetData(maxAmmoAddress, newMaxAmmo)
             else:
-                newCurrentAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(currentAmmo) + incrementAmount), 4))
-            newMaxAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(maxAmmo) + incrementAmount), 4))
-            self.SetData(currentAmmoAddress, newCurrentAmmo)
-            self.SetData(maxAmmoAddress, newMaxAmmo)
+                if itemName in SuperMetroidConstants.toggleItemList:
+                    print(f"ERROR: IncrementItem cannot be called with item '{itemName}', as this item is not represented by an integer.")
+                else:
+                    print(f"ERROR: Super Metroid player had item '{itemName}' incremented, but this item is not a valid Super Metroid item.")
         else:
-            if itemName in self.toggleItemList:
-                print(f"ERROR: IncrementItem cannot be called with item '{itemName}', as this item is not represented by an integer.")
-            else:
-                print(f"ERROR: Super Metroid player had item '{itemName}' incremented, but this item is not a valid Super Metroid item.")
+            print("ERROR: An attempt was made to increment player's {itemName} by {incrementAmount}, but their game is not loaded.")
     
     # Give a player a bitflag-type item.
     # This will also equip it.
     def GiveToggleItem(self, itemName):
-        if itemName in self.toggleItemList:
-            itemOffset = self.toggleItemBitflagOffsets[itemName]
-            equippedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(self.toggleItemBaseAddress) + itemOffset[0])
-            obtainedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2)
-            equippedByte = self.GetData(equippedByteAddress, 1)
-            obtainedByte = self.GetData(obtainedByteAddress, 1)
-            bitflag = 1 << itemOffset[1]
-            newEquippedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByte) | bitflag), 2)
-            newObtainedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) | bitflag), 2)
-            self.SetData(equippedByteAddress, newEquippedByte)
-            self.SetData(obtainedByteAddress, newObtainedByte)
-        else:
-            if itemName in self.ammoItemList:
-                print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+        self.VerifyGameLoaded()
+        if self.gameLoaded:
+            if itemName in SuperMetroidConstants.toggleItemList:
+                itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
+                equippedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0])
+                obtainedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2)
+                equippedByte = self.GetData(equippedByteAddress, 1)
+                obtainedByte = self.GetData(obtainedByteAddress, 1)
+                bitflag = 1 << itemOffset[1]
+                newEquippedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByte) | bitflag), 2)
+                newObtainedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) | bitflag), 2)
+                self.SetData(equippedByteAddress, newEquippedByte)
+                self.SetData(obtainedByteAddress, newObtainedByte)
             else:
-                print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+                if itemName in SuperMetroidConstants.ammoItemList:
+                    print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+                else:
+                    print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+        else:
+            print(f"ERROR: An attempt was made to send player {itemName}, but their game is not loaded.")
     
     # Take away a player's bitflag-type item if they have it.
     # This will also unequip it.
     def TakeAwayToggleItem(self, itemName):
-        if itemName in self.toggleItemList:
-            itemOffset = self.toggleItemBitflagOffsets[itemName]
-            equippedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(self.toggleItemBaseAddress) + itemOffset[0]), 2)
-            obtainedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2), 2)
-            equippedByte = self.GetData(equippedByteAddress, 1)
-            obtainedByte = self.GetData(obtainedByteAddress, 1)
-            bitflag = 1 << itemOffset[1]
-            # Do bitwise and with all ones (except the bitflag we want to turn off)
-            newEquippedByte = HexHelper.intToHex(HexHelper.hexToInt(equippedByte) & (255 - bitflag))
-            newObtainedByte = HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) & (255 - bitflag))
-            self.SetData(equippedByteAddress, newEquippedByte)
-            self.SetData(obtainedByteAddress, newObtainedByte)
-        else:
-            if itemName in self.ammoItemList:
-                print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+        self.VerifyGameLoaded()
+        if self.gameLoaded:
+            if itemName in SuperMetroidConstants.toggleItemList:
+                itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
+                equippedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]), 2)
+                obtainedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2), 2)
+                equippedByte = self.GetData(equippedByteAddress, 1)
+                obtainedByte = self.GetData(obtainedByteAddress, 1)
+                bitflag = 1 << itemOffset[1]
+                # Do bitwise and with all ones (except the bitflag we want to turn off)
+                newEquippedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByte) & (255 - bitflag)), 4)
+                newObtainedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) & (255 - bitflag)), 4)
+                self.SetData(equippedByteAddress, newEquippedByte)
+                self.SetData(obtainedByteAddress, newObtainedByte)
             else:
-                print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+                if itemName in SuperMetroidConstants.ammoItemList:
+                    print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+                else:
+                    print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+        else:
+            print(f"ERROR: An attempt was made to take away player's {itemName}, but their game is not loaded.")
     
     # Sends an info request.
     # Returns true if it receives a result.
@@ -729,6 +579,7 @@ class SuperMetroidInterface:
         
     # Get what state the player is in.
     # Returns a string.
+    # TODO: Convert to a dict
     def GetGameState(self):
         self.VerifyCorrectGame()
         if self.inSuperMetroid:
@@ -787,7 +638,7 @@ class SuperMetroidInterface:
             ammoItemCurrentCount = []
             ammoItemMaximumCount = []
             # Get player's ammo counts.
-            for itemName, address in self.ammoItemAddresses.items():
+            for itemName, address in SuperMetroidConstants.ammoItemAddresses.items():
                 ammoItemList.append(itemName)
                 currentAmmo = self.GetData(address, 2)
                 ammoItemCurrentCount.append(HexHelper.hexToInt(HexHelper.reverseEndianness(currentAmmo)))
@@ -799,7 +650,7 @@ class SuperMetroidInterface:
                     index = len(ammoItemCurrentCount) - 1
                     ammoItemCurrentCount[index], ammoItemMaximumCount[index] = ammoItemMaximumCount[index], ammoItemCurrentCount[index]
             for i in range(len(ammoItemList)):
-                print(f"Samus has {str(ammoItemCurrentCount[i])} {self.itemNameToQuantityName[(ammoItemList[i])]} out of {str(ammoItemMaximumCount[i])}.")
+                print(f"Samus has {str(ammoItemCurrentCount[i])} {SuperMetroidConstants.itemNameToQuantityName[(ammoItemList[i])]} out of {str(ammoItemMaximumCount[i])}.")
             self.ammoItemsHeldList         = ammoItemList
             self.ammoItemCurrentCount = ammoItemCurrentCount
             self.ammoItemMaximumCount = ammoItemMaximumCount
@@ -809,10 +660,10 @@ class SuperMetroidInterface:
     def GetPlayerToggleItems(self):
         self.VerifyGameLoaded()
         if self.gameLoaded:
-            toggleItemHex = self.GetData(self.toggleItemBaseAddress, 8)
+            toggleItemHex = self.GetData(SuperMetroidConstants.toggleItemBaseAddress, 8)
             obtainedItems = []
             equippedItems = []
-            for itemName, byteBitOffsetPair in self.toggleItemBitflagOffsets.items():
+            for itemName, byteBitOffsetPair in SuperMetroidConstants.toggleItemBitflagOffsets.items():
                 obtainedByte = toggleItemHex[((byteBitOffsetPair[0] * 2) + 4) : ((byteBitOffsetPair[0] * 2) + 6)]
                 equippedByte = toggleItemHex[(byteBitOffsetPair[0] * 2) : ((byteBitOffsetPair[0] * 2) + 2)]
                 obtainedVal  = HexHelper.hexToInt(obtainedByte)
@@ -926,7 +777,7 @@ if __name__ == "__main__":
                 print(f"Current State: {state}")
         elif lastInput == "R":
             print("\nQuerying whether Samus is ready for an item...")
-            readiness = interface.IsPlayerReadyForItem()
+            readiness = interface.IsPlayerReadyForEvent()
             if   readiness == True:
                 print("Samus is ready to receive an item.")
             elif readiness == False:

@@ -56,6 +56,7 @@ import json
 import sys
 import os
 from hexhelper import HexHelper
+from SM_Constants import SuperMetroidConstants
 
 class MessageBoxGenerator:
     # List of characters that messages are allowed to have.
@@ -235,172 +236,6 @@ class ItemType:
         if paletteBytes is not None:
             self.paletteBytes = paletteBytes
 
-# Useful for debugging.
-def generateVanillaItemPlacement():
-    vanillaItemList = [
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Energy Tank",
-        "Missile Expansion",
-        "Morph Ball Bombs",
-        
-        "Energy Tank",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Super Missile Expansion",
-        "Missile Expansion",
-        "Power Bomb Expansion",
-        "Super Missile Expansion",
-        "Missile Expansion",
-        
-        "Super Missile Expansion",
-        "Reserve Tank",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Charge Beam",
-        
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Morph Ball",
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Energy Tank",
-        "Energy Tank",
-        "Super Missile Expansion",
-        
-        "Energy Tank",
-        "Missile Expansion",
-        "Energy Tank",
-        "Missile Expansion",
-        "Missile Expansion",
-        "X-Ray Scope",
-        "Power Bomb Expansion",
-        
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Spazer Beam",
-        "Energy Tank",
-        "Missile Expansion",
-        
-        "Varia Suit",
-        "Missile Expansion",
-        "Ice Beam",
-        "Missile Expansion",
-        "Energy Tank",
-        "Hi-Jump Boots",
-        "Missile Expansion",
-        "Missile Expansion",
-        
-        "Energy Tank",
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Grapple Beam",
-        "Reserve Tank",
-        "Missile Expansion",
-        "Missile Expansion",
-        
-        "Missile Expansion",
-        "Missile Expansion",
-        "Speed Booster",
-        "Missile Expansion",
-        "Wave Beam",
-        "Missile Expansion",
-        "Super Missile Expansion",
-        
-        "Missile Expansion",
-        "Missile Expansion",
-        "Power Bomb Expansion",
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Energy Tank",
-        "Screw Attack",
-        
-        "Missile Expansion",
-        
-        "Missile Expansion",
-        "Reserve Tank",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Energy Tank",
-        "Super Missile Expansion",
-        "Super Missile Expansion",
-        "Gravity Suit",
-        
-        "Missile Expansion",
-        "Super Missile Expansion",
-        "Energy Tank",
-        "Missile Expansion",
-        "Super Missile Expansion",
-        "Missile Expansion",
-        "Missile Expansion",
-        "Plasma Beam",
-        
-        "Missile Expansion",
-        "Reserve Tank",
-        "Missile Expansion",
-        "Power Bomb Expansion",
-        "Missile Expansion",
-        "Super Missile Expansion",
-        "Spring Ball",
-        "Missile Expansion",
-        
-        "Energy Tank",
-        "Space Jump"]
-    return vanillaItemList
-        
-# Randomly places every item that would occur in the vanilla game.
-# Almost never completable, purely for testing.
-def generateLogiclessItemPlacement(startingItems = None):
-    print("WARNING: Item list not sent to patcher. Generating logicless item placement.")
-    # List each pickup in the game once for each time it appears.
-    itemList = []
-    itemList.extend(["Missile Expansion"] * 46)
-    itemList.extend(["Super Missile Expansion"] * 10)
-    itemList.extend(["Power Bomb Expansion"] * 10)
-    itemList.extend(["Energy Tank"] * 14)
-    itemList.extend(["Reserve Tank"] * 4)
-    itemList.append("Spazer Beam")
-    itemList.append("Charge Beam")
-    itemList.append("Ice Beam")
-    itemList.append("Plasma Beam")
-    itemList.append("Wave Beam")
-    itemList.append("Varia Suit")
-    itemList.append("Gravity Suit")
-    itemList.append("Morph Ball")
-    itemList.append("Spring Ball")
-    itemList.append("Morph Ball Bombs")
-    itemList.append("Speed Booster")
-    itemList.append("Grapple Beam")
-    itemList.append("X-Ray Scope")
-    itemList.append("Hi-Jump Boots")
-    itemList.append("Space Jump")
-    itemList.append("Screw Attack")
-    # Remove items from placement to account for starting items.
-    if startingItems != None:
-        for item in startingItems:
-            index = itemList.index(item)
-            itemList[index] = "No Item"
-    # Generate logicless item rando
-    itemsInOrderList = []
-    for i in range(100):
-        item = random.choice(itemList)
-        itemList.remove(item)
-        itemsInOrderList.append(item)
-    return itemsInOrderList
-
-# TODO:
-def getCustomSaveStationData(customSaveLocation):
-    
-    regionData = ""
-    saveData   = ""
-    return[regionData, saveData]
-
 # This is just a python function that applies a modified version of
 # Kazuto's More_Efficient_PLM_Items.asm patch without an assembler.
 # Please, send lots of thanks to Kazuto for this, I could not have done
@@ -569,128 +404,6 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
     # Initialize MessageBoxGenerator
     messageBoxGenerator = MessageBoxGenerator(f)
     
-    # Dictionary of nonstandard message box sizes
-    # TODO: Replace this with something more elegant? Possibly.
-    itemMessageNonstandardSizes = {
-        "Missile Expansion"       : "0100",
-        "Super Missile Expansion" : "0100",
-        "Power Bomb Expansion"    : "0100",
-        "Morph Ball Bombs"        : "0100",
-        "Speed Booster"           : "0100",
-        "Grapple Beam"            : "0100",
-        "X-Ray Scope"             : "0100"}
-    
-    # Dictionary of item message locations
-    itemMessageAddresses = {
-        "Energy Tank"             : "877F",
-        "Missile Expansion"       : "87BF",
-        "Super Missile Expansion" : "88BF",
-        "Power Bomb Expansion"    : "89BF",
-        "Grapple Beam"            : "8ABF",
-        "X-Ray Scope"             : "8BBF",
-        "Varia Suit"              : "8CBF",
-        "Spring Ball"             : "8CFF",
-        "Morph Ball"              : "8D3F",
-        "Screw Attack"            : "8D7F",
-        "Hi-Jump Boots"           : "8DBF",
-        "Space Jump"              : "8DFF",
-        "Speed Booster"           : "8E3F",
-        "Charge Beam"             : "8F3F",
-        "Ice Beam"                : "8F7F",
-        "Wave Beam"               : "8FBF",
-        "Spazer Beam"             : "8FFF",
-        "Plasma Beam"             : "903F",
-        "Morph Ball Bombs"        : "907F",
-        "Reserve Tank"            : "94FF",
-        "Gravity Suit"            : "953F"}
-    
-    # The Message Box ID of all these vanilla items.
-    itemMessageIDs = {
-        "Energy Tank"             : "0001",
-        "Missile Expansion"       : "0002",
-        "Super Missile Expansion" : "0003",
-        "Power Bomb Expansion"    : "0004",
-        "Grapple Beam"            : "0005",
-        "X-Ray Scope"             : "0006",
-        "Varia Suit"              : "0007",
-        "Spring Ball"             : "0008",
-        "Morph Ball"              : "0009",
-        "Screw Attack"            : "000A",
-        "Hi-Jump Boots"           : "000B",
-        "Space Jump"              : "000C",
-        "Speed Booster"           : "000D",
-        "Charge Beam"             : "000E",
-        "Ice Beam"                : "000F",
-        "Wave Beam"               : "0010",
-        "Spazer Beam"             : "0011",
-        "Plasma Beam"             : "0012",
-        "Morph Ball Bombs"        : "0013",
-        "Reserve Tank"            : "0019",
-        "Gravity Suit"            : "001A"}
-    
-    # Widths for all messages, either "Small" or "Large".
-    # Small boxes have a width of 19 tiles,
-    # Large boxes have a width of 26 tiles.
-    # This dictates how messages are generated.
-    # If a message type is not in this dict,
-    # It is "Small".
-    # All non-item messages, such as save station menus, recharge stations, etc. are also always small.
-    # This includes unused messages.
-    # Note that messageboxes may have varying heights.
-    itemMessageWidths = {
-        "Energy Tank"             : "Small",
-        "Missile Expansion"       : "Large",
-        "Super Missile Expansion" : "Large",
-        "Power Bomb Expansion"    : "Large",
-        "Grapple Beam"            : "Large",
-        "X-Ray Scope"             : "Large",
-        "Varia Suit"              : "Small",
-        "Spring Ball"             : "Small",
-        "Morph Ball"              : "Small",
-        "Screw Attack"            : "Small",
-        "Hi-Jump Boots"           : "Small",
-        "Space Jump"              : "Small",
-        "Speed Booster"           : "Large",
-        "Charge Beam"             : "Small",
-        "Ice Beam"                : "Small",
-        "Wave Beam"               : "Small",
-        "Spazer Beam"             : "Small",
-        "Plasma Beam"             : "Small",
-        "Morph Ball Bombs"        : "Large",
-        "Reserve Tank"            : "Small",
-        "Gravity Suit"            : "Small"}
-    
-    # The 2-byte IDs of each of these pickups' PLMs.
-    # Curiously, PLM order doesn't match item message order.
-    itemPLMIDs = {
-        "Energy Tank"             : "EED7",
-        "Missile Expansion"       : "EEDB",
-        "Super Missile Expansion" : "EEDF",
-        "Power Bomb Expansion"    : "EEE3",
-        "Morph Ball Bombs"        : "EEE7",
-        "Charge Beam"             : "EEEB",
-        "Ice Beam"                : "EEEF",
-        "Hi-Jump Boots"           : "EEF3",
-        "Speed Booster"           : "EEF7",
-        "Wave Beam"               : "EEFB",
-        "Spazer Beam"             : "EEFF",
-        "Spring Ball"             : "EF03",
-        "Varia Suit"              : "EF07",
-        "Gravity Suit"            : "EF0B",
-        "X-Ray Scope"             : "EF0F",
-        "Plasma Beam"             : "EF13",
-        "Grapple Beam"            : "EF17",
-        "Space Jump"              : "EF1B",
-        "Screw Attack"            : "EF1F",
-        "Morph Ball"              : "EF23",
-        "Reserve Tank"            : "EF27",
-        # This will replace the item with nothing at all.
-        # Its space will simply be empty, nothing will be there.
-        # This is NOT the same as the "No Item" routine, which is
-        # Attached to an actual item, but simply does nothing when picked up
-        # To affect the player's current gamestate.
-        "No Item"                 : "B62F"}
-    
     # Necessary for applying the Kazuto More Efficient Items Patch
     itemTypes = [
         ItemType("Energy Tank"            , "0091"),
@@ -738,207 +451,25 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
     # TODO: Include graphics for common, non VRAM items
     writeKazutoMoreEfficientItemsHack(f, itemTypes)
     
-    # List of all possible item locations as they are ordered in memory.
-    # This looks really good if you have a monospace font.
-    # If you don't have one you're a chump.
-    itemLocationList = [
-        "00", "01", "02", "03", "04", "05", "06", "07",
-        "08", "09", "0A", "0B", "0C", "0D", "0E", "0F",
-        "10", "11", "12", "13",       "15", "16", "17",
-        "18", "19", "1A", "1B", "1C", "1D", "1E", "1F",
-              "21", "22", "23", "24", "25", "26", "27",
-        "28", "29", "2A", "2B", "2C",
-        "30", "31", "32", "33", "34", "35", "36", "37",
-        "38", "39", "3A", "3B", "3C", "3D", "3E", "3F",
-        "40", "41", "42", "43", "44",       "46", "47",
-              "49", "4A", "4B", "4C", "4D", "4E", "4F",
-        "50",
-
-        "80", "81", "82", "83", "84", "85", "86", "87",
-        "88", "89", "8A", "8B", "8C", "8D", "8E", "8F",
-        "90", "91", "92", "93", "94", "95", "96", "97",
-        "98",       "9A"]
-    
-    # List of item PLM type offsets.
-    # Used to set items as shot block or chozo orbs when necessary,
-    # Depending upon which location an item is placed into.
-    itemPLMBlockTypeList = [
-        0, 0, 2, 0, 0, 0, 0, 1,
-        0, 0, 0, 0, 0, 1, 1, 0,
-        0, 1, 2, 0,    0, 0, 1,
-        0, 0, 0, 0, 0, 2, 0, 0,
-           0, 1, 0, 0, 2, 1, 0,
-        1, 0, 1, 2, 2,
-        1, 2, 1, 2, 0, 1, 0, 0,
-        0, 0, 0, 0, 1, 1, 2, 0,
-        0, 2, 1, 0, 1,    0, 2,
-           0, 0, 0, 0, 0, 2, 1,
-        0,
-
-        0, 1, 0, 0, 0, 0, 0, 1,
-        0, 0, 0, 2, 0, 0, 0, 1,
-        0, 1, 0, 0, 0, 0, 1, 2,
-        0,       1]
-    
     # How much an increment for each slot above increases the value of the PLM ID.
     # We will calculate this on the fly depending on how many new items are added to this ROM.
     # TODO: Rewrite this based on len(itemTypes)
     itemPLMBlockTypeMultiplier = hex((int("54", 16) + 0 * 4))[2:].upper()
-    
-    # List of item PLM Locations in ROM.
-    # This is where we place each item's entity so that it will show up in the room.
-    # Doing so overwrites the item that would have been there previously (i.e. in an unpatched ROM).
-    itemPLMLocationList = [
-        "781CC", "781E8", "781EE", "781F4", "78248", "78264", "783EE", "78404",
-        "78432", "78464", "7846A", "78478", "78486", "784AC", "784E4", "78518",
-        "7851E", "7852C", "78532", "78538",          "78608", "7860E", "78614",
-        "7865E", "78676", "786DE", "7874C", "78798", "7879E", "787C2", "787D0",
-                 "787FA", "78802", "78824", "78836", "7883C", "78876", "788CA",
-        "7890E", "78914", "7896E", "7899C", "789EC",             
-        "78ACA", "78AE4", "78B24", "78B46", "78BA4", "78BAC", "78BC0", "78BE6",
-        "78BEC", "78C04", "78C14", "78C2A", "78C36", "78C3E", "78C44", "78C52",
-        "78C66", "78C74", "78C82", "78CBC", "78CCA",          "78E6E", "78E74",
-                 "78F30", "78FCA", "78FD2", "790C0", "79100", "79108", "79110",
-        
-        "79184",
-        "7C265", "7C2E9", "7C2EF", "7C319", "7C337", "7C357", "7C365", "7C36D",
-        "7C437", "7C43D", "7C47D", "7C483", "7C4AF", "7C4B5", "7C533", "7C559",
-        "7C5DD", "7C5E3", "7C5EB", "7C5F1", "7C603", "7C609", "7C6E5", "7C74D",
-        "7C755",          "7C7A7"]
-    
-    # List of location names for use in spoiler log.
-    # Order is the same as prior 3 item lists.
-    locationNamesList = [
-        "Crateria Landing Site Power Bombs",
-        "Crateria Ocean Underwater Missiles",
-        "Crateria Ocean Cliff Missiles",
-        "Crateria Ocean Morph Maze Missiles",
-        "Crateria Moat Missiles",
-        "Crateria Gauntlet Energy Tank",
-        "Crateria Mother Brain Missiles",
-        "Crateria Morph Ball Bombs",
-        
-        "Crateria Terminator Energy Tank",
-        "Crateria Gauntlet Right Missiles",
-        "Crateria Gauntlet Left Missiles",
-        "Crateria Shinespark Shaft Super Missiles",
-        "Crateria Final Missiles",
-        "Green Brinstar Etecoons Power Bombs",
-        "Pink Brinstar Spore Spawn Super Missiles",
-        "Green Brinstar Early Supers Crumble Bridge Missiles",
-        
-        "Green Brinstar Early Supers Super Missiles",
-        "Green Brinstar Reserve Tank",
-        "Green Brinstar Reserve Tank Missiles 2",
-        "Green Brinstar Reserve Tank Missiles",
-        "Pink Brinstar Big Pink Grapple Missiles",
-        "Pink Brinstar Big Pink Bottom Missiles",
-        "Pink Brinstar Charge Beam",
-        
-        "Pink Brinstar Big Pink Grapple Power Bombs",
-        "Green Brinstar Green Hill Zone Missiles",
-        "Blue Brinstar Morph Ball",
-        "Blue Brinstar Power Bombs",
-        "Blue Brinstar Energy Tank Room Missiles",
-        "Blue Brinstar Energy Tank",
-        "Green Brinstar Etecoons Energy Tank",
-        "Green Brinstar Etecoons Super Missiles",
-        
-        "Pink Brinstar Waterway Energy Tank",
-        "Blue Brinstar First Missiles",
-        "Pink Brinstar Wavegate Energy Tank",
-        "Blue Brinstar Billy Mayes Missiles",
-        "Blue Brinstar Billy Mayes' Double Offer Missiles",
-        "Red Brinstar X-Ray Scope",
-        "Red Brinstar Samus Eater Power Bombs",
-        
-        "Red Brinstar Alpha Power Bombs",
-        "Red Brinstar Behind Alpha Power Bombs Missiles",
-        "Red Brinstar Spazer",
-        "Warehouse Brinstar Energy Tank",
-        "Warehouse Brinstar Missiles",
-        
-        "Warehouse Brinstar Varia Suit",
-        "Norfair Cathedral Missiles",
-        "Norfair Ice Beam",
-        "Norfair Crumble Shaft Missiles",
-        "Norfair Crocomire Energy Tank",
-        "Norfair Hi-Jump Boots",
-        "Norfair Crocomire Escape Missiles",
-        "Norfair Hi-Jump Missiles",
-        
-        "Norfair Hi-Jump Energy Tank",
-        "Norfair Crocomire Power Bombs",
-        "Norfair Crocomire Cosine Missiles",
-        "Norfair Grapple Missiles",
-        "Norfair Grapple Beam",
-        "Norfair Bubble Mountain Reserve Tank",
-        "Norfair Bubble Mountain Reserve Missiles",
-        "Norfair Bubble Mountain Grapple Missiles",
-        
-        "Norfair Bubble Mountain Missiles",
-        "Norfair Speedboost Missiles",
-        "Norfair Speed Booster",
-        "Norfair Wave Beam Missiles",
-        "Norfair Wave Beam",
-        "Norfair Golden Torizo Missiles",
-        "Norfair Golden Torizo Super Missiles",
-        
-        "Norfair Mickey Mouse Missiles",
-        "Norfair Springball Maze Missiles",
-        "Norfair Lower Escape Power Bombs",
-        "Norfair Power Bombs of Shame",
-        "Norfair FrankerZ Missiles",
-        "Norfair Ridley Energy Tank",
-        "Norfair Screw Attack",
-        
-        "Norfair Dark Room Energy Tank",
-        
-        "Wrecked Ship Spooky Missiles",
-        "Wrecked Ship Reserve Tank",
-        "Wrecked Ship Bowling Missiles",
-        "Wrecked Ship Robot Missiles",
-        "Wrecked Ship Energy Tank",
-        "Wrecked Ship West Super Missiles",
-        "Wrecked Ship East Super Missiles",
-        "Wrecked Ship Gravity Suit",
-        
-        "Maridia Main Street Missiles",
-        "Maridia Main Street Super Missiles",
-        "Maridia Turtle Energy Tank",
-        "Maridia Turtle Missiles",
-        "Maridia Watering Hole Super Missiles",
-        "Maridia Watering Hole Missiles",
-        "Maridia Pseudo-Spark Missiles",
-        "Maridia Plasma Beam",
-        
-        "Maridia West Sandtrap Missiles",
-        "Maridia Reserve Tank",
-        "Maridia East Sandtrap Missiles",
-        "Maridia East Sandtrap Power Bombs",
-        "Maridia Aqueduct Missiles",
-        "Maridia Aqeuduct Super Misiles",
-        "Maridia Springball",
-        "Maridia Precious Missiles",
-        
-        "Maridia Botwoon Energy Tank",
-        "Maridia Space Jump"]
-    
-    
+       
     # Patch ROM.
     # This part of the code is ugly as sin, I apologize.
     for i in range(100):
         item = itemsInOrderList[i]
         # Write PLM Data.
-        f.seek(HexHelper.hexToInt(itemPLMLocationList[i]))
+        f.seek(HexHelper.hexToInt(SuperMetroidConstants.itemPLMLocationList[i]))
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
         if (item == "No Item"):
-            PLMID = HexHelper.hexToInt(itemPLMIDs[item])
+            PLMID = HexHelper.hexToInt(SuperMetroidConstants.itemPLMIDs[item])
             PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
             f.write(PLMHexadecimalID)
             continue
-        PLMID = HexHelper.hexToInt(itemPLMIDs[item]) + (HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * itemPLMBlockTypeList[i])
+        PLMID = HexHelper.hexToInt(SuperMetroidConstants.itemPLMIDs[item]) + (HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * SuperMetroidConstants.itemPLMBlockTypeList[i])
         PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
         f.write(PLMHexadecimalID)
         
@@ -954,21 +485,21 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
         # See documentation on memory alterations at the top of this document.
         
         # Each table entry is two bytes wide, hence the doubling.
-        memoryBaseLocation = HexHelper.hexToInt("029A00") + (HexHelper.hexToInt(itemLocationList[i]) * 2) 
+        memoryBaseLocation = HexHelper.hexToInt("029A00") + (HexHelper.hexToInt(SuperMetroidConstants.itemLocationList[i]) * 2) 
         f.seek(memoryBaseLocation)
         # TODO: Handle width and height separately.
-        if item in itemMessageNonstandardSizes:
+        if item in SuperMetroidConstants.itemMessageNonstandardSizes:
             f.write(bytes.fromhex("8000")[::-1])
             f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
-            f.write(bytes.fromhex(itemMessageNonstandardSizes[item])[::-1])
+            f.write(bytes.fromhex(SuperMetroidConstants.itemMessageNonstandardSizes[item])[::-1])
         else:
             f.write(bytes.fromhex("8040")[::-1])
             f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
             f.write(bytes.fromhex("0040")[::-1])
         f.seek(memoryBaseLocation + HexHelper.hexToInt("200"))
-        f.write(bytes.fromhex(itemMessageAddresses[item])[::-1])
+        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageAddresses[item])[::-1])
         f.seek(memoryBaseLocation + HexHelper.hexToInt("600"))
-        f.write(bytes.fromhex(itemMessageIDs[item])[::-1])
+        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageIDs[item])[::-1])
         f.seek(memoryBaseLocation + HexHelper.hexToInt("800"))
         # If item is meant for a different player, it will do nothing at all.
         # This is not the same as there not being an item in this position - 
@@ -983,7 +514,7 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
     print("Spoiler file generating at " + spoilerPath + "...")
     spoilerFile = open(spoilerPath, 'w')
     for i in range(100):
-        spoilerFile.write(locationNamesList[i] + ": " + itemsInOrderList[i] + "\n")
+        spoilerFile.write(SuperMetroidConstants.locationNamesList[i] + ": " + itemsInOrderList[i] + "\n")
     spoilerFile.close()
 
 def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
@@ -996,7 +527,7 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
-        itemList = generateVanillaItemPlacement()
+        itemList = SuperMetroidConstants.vanillaPickupList
         startingItems = None
         print("Item list was not supplied to ROM patcher. Generating Vanilla placement with no starting items.")
     else:
@@ -1206,17 +737,8 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
             # This is subject to change
             # TODO: Support Ceres
             if "customSaveStart" in kwargs:
-                regionToHexDict = {
-                    "Crateria"     : "0000",
-                    "Brinstar"     : "0100",
-                    "Norfair"      : "0200",
-                    "Wrecked Ship" : "0300",
-                    "Maridia"      : "0400",
-                    "Tourian"      : "0500"
-                    
-                }
                 customStart = kwargs["customSaveStart"]
-                regionHex = regionToHexDict[customStart[0]]
+                regionHex = SuperMetroidConstants.regionToHexDict[customStart[0]]
                 saveHex = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(customStart[1]), 4))
                 introRoutine = introRoutine.replace("-rgn", regionHex)
                 introRoutine = introRoutine.replace("-sav", saveHex)
@@ -1275,7 +797,6 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     patcherOutput.close()
     f.close()
     print("ROM modified successfully.")
-
 
 if __name__ == "__main__":
     # Build in this to make it faster to run.
