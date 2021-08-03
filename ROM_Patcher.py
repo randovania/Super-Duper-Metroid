@@ -1191,22 +1191,42 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     if introOptionChoice != "Vanilla":
         if introOptionChoice == "Skip Intro":
             # TODO: Convert this to static patch.
-            routineZeta = "9CE20DADDA09D017A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+            introRoutine = "9CE20DADDA09D017A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
             
-            routineZetaAddress = "016EB4"
+            introRoutineAddress = "016EB4"
             
-            overwriteRoutines.extend([routineZeta])
-            overwriteRoutineAddresses.extend([routineZetaAddress])
+            overwriteRoutines.extend([introRoutine])
+            overwriteRoutineAddresses.extend([introRoutineAddress])
         elif introOptionChoice == "Skip Intro And Ceres":
-            routineZeta = "9CE20DADDA09D0149C9F079C8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
-            routineZetaAddress = "016EB4"
+            introRoutine = "9CE20DADDA09D01AA9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+            introRoutineAddress = "016EB4"
+            # Custom save start should be a list/tuple with two values:
+            # Region name and save station index
+            # This is subject to change
+            # TODO: Support Ceres
             if "customSaveStart" in kwargs:
-                pass
+                regionToHexDict = {
+                    "Crateria"     : "0000",
+                    "Brinstar"     : "0100",
+                    "Norfair"      : "0200",
+                    "Wrecked Ship" : "0300",
+                    "Maridia"      : "0400",
+                    "Tourian"      : "0500"
+                    
+                }
+                customStart = kwargs["customSaveStart"]
+                regionHex = regionToHexDict[customStart[0]]
+                saveHex = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(customStart[1]), 4))
+                introRoutine = introRoutine.replace("-rgn", regionHex)
+                introRoutine = introRoutine.replace("-sav", saveHex)
+            else:
+                introRoutine = introRoutine.replace("-rgn", "0000")
+                introRoutine = introRoutine.replace("-sav", "0000")
         else:
             print("WARNING: Invalid option entered for introOptionChoice. Defaulting to vanilla intro behavior...")
         
-        overwriteRoutines.extend([routineZeta])
-        overwriteRoutineAddresses.extend([routineZetaAddress])
+        overwriteRoutines.extend([introRoutine])
+        overwriteRoutineAddresses.extend([introRoutineAddress])
     
     
     overwriteRoutines.extend([routineOverwriteAlpha, routineOverwriteBeta, routineOverwriteGamma, routineOverwriteDelta])
@@ -1215,6 +1235,7 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     # Apply static patches.
     # Many of these patches are provided by community members - 
     # See top of document for details.
+    # TODO
     
     # Replace references with actual addresses.
     for i in range(len(overwriteRoutines)):
@@ -1266,3 +1287,4 @@ if __name__ == "__main__":
         print("Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program.")
         filePath = input()
     patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres")
+    #patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", customSaveStart = ["Brinstar", 0])
