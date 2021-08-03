@@ -35,6 +35,7 @@ import json
 import pprint
 import websocket
 import time
+import sys
 import os
 from websocket import create_connection
 from hexhelper import HexHelper
@@ -443,6 +444,7 @@ class SuperMetroidInterface:
                 self.queuedEvents.append((self.__ReceiveItemInternal, [itemName, sender, showMessage], {}))
                 if self.inGameInvokeEventThread is None or not self.inGameInvokeEventThread.is_alive():
                     self.inGameInvokeEventThread = threading.Thread(target = self.__InvokeInGameEvents)
+                    self.inGameInvokeEventThread.daemon = True
                     self.inGameInvokeEventThread.start()
                 print("Receive Item Event queued successfully!")
             finally:
@@ -459,13 +461,13 @@ class SuperMetroidInterface:
                     print("Player is ready for event, sending now...")
                     currentEvent = self.queuedEvents.pop(0)
                     (currentEvent[0])(*currentEvent[1])
-                    timeout = 0.3
+                    timeout = 0.8
                 else:
                     print(f"Player is not ready for event, waiting {timeout} seconds...")
                     self.lock.release()
                     time.sleep(timeout)
                     self.lock.acquire()
-                    timeout *= 1.5
+                    timeout *= 1.3
         finally:
             self.lock.release()
     
@@ -866,6 +868,11 @@ class SuperMetroidInterface:
     # def __SetStatusBarSelection(self):
     #     pass
     
+    # Close interface, shut down any threads
+    def Close(self):
+        self.CloseConnection()
+        sys.exit()
+    
     # I don't know if this is strictly necessary, but it can't possibly hurt.
     def CloseConnection(self):
         if self.connectionInitialized:
@@ -938,6 +945,6 @@ if __name__ == "__main__":
             interface.IncrementItem("Missile Expansion", 5)
         elif lastInput == "Q":
             print("\nQuitting...")
-            interface.CloseConnection()
+            interface.Close()
         else:
             print(f"\nERROR: Input '{str(lastInput)}' not recognized")
