@@ -805,7 +805,14 @@ class SuperMetroidInterface:
         pass
 
 if __name__ == "__main__":
-    interface = SuperMetroidInterface("C:\\Users\\Dood\\Dropbox\\SM Modding\\Patcher Test Rom\\Super Metroid (Japan, USA) (En,Ja)_PatcherData.json")
+    if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
+        f = open(os.getcwd() + "\\romfilepath.txt", 'r')
+        patchFilePath = f.readline().rstrip()
+        f.close()
+    else:
+        print("Enter the path to the PatchData file that was generated when you patched your ROM.")
+        patchFilePath = input()
+    interface = SuperMetroidInterface(patchFilePath)
     menu  = "C: Initialize Connection\n"
     menu += "D: Attach to a Device\n"
     menu += "I: Query Inventory\n"

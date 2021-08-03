@@ -55,7 +55,8 @@ class IPSPatcher:
         romFile.close()
 
 if __name__ == "__main__":
-    ipsPath = "C:\\Users\\Dood\\Dropbox\\SM Modding\\Publish\\Patches\\max_ammo_display.ips"
-    romPath = "C:\\Users\\Dood\\Dropbox\\SM Modding\\Patcher Test Rom\\Super Metroid (Japan, USA) (En,Ja).sfc"
+    print("Enter path to IPS file.")
+    ipsPath = input()
+    print("Enter path to ROM file.")
+    romPath = input()
     IPSPatcher.applyIPSPatch(ipsPath, romPath)
-    print("ROM patch attempt finished.")
