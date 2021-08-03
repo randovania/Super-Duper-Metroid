@@ -34,6 +34,7 @@ import threading
 import json
 import pprint
 import websocket
+import time
 import os
 from websocket import create_connection
 from hexhelper import HexHelper
@@ -437,17 +438,29 @@ class SuperMetroidInterface:
         if itemName in self.itemList:
             # Lock this part to prevent overlapping with the event handling thread.
             self.lock.acquire()
-            self.queuedEvents.append(self.__ReceiveItemInternal, [itemName, sender, showMessage], {})
-            if self.inGameInvokeEventThread is None or not self.inGameInvokeEventThread.is_alive():
-                self.inGameInvokeEventThread = threading.Thread(target = self.__ReceiveItemInternal)
-                self.inGameInvokeEventThread.start()
-            self.lock.release()
+            try:
+                self.queuedEvents.append((self.__ReceiveItemInternal, [itemName, sender, showMessage], {}))
+                if self.inGameInvokeEventThread is None or not self.inGameInvokeEventThread.is_alive():
+                    self.inGameInvokeEventThread = threading.Thread(target = self.__InvokeInGameEvents)
+                    self.inGameInvokeEventThread.start()
+            finally:
+                self.lock.release()
         else:
             print(f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item.")
     
-    # Temp
-    def TestMyLuck(self, itemName, sender, showMessage = True):
-        self.__ReceiveItemInternal(itemName, sender, showMessage)
+    def __InvokeInGameEvents(self):
+        self.lock.acquire()
+        try:
+            while len(self.queuedEvents) > 0:
+                if self.IsPlayerReadyForEvent():
+                    print("Player is ready for event, sending now...")
+                    currentEvent = self.queuedEvents.pop(0)
+                    (currentEvent[0])(*currentEvent[1])
+                else:
+                    print("Player is not ready for event, waiting 300 milliseconds...")
+                    time.sleep(0.3)
+        finally:
+            self.lock.release()
     
     # The part that actually does the thing.
     # Only called from event manager, will assume that state is permissible when run.
@@ -518,12 +531,7 @@ class SuperMetroidInterface:
                 self.IncrementItem(itemName, self.ammoItemToQuantity[itemName])
             pass
     # For displaying an arbitrary message
-    # Will do its damnedest to display a string it has been given.
-    # Note that SM messages have a maximum size, both total and for individual lines.
-    # A line cannot exceed 26 characters, and there are at most 4 lines available
-    # For standard text. This may be alterable, but treat this as a hard limit for now.
-    # If you want it to include linebreaks at specific places, include linebreak characters.
-    # Otherwise it will try to find good breaks in the string by itself.
+    # TODO: Figure out how to do this.
     def ReceiveMessage(message, width = "Variable", size = None):
         pass
     
@@ -638,7 +646,7 @@ class SuperMetroidInterface:
         if self.connectedToDevice:
             gameType = self.deviceInfo[2].strip()
             if gameType == "No Info":
-                print("CAUTION: Could not determine current game. This could be because the device connected is an SNES Classic, or because of a reason I haven't thought of.")
+                #print("CAUTION: Could not determine current game. This could be because the device connected is an SNES Classic, or because the interface hasn't exposed this information.")
                 self.inSuperMetroid = True
                 return True
             if gameType == "Super Metroid":
@@ -837,6 +845,7 @@ class SuperMetroidInterface:
 
     # Get what tiles in current region player has visited.
     # 7E:07F7 - 7E:08F6 : Map tiles explored for current area (1 tile = 1 bit)
+    # TODO: Make more observations about data format
     def GetMapCompletion(self):
         pass
     
@@ -845,9 +854,10 @@ class SuperMetroidInterface:
         pass
     
     # Used to take away X-Ray Scope and Grapple Beam.
-    # 7E:09D2 - 7E:09D3 : Currently selected status bar item	
-    def __SetStatusBarSelection(self):
-        pass
+    # 7E:09D2 - 7E:09D3 : Currently selected status bar item
+    # TODO: Check whether this is necessary.
+    # def __SetStatusBarSelection(self):
+    #     pass
     
     # I don't know if this is strictly necessary, but it can't possibly hurt.
     def CloseConnection(self):
@@ -909,7 +919,7 @@ if __name__ == "__main__":
                 print("Samus isn't ready to receive an item.")
         elif lastInput == "W":
             print("Trying to send Wave Beam...")
-            interface.TestMyLuck("Wave Beam", "Galactic Federation HQ")
+            interface.ReceiveItem("Wave Beam", "Galactic Federation HQ")
         elif lastInput == "G":
             print("Manually Giving Screw Attack...")
             interface.GiveToggleItem("Screw Attack")
