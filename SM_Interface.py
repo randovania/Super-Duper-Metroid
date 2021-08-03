@@ -437,12 +437,14 @@ class SuperMetroidInterface:
     def ReceiveItem(self, itemName, sender, showMessage = True):        
         if itemName in self.itemList:
             # Lock this part to prevent overlapping with the event handling thread.
+            print("Trying to queue Receive Item Event...")
             self.lock.acquire()
             try:
                 self.queuedEvents.append((self.__ReceiveItemInternal, [itemName, sender, showMessage], {}))
                 if self.inGameInvokeEventThread is None or not self.inGameInvokeEventThread.is_alive():
                     self.inGameInvokeEventThread = threading.Thread(target = self.__InvokeInGameEvents)
                     self.inGameInvokeEventThread.start()
+                print("Receive Item Event queued successfully!")
             finally:
                 self.lock.release()
         else:
@@ -451,14 +453,19 @@ class SuperMetroidInterface:
     def __InvokeInGameEvents(self):
         self.lock.acquire()
         try:
+            timeout = 0.3
             while len(self.queuedEvents) > 0:
                 if self.IsPlayerReadyForEvent():
                     print("Player is ready for event, sending now...")
                     currentEvent = self.queuedEvents.pop(0)
                     (currentEvent[0])(*currentEvent[1])
+                    timeout = 0.3
                 else:
-                    print("Player is not ready for event, waiting 300 milliseconds...")
-                    time.sleep(0.3)
+                    print(f"Player is not ready for event, waiting {timeout} seconds...")
+                    self.lock.release()
+                    time.sleep(timeout)
+                    self.lock.acquire()
+                    timeout *= 1.5
         finally:
             self.lock.release()
     
