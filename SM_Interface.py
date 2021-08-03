@@ -20,7 +20,7 @@
 # That could possibly cause us to get a garbage value.
 # There's not really anything we can do about that, since there's no way to lock this data (to my knowledge).
 # This is incredibly unlikely, however, as the speed of this program and its interface
-# Is significantly faster than the framerate of an SNES (and obviously blowebSocket the speed of a human's actions out of the water).
+# Is significantly faster than the framerate of an SNES (and obviously blows the speed of a human's actions out of the water).
 # If interfacing is slower with physical devices there may be a need for further investigation.
 
 # TODO: Implement data sharing with this.
@@ -322,7 +322,7 @@ class SuperMetroidInterface:
                 print("ERROR: No devices were found by SNI. Could not link to any device.")
                 return
             if len(result) > 1:
-                print("WARNING: More than one devices have been listed by SNI. Device list is as followebSocket:")
+                print("WARNING: More than one devices have been listed by SNI. Device list is as follows:")
                 for i, device in enumerate(result):
                     print(f"\tDevice {str(i)}: {device}")
                 print("The Super Metroid interface will default to connecting to the first device listed.\n")
@@ -349,7 +349,7 @@ class SuperMetroidInterface:
     
     # Get data at the specified address.
     # If checkRomRead = True, check whether the read being requested would read from ROM.
-    # If it would, check to see whether the system being used allowebSocket it.
+    # If it would, check to see whether the system being used allows it.
     # If it doesn't, refuse to read it, throw error.
     def GetData(self, address, numBytes, checkRomRead = True):
         self.VerifyConnectedToDevice()
@@ -374,7 +374,7 @@ class SuperMetroidInterface:
     
     # Write data to the specified address.
     # If checkRomWrite = True, check whether the write being requested would write to ROM.
-    # If it would, check to see whether the system being used allowebSocket it.
+    # If it would, check to see whether the system being used allows it.
     # If it doesn't, refuse to write it, throw error.
     def SetData(self, address, hexData, checkRomWrite = True):
         self.VerifyConnectedToDevice()
@@ -540,8 +540,6 @@ class SuperMetroidInterface:
     # 7E:0A12 - 7E:0A13 Mirror's Samus's health. Used to check to make hurt sound and flash.
     # TODO: Test to see if this introduces errors in HUD graphics.
     def IncrementItem(self, itemName, incrementAmount, maxAmountOnly = False):
-        print(itemName)
-        print(self.ammoItemList[1])
         if itemName in self.ammoItemList:
             currentAmmoAddress = self.ammoItemAddresses[itemName]
             maxAmmoAddress = HexHelper.intToHex(HexHelper.hexToInt(currentAmmoAddress) + 2)
