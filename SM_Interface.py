@@ -20,7 +20,7 @@
 # That could possibly cause us to get a garbage value.
 # There's not really anything we can do about that, since there's no way to lock this data (to my knowledge).
 # This is incredibly unlikely, however, as the speed of this program and its interface
-# Is significantly faster than the framerate of an SNES (and obviously blows the speed of a human's actions out of the water).
+# Is significantly faster than the framerate of an SNES (and obviously blowebSocket the speed of a human's actions out of the water).
 # If interfacing is slower with physical devices there may be a need for further investigation.
 
 # TODO: Implement data sharing with this.
@@ -34,6 +34,7 @@ import threading
 import json
 import pprint
 import websocket
+import os
 from websocket import create_connection
 from hexhelper import HexHelper
 
@@ -67,7 +68,8 @@ class SuperMetroidInterface:
         "Gravity Suit"
     ]
     
-    # TODO: Import this dynamically.
+    # These get imported dynamically from a JSON file created by the patcher.
+    # This is necessary because these may not always be in the same place every game.
     itemRoutineDict = {
         "Energy Tank"             : None,
         "Missile Expansion"       : None,
@@ -237,14 +239,23 @@ class SuperMetroidInterface:
         "Reserve Tank"            : "Reserve Energy"
     }
     
+    # TODO: Import this dynamically from the patcher
+    ammoItemToQuantity = {
+        "Energy Tank"             : 100,
+        "Missile Expansion"       : 5,
+        "Super Missile Expansion" : 5,
+        "Power Bomb Expansion"    : 5,
+        "Reserve Tank"            : 100
+    }
+    
     obtainedToggleItems  = []
     equippedToggleItems  = []
     
-    ammoItemList         = []
+    ammoItemsHeldList = []
     ammoItemCurrentCount = []
     ammoItemMaximumCount = []
     
-    ws = None
+    webSocket = None
     # If true, player has booted game and connection has been initialized.
     connectionInitialized = False
     # True if SNI has successfully connected to an SNES-Like device.
@@ -289,7 +300,7 @@ class SuperMetroidInterface:
     # They will be called by higher-level code.
     def InitializeConnection(self):
         try:
-            self.ws = create_connection('ws://localhost:8080')
+            self.webSocket = create_connection('ws://localhost:8080')
             print("Connection made with SNI successfully.")
             self.connectionInitialized = True
         except Exception:
@@ -304,14 +315,14 @@ class SuperMetroidInterface:
                 "Space"  : "SNES"
             }
             
-            self.ws.send(json.dumps(jsonGetDevicesCommand))
-            result = self.ws.recv()
+            self.webSocket.send(json.dumps(jsonGetDevicesCommand))
+            result = self.webSocket.recv()
             result = (json.loads(result))["Results"]
             if len(result) == 0:
                 print("ERROR: No devices were found by SNI. Could not link to any device.")
                 return
             if len(result) > 1:
-                print("WARNING: More than one devices have been listed by SNI. Device list is as follows:")
+                print("WARNING: More than one devices have been listed by SNI. Device list is as followebSocket:")
                 for i, device in enumerate(result):
                     print(f"\tDevice {str(i)}: {device}")
                 print("The Super Metroid interface will default to connecting to the first device listed.\n")
@@ -323,7 +334,7 @@ class SuperMetroidInterface:
                 "Space"    : "SNES",
                 "Operands" : deviceToConnectTo
             }
-            self.ws.send(json.dumps(jsonAttachToDeviceCommand))
+            self.webSocket.send(json.dumps(jsonAttachToDeviceCommand))
             self.VerifyConnectedToDevice()
             self.PrintDeviceInfo()
             if(self.connectedToDevice):
@@ -338,7 +349,7 @@ class SuperMetroidInterface:
     
     # Get data at the specified address.
     # If checkRomRead = True, check whether the read being requested would read from ROM.
-    # If it would, check to see whether the system being used allows it.
+    # If it would, check to see whether the system being used allowebSocket it.
     # If it doesn't, refuse to read it, throw error.
     def GetData(self, address, numBytes, checkRomRead = True):
         self.VerifyConnectedToDevice()
@@ -352,8 +363,8 @@ class SuperMetroidInterface:
                 "Space"  : "SNES",
                 "Operands" : [address, HexHelper.intToHex(numBytes)]
             }
-            self.ws.send(json.dumps(jsonReadDataFromAddressCommand))
-            result = self.ws.recv()
+            self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
+            result = self.webSocket.recv()
             result = HexHelper.dataToHex(result)
             print(f"Read from address {address} was successful.")
             return result
@@ -363,7 +374,7 @@ class SuperMetroidInterface:
     
     # Write data to the specified address.
     # If checkRomWrite = True, check whether the write being requested would write to ROM.
-    # If it would, check to see whether the system being used allows it.
+    # If it would, check to see whether the system being used allowebSocket it.
     # If it doesn't, refuse to write it, throw error.
     def SetData(self, address, hexData, checkRomWrite = True):
         self.VerifyConnectedToDevice()
@@ -379,9 +390,9 @@ class SuperMetroidInterface:
                 "Space"  : "SNES",
                 "Operands" : [address, HexHelper.intToHex(numBytes)]
             }
-            self.ws.send(json.dumps(jsonReadDataFromAddressCommand))
+            self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             # Send Data
-            self.ws.send(HexHelper.hexToData(hexData))
+            self.webSocket.send(HexHelper.hexToData(hexData))
             print(f"Write to address {address} was successful.")
         else:
             print("ERROR: Connection was not initialized properly before attempting to set data. Ignoring request...")
@@ -434,6 +445,7 @@ class SuperMetroidInterface:
         else:
             print(f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item.")
     
+    # Temp
     def TestMyLuck(self, itemName, sender, showMessage = True):
         self.__ReceiveItemInternal(itemName, sender, showMessage)
     
@@ -448,6 +460,7 @@ class SuperMetroidInterface:
             self.SetData("F51C1F", "1000")
             
             # Set the function to be called.
+            # TODO: Verify this is correct
             self.SetData("F6FF72", "65AD")
             
             # Set the "Item Picked Up" word to 1.
@@ -458,6 +471,7 @@ class SuperMetroidInterface:
             # Header/footer.
             # This is a standard item, so give the pointer to
             # An empty header/footer of correct width.
+            # TODO: Import these dynamically from patcher.
             width = "Small"
             if itemName in self.itemMessageWidths:
                 width = self.itemMessageWidths[itemName]
@@ -468,6 +482,7 @@ class SuperMetroidInterface:
             
             # Content.
             # Different for each item - main message for an item pickup.
+            # TODO: Import these dynamically from patcher.
             self.SetData("F6FF78", HexHelper.reverseEndianness(self.itemMessageAddresses[itemName]))
             
             # Message box size, in bytes.
@@ -490,16 +505,17 @@ class SuperMetroidInterface:
             # What we actually call on pickup.
             self.SetData("F6FF7E", self.itemRoutineDict[itemName])
             
-            
-            
-            
-            # ACTUAL INSTRUCTION
+            # Overwrite an instruction pointer in the game's RAM.
+            # This is what actually causes our code to execute.
             self.SetData("F50A42", "F0FF")
-            
-            
             
         # Otherwise, directly add the item to their inventory.
         else:
+            if itemName in self.toggleItemList:
+                self.GiveToggleItem(itemName)
+            elif itemName in self.ammoItemList:
+                # TODO: Change this part so that this is passed as an argument actually
+                self.IncrementItem(itemName, self.ammoItemToQuantity[itemName])
             pass
     # For displaying an arbitrary message
     # Will do its damnedest to display a string it has been given.
@@ -522,22 +538,65 @@ class SuperMetroidInterface:
     # This will work with Missiles, Supers, Power Bombs, E-Tanks, and Reserve Tanks
     # If maxAmountOnly is true, this will not increment the player's current number of this item, only the capacity for this item.
     # 7E:0A12 - 7E:0A13 Mirror's Samus's health. Used to check to make hurt sound and flash.
+    # TODO: Test to see if this introduces errors in HUD graphics.
     def IncrementItem(self, itemName, incrementAmount, maxAmountOnly = False):
-        if itemName in ammoItemList:
-            pass
+        print(itemName)
+        print(self.ammoItemList[1])
+        if itemName in self.ammoItemList:
+            currentAmmoAddress = self.ammoItemAddresses[itemName]
+            maxAmmoAddress = HexHelper.intToHex(HexHelper.hexToInt(currentAmmoAddress) + 2)
+            currentAmmo = HexHelper.reverseEndianness(self.GetData(currentAmmoAddress, 2))
+            maxAmmo     = HexHelper.reverseEndianness(self.GetData(maxAmmoAddress, 2))
+            if maxAmountOnly:
+                newCurrentAmmo = HexHelper.reverseEndianness(currentAmmo)
+            else:
+                newCurrentAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(currentAmmo) + incrementAmount), 4))
+            newMaxAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(maxAmmo) + incrementAmount), 4))
+            self.SetData(currentAmmoAddress, newCurrentAmmo)
+            self.SetData(maxAmmoAddress, newMaxAmmo)
         else:
-            if itemName in toggleItemList:
+            if itemName in self.toggleItemList:
                 print(f"ERROR: IncrementItem cannot be called with item '{itemName}', as this item is not represented by an integer.")
             else:
                 print(f"ERROR: Super Metroid player had item '{itemName}' incremented, but this item is not a valid Super Metroid item.")
     
+    # Give a player a bitflag-type item.
+    # This will also equip it.
+    def GiveToggleItem(self, itemName):
+        if itemName in self.toggleItemList:
+            itemOffset = self.toggleItemBitflagOffsets[itemName]
+            equippedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(self.toggleItemBaseAddress) + itemOffset[0])
+            obtainedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2)
+            equippedByte = self.GetData(equippedByteAddress, 1)
+            obtainedByte = self.GetData(obtainedByteAddress, 1)
+            bitflag = 1 << itemOffset[1]
+            newEquippedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByte) | bitflag), 2)
+            newObtainedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) | bitflag), 2)
+            self.SetData(equippedByteAddress, newEquippedByte)
+            self.SetData(obtainedByteAddress, newObtainedByte)
+        else:
+            if itemName in self.ammoItemList:
+                print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+            else:
+                print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+    
     # Take away a player's bitflag-type item if they have it.
     # This will also unequip it.
-    def TakeAwayItem(self, itemName):
-        if itemName in toggleItemList:
-            pass
+    def TakeAwayToggleItem(self, itemName):
+        if itemName in self.toggleItemList:
+            itemOffset = self.toggleItemBitflagOffsets[itemName]
+            equippedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(self.toggleItemBaseAddress) + itemOffset[0]), 2)
+            obtainedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2), 2)
+            equippedByte = self.GetData(equippedByteAddress, 1)
+            obtainedByte = self.GetData(obtainedByteAddress, 1)
+            bitflag = 1 << itemOffset[1]
+            # Do bitwise and with all ones (except the bitflag we want to turn off)
+            newEquippedByte = HexHelper.intToHex(HexHelper.hexToInt(equippedByte) & (255 - bitflag))
+            newObtainedByte = HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) & (255 - bitflag))
+            self.SetData(equippedByteAddress, newEquippedByte)
+            self.SetData(obtainedByteAddress, newObtainedByte)
         else:
-            if itemName in ammoItemList:
+            if itemName in self.ammoItemList:
                 print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
             else:
                 print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
@@ -552,8 +611,8 @@ class SuperMetroidInterface:
                     "Opcode" : "Info",
                     "Space"  : "SNES"
                 }
-                self.ws.send(json.dumps(jsonGetDeviceInfoCommand))
-                result = self.ws.recv()
+                self.webSocket.send(json.dumps(jsonGetDeviceInfoCommand))
+                result = self.webSocket.recv()
                 result = (json.loads(result))["Results"]
                 if len(result) < 1:
                     print("ERROR: No device info could be found. Device has not successfully attached.")
@@ -726,7 +785,7 @@ class SuperMetroidInterface:
                     ammoItemCurrentCount[index], ammoItemMaximumCount[index] = ammoItemMaximumCount[index], ammoItemCurrentCount[index]
             for i in range(len(ammoItemList)):
                 print(f"Samus has {str(ammoItemCurrentCount[i])} {self.itemNameToQuantityName[(ammoItemList[i])]} out of {str(ammoItemMaximumCount[i])}.")
-            self.ammoItemList         = ammoItemList
+            self.ammoItemsHeldList         = ammoItemList
             self.ammoItemCurrentCount = ammoItemCurrentCount
             self.ammoItemMaximumCount = ammoItemMaximumCount
         else:
@@ -795,7 +854,7 @@ class SuperMetroidInterface:
     # I don't know if this is strictly necessary, but it can't possibly hurt.
     def CloseConnection(self):
         if self.connectionInitialized:
-            self.ws.close()
+            self.webSocket.close()
         else:
             print("WARNING: Connection cannot be closed, as no connection was initialized. Ignoring request...")
     
@@ -808,6 +867,8 @@ if __name__ == "__main__":
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
         f = open(os.getcwd() + "\\romfilepath.txt", 'r')
         patchFilePath = f.readline().rstrip()
+        patchFilePath = patchFilePath[-len(patchFilePath):-4]
+        patchFilePath += "_PatcherData.json"
         f.close()
     else:
         print("Enter the path to the PatchData file that was generated when you patched your ROM.")
@@ -819,6 +880,9 @@ if __name__ == "__main__":
     menu += "S: Query Gamestate\n"
     menu += "R: Query If Player is Ready for an Item\n"
     menu += "W: Send Wave Beam\n"
+    menu += "G: Force Give Screw Attack\n"
+    menu += "T: Force Take Screw Attack\n"
+    menu += "M: Force Give 5 Missiles\n"
     menu += "Q: Quit"
     lastInput = None
     while lastInput != "Q":
@@ -848,6 +912,15 @@ if __name__ == "__main__":
         elif lastInput == "W":
             print("Trying to send Wave Beam...")
             interface.TestMyLuck("Wave Beam", "Galactic Federation HQ")
+        elif lastInput == "G":
+            print("Manually Giving Screw Attack...")
+            interface.GiveToggleItem("Screw Attack")
+        elif lastInput == "T":
+            print("Manually Taking Screw Attack...")
+            interface.TakeAwayToggleItem("Screw Attack")
+        elif lastInput == "M":
+            print("Manually Giving 5 Missiles...")
+            interface.IncrementItem("Missile Expansion", 5)
         elif lastInput == "Q":
             print("\nQuitting...")
             interface.CloseConnection()
