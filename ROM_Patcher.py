@@ -1019,16 +1019,16 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     #
     # Keyphrases starting in - will be substituted with addresses.
     # These must be of appropriate length or size calculations might fail.
-    # routineAlpha = -alp
-    # routineBeta  = -bta
-    # routineGamma = -gma
-    # routineDelta = -dlt
-    routineAlpha = "8D1F1CC91C00F00AC914009006C91900B00160AF74FF7FC90100D01CAF7CFF7F8D1F1CA500DA48AF7EFF7F850068A20000FC0000FA8500605ADAA22000BF6ED87E9FCEFF7FCACAE00000D0F1AFD0FF7F38EFB0FF7FC90000F0278F8EFF7FA90100CF8EFF7FF01AC90080080A28D0F2A22000A90000EA9FAEFF7FCACAE00000D0F1A22000BFCEFF7F38FFAEFF7F9F8EFF7FCACAE00000D0ECA0F000A22000BF8EFF7FC90000D00A9838E91000A8CACA80EDBFCEFF7F9FAEFF7FBF8EFF7FC90100F004C84A80F7980A8F8EFF7FAABD00A08D1F1CFC00A2FA7A60"
-    routineBeta  = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
-    routineGamma = "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
-    routineDelta = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
+    # onPickupFoundRoutine = -alp
+    # getMessageHeaderDataRoutine  = -bta
+    # getMessageHeaderRoutine = -gma
+    # getMessageContentRoutine = -dlt
+    onPickupFoundRoutine = "8D1F1CC91C00F00AC914009006C91900B00160AF74FF7FC90100D01CAF7CFF7F8D1F1CA500DA48AF7EFF7F850068A20000FC0000FA8500605ADAA22000BF6ED87E9FCEFF7FCACAE00000D0F1AFD0FF7F38EFB0FF7FC90000F0278F8EFF7FA90100CF8EFF7FF01AC90080080A28D0F2A22000A90000EA9FAEFF7FCACAE00000D0F1A22000BFCEFF7F38FFAEFF7F9F8EFF7FCACAE00000D0ECA0F000A22000BF8EFF7FC90000D00A9838E91000A8CACA80EDBFCEFF7F9FAEFF7FBF8EFF7FC90100F004C84A80F7980A8F8EFF7FAABD00A08D1F1CFC00A2FA7A60"
+    getMessageHeaderDataRoutine  = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
+    getMessageHeaderRoutine = "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
+    getMessageContentRoutine = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
 
-    routines = [routineAlpha, routineBeta, routineGamma, routineDelta]
+    routines = [onPickupFoundRoutine, getMessageHeaderDataRoutine, getMessageHeaderRoutine, getMessageContentRoutine]
     routineAddresses = []
     routineAddressRefs = ["-alp", "-bta", "-gma", "-dlt"]
     currentAddress = HexHelper.hexToInt(baseRoutineWritingAddress)
@@ -1146,6 +1146,7 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
         "No Item"                 : itemGetRoutineAddresses[21]
     }
     
+    # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
     for (itemName, routineAddress) in itemGetRoutineAddressesDict.items():
         itemRoutinesJsonOutput.append({"itemName" : itemName, "routineAddress" : routineAddress})
@@ -1168,16 +1169,16 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     overwriteRoutineAddresses = []
     
     # Modify Message Box Routines To Allow Customizable Behavior
-    routineOverwriteAlpha = "20-alp"
-    routineOverwriteBeta  = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
-    routineOverwriteGamma = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
-    routineOverwriteDelta = "205A82"
+    overwriteJSRToPickupRoutine = "20-alp"
+    overwriteGetMessageHeaderRoutine  = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
+    overwriteJSRToGetMessageRoutine = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
+    overwriteJSRToGetHeaderRoutine = "205A82"
     
     # Addresses to write routines to in Headerless ROM file.
-    routineOverwriteAlphaAddress = "028086"
-    routineOverwriteBetaAddress = "02825A"
-    routineOverwriteGammaAddress = "0282E5"
-    routineOverwriteDeltaAddress = "028250"    
+    overwriteJSRToPickupRoutineAddress = "028086"
+    overwriteGetMessageHeaderRoutineAddress = "02825A"
+    overwriteJSRToGetMessageRoutineAddress = "0282E5"
+    overwriteJSRToGetHeaderRoutineAddress = "028250"    
     
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
     # Default behavior is to skip straight to landing site.
@@ -1229,8 +1230,8 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
         overwriteRoutineAddresses.extend([introRoutineAddress])
     
     
-    overwriteRoutines.extend([routineOverwriteAlpha, routineOverwriteBeta, routineOverwriteGamma, routineOverwriteDelta])
-    overwriteRoutineAddresses.extend([routineOverwriteAlphaAddress, routineOverwriteBetaAddress, routineOverwriteGammaAddress, routineOverwriteDeltaAddress])
+    overwriteRoutines.extend([overwriteJSRToPickupRoutine, overwriteGetMessageHeaderRoutine, overwriteJSRToGetMessageRoutine, overwriteJSRToGetHeaderRoutine])
+    overwriteRoutineAddresses.extend([overwriteJSRToPickupRoutineAddress, overwriteGetMessageHeaderRoutineAddress, overwriteJSRToGetMessageRoutineAddress, overwriteJSRToGetHeaderRoutineAddress])
     
     # Apply static patches.
     # Many of these patches are provided by community members - 
