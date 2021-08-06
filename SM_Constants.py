@@ -2,6 +2,123 @@
 # This file only holds constants - any data specific to a given patch or version is not present.
 
 class SuperMetroidConstants:
+    # Dictionary of locations by their in-game bitflag index
+    bitflagIndexToLocationNameDict = {
+        0   : "Crateria Landing Site Power Bombs",
+        1   : "Crateria Ocean Underwater Missiles",
+        2   : "Crateria Ocean Cliff Missiles",
+        3   : "Crateria Ocean Morph Maze Missiles",
+        4   : "Crateria Moat Missiles",
+        5   : "Crateria Gauntlet Energy Tank",
+        6   : "Crateria Mother Brain Missiles",
+        7   : "Crateria Morph Ball Bombs",
+        
+        8   : "Crateria Terminator Energy Tank",
+        9   : "Crateria Gauntlet Right Missiles",
+        10  : "Crateria Gauntlet Left Missiles",
+        11  : "Crateria Shinespark Shaft Super Missiles",
+        12  : "Crateria Final Missiles",
+        13  : "Green Brinstar Etecoons Power Bombs",
+        14  : "Pink Brinstar Spore Spawn Super Missiles",
+        15  : "Green Brinstar Early Supers Crumble Bridge Missiles",
+        
+        16  : "Green Brinstar Early Supers Super Missiles",
+        17  : "Green Brinstar Reserve Tank",
+        18  : "Green Brinstar Reserve Tank Missiles 2",
+        19  : "Green Brinstar Reserve Tank Missiles",
+        21  : "Pink Brinstar Big Pink Grapple Missiles",
+        22  : "Pink Brinstar Big Pink Bottom Missiles",
+        23  : "Pink Brinstar Charge Beam",
+        
+        24  : "Pink Brinstar Big Pink Grapple Power Bombs",
+        25  : "Green Brinstar Green Hill Zone Missiles",
+        26  : "Blue Brinstar Morph Ball",
+        27  : "Blue Brinstar Power Bombs",
+        28  : "Blue Brinstar Energy Tank Room Missiles",
+        29  : "Blue Brinstar Energy Tank",
+        30  : "Green Brinstar Etecoons Energy Tank",
+        31  : "Green Brinstar Etecoons Super Missiles",
+        
+        33  : "Pink Brinstar Waterway Energy Tank",
+        34  : "Blue Brinstar First Missiles",
+        35  : "Pink Brinstar Wavegate Energy Tank",
+        36  : "Blue Brinstar Billy Mayes Missiles",
+        37  : "Blue Brinstar Billy Mayes' Double Offer Missiles",
+        38  : "Red Brinstar X-Ray Scope",
+        39  : "Red Brinstar Samus Eater Power Bombs",
+        
+        40  : "Red Brinstar Alpha Power Bombs",
+        41  : "Red Brinstar Behind Alpha Power Bombs Missiles",
+        42  : "Red Brinstar Spazer",
+        43  : "Warehouse Brinstar Energy Tank",
+        44  : "Warehouse Brinstar Missiles",
+        
+        48  : "Warehouse Brinstar Varia Suit",
+        49  : "Norfair Cathedral Missiles",
+        50  : "Norfair Ice Beam",
+        51  : "Norfair Crumble Shaft Missiles",
+        52  : "Norfair Crocomire Energy Tank",
+        53  : "Norfair Hi-Jump Boots",
+        54  : "Norfair Crocomire Escape Missiles",
+        55  : "Norfair Hi-Jump Missiles",
+        
+        56  : "Norfair Hi-Jump Energy Tank",
+        57  : "Norfair Crocomire Power Bombs",
+        58  : "Norfair Crocomire Cosine Missiles",
+        59  : "Norfair Grapple Missiles",
+        60  : "Norfair Grapple Beam",
+        61  : "Norfair Bubble Mountain Reserve Tank",
+        62  : "Norfair Bubble Mountain Reserve Missiles",
+        63  : "Norfair Bubble Mountain Grapple Missiles",
+        
+        64  : "Norfair Bubble Mountain Missiles",
+        65  : "Norfair Speedboost Missiles",
+        66  : "Norfair Speed Booster",
+        67  : "Norfair Wave Beam Missiles",
+        68  : "Norfair Wave Beam",
+        70  : "Norfair Golden Torizo Missiles",
+        71  : "Norfair Golden Torizo Super Missiles",
+        
+        73  : "Norfair Mickey Mouse Missiles",
+        74  : "Norfair Springball Maze Missiles",
+        75  : "Norfair Lower Escape Power Bombs",
+        76  : "Norfair Power Bombs of Shame",
+        77  : "Norfair FrankerZ Missiles",
+        78  : "Norfair Ridley Energy Tank",
+        79  : "Norfair Screw Attack",
+        
+        80  : "Norfair Dark Room Energy Tank",
+        
+        128 : "Wrecked Ship Spooky Missiles",
+        129 : "Wrecked Ship Reserve Tank",
+        130 : "Wrecked Ship Bowling Missiles",
+        131 : "Wrecked Ship Robot Missiles",
+        132 : "Wrecked Ship Energy Tank",
+        133 : "Wrecked Ship West Super Missiles",
+        134 : "Wrecked Ship East Super Missiles",
+        135 : "Wrecked Ship Gravity Suit",
+        
+        136 : "Maridia Main Street Missiles",
+        137 : "Maridia Main Street Super Missiles",
+        138 : "Maridia Turtle Energy Tank",
+        139 : "Maridia Turtle Missiles",
+        140 : "Maridia Watering Hole Super Missiles",
+        141 : "Maridia Watering Hole Missiles",
+        142 : "Maridia Pseudo-Spark Missiles",
+        143 : "Maridia Plasma Beam",
+        
+        144 : "Maridia West Sandtrap Missiles",
+        145 : "Maridia Reserve Tank",
+        146 : "Maridia East Sandtrap Missiles",
+        147 : "Maridia East Sandtrap Power Bombs",
+        148 : "Maridia Aqueduct Missiles",
+        149 : "Maridia Aqeuduct Super Misiles",
+        150 : "Maridia Springball",
+        151 : "Maridia Precious Missiles",
+        
+        152 : "Maridia Botwoon Energy Tank",
+        154 : "Maridia Space Jump"}
+    
     # List of ammo items, ordered by ascending Message ID
     ammoItemList = [
         "Energy Tank",

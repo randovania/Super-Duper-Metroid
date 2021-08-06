@@ -100,7 +100,8 @@ class SuperMetroidInterface:
     lastLocationsCheckedBitflags = None
     
     lock = threading.Lock()
-    inGameInvokeEventThread = None
+    inGameInvokeEventThread  = None
+    pollLocationChecksThread = None
     # Format of a queued event:
     # Will check to see if args or kwargs are not present, will omit them if this is the case.
     # Note that you should still have three elements in the base list, as it will naiively index it.
@@ -276,15 +277,36 @@ class SuperMetroidInterface:
         else:
             print(f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item.")
     
+    def StartPollingGameForChecks(self):
+        if self.pollLocationChecksThread is None or not self.pollLocationChecksThread.is_alive():
+            # This data can be junk so we take care to set this before we start polling.
+            # That way we only update once everything is actually cleared.
+            # TODO: Modify code so a flag is set once we know this memory is good.
+            self.lastLocationsCheckedBitflags = bin(HexHelper.hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
+            self.pollLocationChecksThread = threading.Thread(target = self.__PollGameForChecks)
+            self.pollLocationChecksThread.daemon = True
+            self.pollLocationChecksThread.start()
+            print("Started polling for location checks...")
+    
     # Poll the game to see
     def __PollGameForChecks(self):
         # TODO: I'm sure there's better syntax for doing this sort of thing.
-        timeout = 1.0
+        timeout = 1.4
         while(True):
-            bitflags = self.GetData("F6FFCE", 32)
+            bitflags = bin(HexHelper.hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
             time.sleep(timeout)
             if bitflags != self.lastLocationsCheckedBitflags:
-                pass
+                # Convert to a binary string so we can easily check flags
+                for index, locationBit in enumerate(bitflags):
+                    if locationBit == "1":
+                        if self.lastLocationsCheckedBitflags is None or self.lastLocationsCheckedBitflags[index] == "0":
+                            # For some reason, bit order is reverse of what I think it should be,
+                            # I'll have plenty of time to figure this out later but for now
+                            # /shrug
+                            trueIndex = (index // 8) * 8 + - ((index % 8) - 7)
+                            print(f"Samus Checked Location {SuperMetroidConstants.bitflagIndexToLocationNameDict[trueIndex]}")
+                self.lastLocationsCheckedBitflags = bitflags
+    
     
     # Run on its own thread.
     # Polls the game to see when it's ready,
@@ -419,6 +441,7 @@ class SuperMetroidInterface:
     
     # Give a player a bitflag-type item.
     # This will also equip it.
+    # TODO: Make sure Plasma and Spazer can't both be equipped simultaneously
     def GiveToggleItem(self, itemName):
         self.VerifyGameLoaded()
         if self.gameLoaded:
@@ -736,6 +759,53 @@ class SuperMetroidInterface:
     def HandleRequestQueue(self):
         pass
 
+def temp(interface):
+    interface.ReceiveItem("Wave Beam", "Galactic Federation HQ")
+    interface.ReceiveItem("Ice Beam", "Galactic Federation HQ")
+    interface.ReceiveItem("Plasma Beam", "Galactic Federation HQ")
+    interface.ReceiveItem("Charge Beam", "Galactic Federation HQ")
+    interface.ReceiveItem("Grapple Beam", "Galactic Federation HQ")
+    interface.ReceiveItem("X-Ray Scope", "Galactic Federation HQ")
+    interface.ReceiveItem("Varia Suit", "Galactic Federation HQ")
+    interface.ReceiveItem("Gravity Suit", "Galactic Federation HQ")
+    interface.ReceiveItem("Morph Ball", "Galactic Federation HQ")
+    interface.ReceiveItem("Spring Ball", "Galactic Federation HQ")
+    interface.ReceiveItem("Morph Ball Bombs", "Galactic Federation HQ")
+    interface.ReceiveItem("Speed Booster", "Galactic Federation HQ")
+    interface.ReceiveItem("Hi-Jump Boots", "Galactic Federation HQ")
+    interface.ReceiveItem("Space Jump", "Galactic Federation HQ")
+    interface.ReceiveItem("Screw Attack", "Galactic Federation HQ")
+    interface.ReceiveItem("Energy Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Energy Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Energy Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Energy Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Energy Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Energy Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Reserve Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Reserve Tank", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Super Missile Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
+    interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
+
 if __name__ == "__main__":
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
         f = open(os.getcwd() + "\\romfilepath.txt", 'r')
@@ -756,6 +826,7 @@ if __name__ == "__main__":
     menu += "G: Force Give Screw Attack\n"
     menu += "T: Force Take Screw Attack\n"
     menu += "M: Force Give 5 Missiles\n"
+    menu += "P: Start Polling for Location Checks\n"
     menu += "Q: Quit"
     lastInput = None
     while lastInput != "Q":
@@ -783,17 +854,26 @@ if __name__ == "__main__":
             elif readiness == False:
                 print("Samus isn't ready to receive an item.")
         elif lastInput == "W":
-            print("Trying to send Wave Beam...")
+            print("\nTrying to send Wave Beam...")
             interface.ReceiveItem("Wave Beam", "Galactic Federation HQ")
         elif lastInput == "G":
-            print("Manually Giving Screw Attack...")
+            print("\nManually Giving Screw Attack...")
             interface.GiveToggleItem("Screw Attack")
         elif lastInput == "T":
-            print("Manually Taking Screw Attack...")
+            print("\nManually Taking Screw Attack...")
             interface.TakeAwayToggleItem("Screw Attack")
         elif lastInput == "M":
-            print("Manually Giving 5 Missiles...")
+            print("\nManually Giving 5 Missiles...")
             interface.IncrementItem("Missile Expansion", 5)
+        elif lastInput == "P":
+            print("\nManually starting polling thread...")
+            interface.StartPollingGameForChecks()
+        elif lastInput == "F":
+            print("\nChecking and printing location bitflags...")
+            print(interface.GetData("F6FFD0", 96))
+        elif lastInput == "H":
+            print("\nTEMP COMMAND")
+            temp(interface)
         elif lastInput == "Q":
             print("\nQuitting...")
             interface.Close()
