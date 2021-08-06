@@ -300,9 +300,10 @@ class SuperMetroidInterface:
                 for index, locationBit in enumerate(bitflags):
                     if locationBit == "1":
                         if self.lastLocationsCheckedBitflags is None or self.lastLocationsCheckedBitflags[index] == "0":
-                            # For some reason, bit order is reverse of what I think it should be,
-                            # I'll have plenty of time to figure this out later but for now
-                            # /shrug
+                            # It is necessary to reverse the bit order per byte for calculating our index,
+                            # As the most significant bit comes first in the string and would,
+                            # Without this treatment,
+                            # Act as though it were the least significant bit.
                             trueIndex = (index // 8) * 8 + - ((index % 8) - 7)
                             print(f"Samus Checked Location {SuperMetroidConstants.bitflagIndexToLocationNameDict[trueIndex]}")
                 self.lastLocationsCheckedBitflags = bitflags
