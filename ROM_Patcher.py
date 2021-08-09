@@ -236,6 +236,29 @@ class ItemType:
         if paletteBytes is not None:
             self.paletteBytes = paletteBytes
 
+# Class which represents items being passed to the game from the generator
+# TODO: Implement this more fully
+class PickupPlacementData:    
+    def __init__(self, quantityGiven, pickupIndex, itemName, pickupItemEffect = "Default", nativeGraphics = True, ownerName = None, graphicsFileName = None, nativeSpriteName = "Default"):
+        self.quantityGiven    = quantityGiven
+        self.pickupIndex      = pickupIndex
+        self.itemName         = itemName
+        self.pickupItemEffect = pickupItemEffect
+        self.nativeGraphics   = nativeGraphics
+        self.ownerName        = ownerName
+        self.graphicsFileName = graphicsFileName
+        self.nativeSpriteName = nativeSpriteName
+
+# Generate a game with vanilla item placements
+def genVanillaGame():
+    pickupsList = []
+    for itemIndex, itemName in zip(SuperMetroidConstants.itemIndexList, SuperMetroidConstants.vanillaPickupList):
+        if itemName in SuperMetroidConstants.ammoItemList:
+            pickupsList.append(PickupPlacementData(SuperMetroidConstants.defaultAmmoItemToQuantity[itemName], itemIndex, itemName))
+        else:
+            pickupsList.append(PickupPlacementData(1, itemIndex, itemName))
+    return pickupsList
+
 # This is just a python function that applies a modified version of
 # Kazuto's More_Efficient_PLM_Items.asm patch without an assembler.
 # Please, send lots of thanks to Kazuto for this, I could not have done
@@ -400,33 +423,33 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
         
 
 # Places the items into the game.
-def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemHoldersInOrderList = None, playerName = None):
+def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerName = None):
     # Initialize MessageBoxGenerator
     messageBoxGenerator = MessageBoxGenerator(f)
     
     # Necessary for applying the Kazuto More Efficient Items Patch
     itemTypes = [
-        ItemType("Energy Tank"            , "0091"),
-        ItemType("Missile Expansion"      , "0092"),
-        ItemType("Super Missile Expansion", "0093"),
-        ItemType("Power Bomb Expansion"   , "0094"),
-        ItemType("Morph Ball Bombs"       , "0080"),
-        ItemType("Charge Beam"            , "008B"),
-        ItemType("Ice Beam"               , "008C" , ["00", "03", "00", "00", "00", "03", "00", "00"]),
-        ItemType("Hi-Jump Boots"          , "0084"),
-        ItemType("Speed Booster"          , "008A"),
-        ItemType("Wave Beam"              , "008D" , ["00", "02", "00", "00", "00", "02", "00", "00"]),
-        ItemType("Spazer Beam"            , "008F"),
-        ItemType("Spring Ball"            , "0082"),
-        ItemType("Varia Suit"             , "0083"),
-        ItemType("Gravity Suit"           , "0081"),
-        ItemType("X-Ray Scope"            , "0089" , ["01", "01", "00", "00", "03", "03", "00", "00"]),
-        ItemType("Plasma Beam"            , "008E" , ["00", "01", "00", "00", "00", "01", "00", "00"]),
-        ItemType("Grapple Beam"           , "0088"),
-        ItemType("Space Jump"             , "0086"),
-        ItemType("Screw Attack"           , "0085"),
-        ItemType("Morph Ball"             , "0087"),
-        ItemType("Reserve Tank"           , "0090"),
+        ItemType("Energy Tank"             , "0091"),
+        ItemType("Missile Expansion"       , "0092"),
+        ItemType("Super Missile Expansion" , "0093"),
+        ItemType("Power Bomb Expansion"    , "0094"),
+        ItemType("Morph Ball Bombs"        , "0080"),
+        ItemType("Charge Beam"             , "008B"),
+        ItemType("Ice Beam"                , "008C" , ["00", "03", "00", "00", "00", "03", "00", "00"]),
+        ItemType("Hi-Jump Boots"           , "0084"),
+        ItemType("Speed Booster"           , "008A"),
+        ItemType("Wave Beam"               , "008D" , ["00", "02", "00", "00", "00", "02", "00", "00"]),
+        ItemType("Spazer Beam"             , "008F"),
+        ItemType("Spring Ball"             , "0082"),
+        ItemType("Varia Suit"              , "0083"),
+        ItemType("Gravity Suit"            , "0081"),
+        ItemType("X-Ray Scope"             , "0089" , ["01", "01", "00", "00", "03", "03", "00", "00"]),
+        ItemType("Plasma Beam"             , "008E" , ["00", "01", "00", "00", "00", "01", "00", "00"]),
+        ItemType("Grapple Beam"            , "0088"),
+        ItemType("Space Jump"              , "0086"),
+        ItemType("Screw Attack"            , "0085"),
+        ItemType("Morph Ball"              , "0087"),
+        ItemType("Reserve Tank"            , "0090"),
     ]
     
     # FOR MULTIWORLD
@@ -448,7 +471,6 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
             # itemTypes.append(ItemType(item, ))
             # nextPLMId = HexHelper.intToHex(HexHelper.hexToInt(nextPLMId) + 4)
     
-    # TODO: Include graphics for common, non VRAM items
     writeKazutoMoreEfficientItemsHack(f, itemTypes)
     
     # How much an increment for each slot above increases the value of the PLM ID.
@@ -458,18 +480,21 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
        
     # Patch ROM.
     # This part of the code is ugly as sin, I apologize.
-    for i in range(100):
-        item = itemsInOrderList[i]
+    spoilerPath = filePath[:filePath.rfind(".")] + "_SPOILER.txt"
+    print("Spoiler file generating at " + spoilerPath + "...")
+    spoilerFile = open(spoilerPath, 'w')
+    for i, item in enumerate(pickupDataList):
+        patcherIndex = SuperMetroidConstants.itemIndexList.index(item.pickupIndex)
         # Write PLM Data.
-        f.seek(HexHelper.hexToInt(SuperMetroidConstants.itemPLMLocationList[i]))
+        f.seek(HexHelper.hexToInt(SuperMetroidConstants.itemPLMLocationList[patcherIndex]))
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
-        if (item == "No Item"):
-            PLMID = HexHelper.hexToInt(SuperMetroidConstants.itemPLMIDs[item])
+        if (item.itemName == "No Item"):
+            PLMID = HexHelper.hexToInt(SuperMetroidConstants.itemPLMIDs[item.itemName])
             PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
             f.write(PLMHexadecimalID)
             continue
-        PLMID = HexHelper.hexToInt(SuperMetroidConstants.itemPLMIDs[item]) + (HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * SuperMetroidConstants.itemPLMBlockTypeList[i])
+        PLMID = HexHelper.hexToInt(SuperMetroidConstants.itemPLMIDs[item.itemName]) + (HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * SuperMetroidConstants.itemPLMBlockTypeList[patcherIndex])
         PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
         f.write(PLMHexadecimalID)
         
@@ -485,39 +510,42 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, itemsInOrderList, itemH
         # See documentation on memory alterations at the top of this document.
         
         # Each table entry is two bytes wide, hence the doubling.
-        memoryBaseLocation = HexHelper.hexToInt("029A00") + (HexHelper.hexToInt(SuperMetroidConstants.itemLocationList[i]) * 2) 
+        memoryBaseLocation = HexHelper.hexToInt("029A00") + (HexHelper.hexToInt(SuperMetroidConstants.itemLocationList[patcherIndex]) * 2) 
         f.seek(memoryBaseLocation)
         # TODO: Handle width and height separately.
-        if item in SuperMetroidConstants.itemMessageNonstandardSizes:
+        if item.itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
             f.write(bytes.fromhex("8000")[::-1])
             f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
-            f.write(bytes.fromhex(SuperMetroidConstants.itemMessageNonstandardSizes[item])[::-1])
+            f.write(bytes.fromhex(SuperMetroidConstants.itemMessageNonstandardSizes[item.itemName])[::-1])
         else:
             f.write(bytes.fromhex("8040")[::-1])
             f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
             f.write(bytes.fromhex("0040")[::-1])
+        
         f.seek(memoryBaseLocation + HexHelper.hexToInt("200"))
-        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageAddresses[item])[::-1])
+        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageAddresses[item.itemName])[::-1])
+        
         f.seek(memoryBaseLocation + HexHelper.hexToInt("600"))
-        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageIDs[item])[::-1])
+        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageIDs[item.itemName])[::-1])
+        
         f.seek(memoryBaseLocation + HexHelper.hexToInt("800"))
         # If item is meant for a different player, it will do nothing at all.
         # This is not the same as there not being an item in this position - 
         # The item will be there, it will just have no effect for the SM player.
-        if itemHoldersInOrderList is not None and itemHoldersInOrderList[i] != playerName:
+        if playerName is not None and not item.ownerName == playerName:
             f.write(HexHelper.hexToData(itemGetRoutineAddressesDict["No Item"]))
         else:
-            f.write(HexHelper.hexToData(itemGetRoutineAddressesDict[item]))
-            
-    # Write spoiler log
-    spoilerPath = filePath[:filePath.rfind(".")] + "_SPOILER.txt"
-    print("Spoiler file generating at " + spoilerPath + "...")
-    spoilerFile = open(spoilerPath, 'w')
-    for i in range(100):
-        spoilerFile.write(SuperMetroidConstants.locationNamesList[i] + ": " + itemsInOrderList[i] + "\n")
+            effectiveItemName = item.itemName
+            if item.itemName in SuperMetroidConstants.ammoItemList:
+                effectiveItemName = f"{item.itemName} {item.quantityGiven}"
+            f.write(HexHelper.hexToData(itemGetRoutineAddressesDict[effectiveItemName]))
+
+        
+        # Write spoiler log
+        spoilerFile.write(f"{SuperMetroidConstants.locationNamesList[patcherIndex]}: {item.itemName}\n")
     spoilerFile.close()
 
-def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
+def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = None, **kwargs):
     # Open ROM File
     f = open(ROMFilePath, 'r+b', buffering = 0)
     # Open Patcher Data Output File
@@ -527,7 +555,8 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
-        itemList = SuperMetroidConstants.vanillaPickupList
+        # FIXME
+        itemList = genVanillaGame()
         startingItems = None
         print("Item list was not supplied to ROM patcher. Generating Vanilla placement with no starting items.")
     else:
@@ -577,105 +606,120 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
             routines[i] = (routines[i]).replace(routineAddressRefs[j], routineAddresses[j])
         f.write(HexHelper.hexToData(routines[i]))
     
-    # Now the dumb part. We create item pickup routines, one for each item in the game.
-    # Yes it's dumb, but dumb works. This can probably be optimized later.
-    itemGetRoutines      = []
-    
     # Flags have their endianness reversed before being written.
-    beamBitFlags         = ["1000", "0002", "0001", "0004", "0008"]
-    equipmentBitFlags    = ["0001", "0002", "0004", "0008", "0100", "0200", "2000", "1000", "0020"]
+    itemGetRoutinesDict = {}
+    # I hate this code
+    # This is just all possible get routines, excluding filled ammo templates, of which only those deemed necessary are included.
+    # Not all routines here are written to ROM
+    # availableItemGetRoutinesDict = {}
     
-    # These values could later be substituted to give different effects for SM players.
-    # Note that bytes are ordered in little-endian format.
-    missilesPerPack      = "0500"
-    supersPerPack        = "0500"
-    energyPerTank        = "6400"
-    energyPerReserve     = "6400"
-    powerBombsPerPack    = "0500"
+    beamBitFlagsDict       = {
+        "Charge Beam" : "1000",
+        "Ice Beam"    : "0002",
+        "Wave Beam"   : "0001",
+        "Spazer Beam" : "0004",
+        "Plasma Beam" : "0008"
+    }
+    
+    equipmentBitFlagsDict = {
+        "Varia Suit"       : "0001",
+        "Spring Ball"      : "0002",
+        "Morph Ball"       : "0004",
+        "Screw Attack"     : "0008",
+        "Hi-Jump Boots"    : "0100",
+        "Space Jump"       : "0200",
+        "Speed Booster"    : "2000",
+        "Morph Ball Bombs" : "1000",
+        "Gravity Suit"     : "0020"
+    }
+    
+    ammoGetTemplates = {
+        "Energy Tank"             : "ADC4091869-qty8DC4098DC20960",
+        "Reserve Tank"            : "ADD4091869-qty8DD409ADC009D003EEC00960",
+        "Missile Expansion"       : "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
+        "Super Missile Expansion" : "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
+        "Power Bomb Expansion"    : "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060"
+    }
+    
+    # For new ammo-type items.
+    customAmmoGetTemplates = {
+    
+    }
     
     # Make all the get routines and templates.
-    etankGet             = "ADC4091869-nrg8DC4098DC20960"
-    reserveGet           = "ADD4091869-rsv8DD409ADC009D003EEC00960"
-    missileGet           = "ADC8091869-msl8DC809ADC6091869-msl8DC60922CF998060"
-    supersGet            = "ADCC091869-spr8DCC09ADCA091869-spr8DCA09220E9A8060"
-    pbsGet               = "ADD0091869-pwb8DD009ADCE091869-pwb8DCE09221E9A8060"
     grappleGet           = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
     xRayGet              = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
     equipmentGetTemplate = "ADA20909-eqp8DA209ADA40909-eqp8DA40960"
-    beamGetTemplate      = "A9-bem0DA8098DA809A9-bem0DA6098DA609A9-bem0A2908001CA609A9-bem4A2904001CA609228DAC9060"
-    equipmentGets        = [equipmentGetTemplate] * len(equipmentBitFlags)
-    beamGets             = [beamGetTemplate] * len(beamBitFlags)
+    beamGetTemplate      = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
     
-    # Substitute references for literals.
-    etankGet = etankGet.replace("-nrg", energyPerTank)
-    reserveGet = reserveGet.replace("-rsv", energyPerReserve)
-    missileGet = missileGet.replace("-msl", missilesPerPack)
-    supersGet = supersGet.replace("-spr", supersPerPack)
-    pbsGet = pbsGet.replace("-pwb", powerBombsPerPack)
+    # Note that if items appear more than once with different implementations, things will break horribly.
+    # If you want major items with different effects, give them a new name - 
+    # Ex. Instead of "Spazer" and "Plasma" for a progressive spazer hack, call it
+    # "Progressive Spazer"
+    # Will still try its damnedest if you give it conflicting info, but can't give multiple effects to an item that it thinks is the same.
+    # This is why ammo item names have the quantity appended to them - since having differing quantities makes them effectively different items.
+    equipmentGets = {}
+    equipmentGets["X-Ray Scope"]  = xRayGet
+    equipmentGets["Grapple Beam"] = grappleGet
+    for itemName, bitFlags  in equipmentBitFlagsDict.items():
+        equipmentGets[itemName] = equipmentGetTemplate.replace("-eqp", HexHelper.reverseEndianness(bitFlags))
+    for itemName, bitFlags in beamBitFlagsDict.items():
+        equipmentGets[itemName] = beamGetTemplate.replace("-eqp", HexHelper.reverseEndianness(bitFlags))
     
     # Create individual routines from ASM templates.
-    for i in range(len(equipmentGets)):
-        equipmentGets[i] = (equipmentGets[i]).replace("-eqp", HexHelper.reverseEndianness(equipmentBitFlags[i]))
-    for i in range(len(beamGets)):
-        beamGets[i] = (beamGets[i]).replace("-bem", HexHelper.reverseEndianness(beamBitFlags[i]))
+    # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
+    # This is because I'm lazy and we absolutely have room for it.
+    for pickup in itemList:
+        if pickup.ownerName is None or pickup.ownerName == playerName:
+            
+            if pickup.pickupItemEffect == "Default":
+                if pickup.itemName in SuperMetroidConstants.ammoItemList:
+                    if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
+                        print(f"{pickup.itemName} {pickup.quantityGiven}")
+                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = ammoGetTemplates[pickup.itemName].replace("-qty", HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven), 4)))
+                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
+                    if not pickup.itemName in itemGetRoutinesDict:
+                        itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.itemName]
+                else:
+                    print("ERROR: Cannot specify itemPickupEffect as \"Default\" for an item which does not exist in the vanilla game.")
+            else:
+                if pickup.itemName in SuperMetroidConstants.ammoItemList:
+                    if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
+                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = customAmmoGetTemplates[pickup.pickupItemEffect].replace("-qty", HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven)), 4))
+                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
+                    # Overwrite vanilla behavior for this item if vanilla.
+                    # Otherwise add new item effect for the item type.
+                    # Note that adding multiple toggle items with the same name and different effects has undefined behavior.
+                    if not pickup.itemName in itemGetRoutinesDict:
+                        if pickup.pickupItemEffect in equipmentGets:
+                            itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.pickupItemEffect]
+                    # Otherwise add new effect
+                else:
+                    print("ERROR: Custom item pickup behaviors are not yet implemented.")
     
     
-    
-    # Construct the item routine list in the proper order.
-    itemGetRoutines.append(etankGet)
-    itemGetRoutines.append(missileGet)
-    itemGetRoutines.append(supersGet)
-    itemGetRoutines.append(pbsGet)
-    itemGetRoutines.append(grappleGet)
-    itemGetRoutines.append(xRayGet)
-    itemGetRoutines.extend(equipmentGets[0:7])
-    itemGetRoutines.extend(beamGets)
-    itemGetRoutines.append(equipmentGets[7])
-    itemGetRoutines.append(reserveGet)
-    itemGetRoutines.append(equipmentGets[8])
     # This is a command that will do nothing, used for items that are meant to go to other players.
-    # 60 is the RTS instruction. In other words when called it will immediately returned.
-    itemGetRoutines.append("60")
+    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
+    itemGetRoutinesDict["No Item"] = "60"
     
-    
-    # Write them to memory and store their addresses in an ordered list.
+    # Write them to memory and store their addresses in a dict.
     # This is critical, as we will use these addresses to store to a table that dictates
     # What an item will do when picked up.
     # We'll be appending them to the same place as messagebox code, so we'll keep the
     # Address and file pointer we had from before.
-    itemGetRoutineAddresses = []
-    for i in range(len(itemGetRoutines)):
-        itemGetRoutineAddresses.append(HexHelper.reverseEndianness(inGameAddress))
-        f.write(HexHelper.hexToData(itemGetRoutines[i]))
-        inGameAddress   = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(itemGetRoutines[i]) // 2))
-        currentAddress += int(len(itemGetRoutines[i]) // 2)
-    
-    # You shouldn't ever need to expand this, as this only concerns the actual effects
-    # Of items for the SM player.
-    itemGetRoutineAddressesDict = {
-        "Energy Tank"             : itemGetRoutineAddresses[ 0],
-        "Missile Expansion"       : itemGetRoutineAddresses[ 1],
-        "Super Missile Expansion" : itemGetRoutineAddresses[ 2],
-        "Power Bomb Expansion"    : itemGetRoutineAddresses[ 3],
-        "Grapple Beam"            : itemGetRoutineAddresses[ 4],
-        "X-Ray Scope"             : itemGetRoutineAddresses[ 5],
-        "Varia Suit"              : itemGetRoutineAddresses[ 6],
-        "Spring Ball"             : itemGetRoutineAddresses[ 7],
-        "Morph Ball"              : itemGetRoutineAddresses[ 8],
-        "Screw Attack"            : itemGetRoutineAddresses[ 9],
-        "Hi-Jump Boots"           : itemGetRoutineAddresses[10],
-        "Space Jump"              : itemGetRoutineAddresses[11],
-        "Speed Booster"           : itemGetRoutineAddresses[12],
-        "Charge Beam"             : itemGetRoutineAddresses[13],
-        "Ice Beam"                : itemGetRoutineAddresses[14],
-        "Wave Beam"               : itemGetRoutineAddresses[15],
-        "Spazer Beam"             : itemGetRoutineAddresses[16],
-        "Plasma Beam"             : itemGetRoutineAddresses[17],
-        "Morph Ball Bombs"        : itemGetRoutineAddresses[18],
-        "Reserve Tank"            : itemGetRoutineAddresses[19],
-        "Gravity Suit"            : itemGetRoutineAddresses[20],
-        "No Item"                 : itemGetRoutineAddresses[21]
-    }
+    # We may want to move these somewhere else later.
+    itemGetRoutineAddressesDict = {}
+    passedTables = False
+    for itemName, routine in itemGetRoutinesDict.items():
+        # Don't overwrite the tables
+        if (HexHelper.hexToInt(inGameAddress) + int(len(routine) // 2)) >= HexHelper.hexToInt("9A00") and not passedTables:
+            f.seek(HexHelper.hexToInt("2A400"))
+            inGameAddress = "A400"
+            passedTables = True
+        itemGetRoutineAddressesDict[itemName] = HexHelper.reverseEndianness(inGameAddress)
+        f.write(HexHelper.hexToData(routine))
+        inGameAddress   = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routine) // 2))
+        currentAddress += int(len(routine) // 2)
     
     # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
@@ -683,14 +727,6 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
         itemRoutinesJsonOutput.append({"itemName" : itemName, "routineAddress" : routineAddress})
         print(itemName + " has routine address " + routineAddress)
     patcherOutputJson["patcherData"].append({"itemRoutines" : itemRoutinesJsonOutput})
-    
-    # Sanity check.
-    # If this trips I'm in deep trouble.
-    # We are safe - for now.
-    print("Free routine ROM in bank 85 begins at " + inGameAddress)
-    if HexHelper.hexToInt(inGameAddress) > HexHelper.hexToInt("9A00"):
-        print("ERROR: Routines written overlap with start of pickup tables in bank $85")
-        return
     
     # Patch Item Placements into the ROM.
     placeItems(f, ROMFilePath, itemGetRoutineAddressesDict, itemList)
@@ -773,6 +809,7 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     
     # MULTIWORLD ROUTINES:
     # Appended to bank 90. Used to work the game's events in our favor.
+    # TODO: Convert this to an ips patch
     multiworldExecuteArbitraryFunctionRoutine = "E220A98348C220AF72FF7F486B"
     # Address relative to start of bank 90
     multiworldExecuteArbitraryFunctionRoutineAddress = "FFF0"
@@ -784,6 +821,8 @@ def patchROM(ROMFilePath, itemList = None, recipientList = None, **kwargs):
     f.write(HexHelper.hexToData(multiworldExecuteArbitraryFunctionRoutine))
     
     # Routines to append to bank $83.
+    
+
     multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
     multiworldRoutineAddressStart = "01AD66"
     

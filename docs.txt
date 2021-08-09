@@ -1,0 +1,49 @@
+DOCS:
+Passing pickups to the patcher
+The format for pickups to give to the randomizer has lots of room for freedom.
+
+You should pass pickup data for every location in the player's game,
+As well as for pickups in other players' games which belong to this player.
+
+Pickups you pass have several fields you can customize:
+	mandatory arguments:
+		quantityGiven [integer]
+			How much of this item is given to the player?
+			Ignored for bitflag-type items
+		pickupIndex [integer]
+			The index for the pickup location to place this item at.
+			Please pass pickups which appear in other players' games with index -1,
+			As this lets the patcher know to add item effects and message boxes for it.
+		itemName [string]
+			The name of the item. This also dictates item type.
+	optional arguments:
+		pickupItemEffect [string] (default: "Default")
+			The name of the item pickup effect to apply for this item.
+			If you just want vanilla behavior, use "Default" for this argument.
+			Note that items that don't belong to the player have effect ignored - you needn't specify
+			That an item meant for someone else has no effect.
+			You can only specify the effect as being "Default" if this item exists in Super Metroid already.
+		nativeGraphics [boolean] (default: True)
+			If this item uses a sprite which already exists in the game, set to True.
+			If set to False, the patcher will patch in the sprite for this item into the game.
+		ownerName [string] (default: None)
+			The name of this item's owner. Used to generate message boxes and determine if the item should have an effect for the player.
+			If set to None, the patcher will assume that this item belongs to the player, and will not create a custom message box for it.
+		graphicsFileName [string] (default: None)
+			If nativeGraphics is set to False, you must supply the path to the .bin file with this item's graphics.
+			Ignored if nativeGraphics is True.
+		nativeSpriteName [string] (default: "Default")
+			Must be specified if a custom item uses a vanilla sprite.
+			If item is a vanilla item, leaving as "Default" will tell it to use the sprite it normally has in vanilla.
+			Ignored if nativeGraphics is False.
+
+However, here are some things to avoid:
+	Giving different effects to items of the same name
+		Note that giving different quantities for items of the same type is valid behavior.
+	Giving different sprites or palettes to items of the same name
+		Although it is theoretically possible, as far as I'm concerned as a programmer it's just a bridge too far.
+		Writing code to look for and deal with this would make things even messier than they already are.
+
+patchROM behavior
+
+	
