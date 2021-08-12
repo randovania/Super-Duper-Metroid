@@ -12,7 +12,7 @@ class SuperMetroidConstants:
         5   : "Crateria Gauntlet Energy Tank",
         6   : "Crateria Mother Brain Missiles",
         7   : "Crateria Morph Ball Bombs",
-        
+
         8   : "Crateria Terminator Energy Tank",
         9   : "Crateria Gauntlet Right Missiles",
         10  : "Crateria Gauntlet Left Missiles",
@@ -21,7 +21,7 @@ class SuperMetroidConstants:
         13  : "Green Brinstar Etecoons Power Bombs",
         14  : "Pink Brinstar Spore Spawn Super Missiles",
         15  : "Green Brinstar Early Supers Crumble Bridge Missiles",
-        
+
         16  : "Green Brinstar Early Supers Super Missiles",
         17  : "Green Brinstar Reserve Tank",
         18  : "Green Brinstar Reserve Tank Missiles 2",
@@ -29,7 +29,7 @@ class SuperMetroidConstants:
         21  : "Pink Brinstar Big Pink Grapple Missiles",
         22  : "Pink Brinstar Big Pink Bottom Missiles",
         23  : "Pink Brinstar Charge Beam",
-        
+
         24  : "Pink Brinstar Big Pink Grapple Power Bombs",
         25  : "Green Brinstar Green Hill Zone Missiles",
         26  : "Blue Brinstar Morph Ball",
@@ -38,7 +38,7 @@ class SuperMetroidConstants:
         29  : "Blue Brinstar Energy Tank",
         30  : "Green Brinstar Etecoons Energy Tank",
         31  : "Green Brinstar Etecoons Super Missiles",
-        
+
         33  : "Pink Brinstar Waterway Energy Tank",
         34  : "Blue Brinstar First Missiles",
         35  : "Pink Brinstar Wavegate Energy Tank",
@@ -46,13 +46,13 @@ class SuperMetroidConstants:
         37  : "Blue Brinstar Billy Mayes' Double Offer Missiles",
         38  : "Red Brinstar X-Ray Scope",
         39  : "Red Brinstar Samus Eater Power Bombs",
-        
+
         40  : "Red Brinstar Alpha Power Bombs",
         41  : "Red Brinstar Behind Alpha Power Bombs Missiles",
         42  : "Red Brinstar Spazer",
         43  : "Warehouse Brinstar Energy Tank",
         44  : "Warehouse Brinstar Missiles",
-        
+
         48  : "Warehouse Brinstar Varia Suit",
         49  : "Norfair Cathedral Missiles",
         50  : "Norfair Ice Beam",
@@ -61,7 +61,7 @@ class SuperMetroidConstants:
         53  : "Norfair Hi-Jump Boots",
         54  : "Norfair Crocomire Escape Missiles",
         55  : "Norfair Hi-Jump Missiles",
-        
+
         56  : "Norfair Hi-Jump Energy Tank",
         57  : "Norfair Crocomire Power Bombs",
         58  : "Norfair Crocomire Cosine Missiles",
@@ -70,7 +70,7 @@ class SuperMetroidConstants:
         61  : "Norfair Bubble Mountain Reserve Tank",
         62  : "Norfair Bubble Mountain Reserve Missiles",
         63  : "Norfair Bubble Mountain Grapple Missiles",
-        
+
         64  : "Norfair Bubble Mountain Missiles",
         65  : "Norfair Speedboost Missiles",
         66  : "Norfair Speed Booster",
@@ -78,7 +78,7 @@ class SuperMetroidConstants:
         68  : "Norfair Wave Beam",
         70  : "Norfair Golden Torizo Missiles",
         71  : "Norfair Golden Torizo Super Missiles",
-        
+
         73  : "Norfair Mickey Mouse Missiles",
         74  : "Norfair Springball Maze Missiles",
         75  : "Norfair Lower Escape Power Bombs",
@@ -86,9 +86,9 @@ class SuperMetroidConstants:
         77  : "Norfair FrankerZ Missiles",
         78  : "Norfair Ridley Energy Tank",
         79  : "Norfair Screw Attack",
-        
+
         80  : "Norfair Dark Room Energy Tank",
-        
+
         128 : "Wrecked Ship Spooky Missiles",
         129 : "Wrecked Ship Reserve Tank",
         130 : "Wrecked Ship Bowling Missiles",
@@ -97,7 +97,7 @@ class SuperMetroidConstants:
         133 : "Wrecked Ship West Super Missiles",
         134 : "Wrecked Ship East Super Missiles",
         135 : "Wrecked Ship Gravity Suit",
-        
+
         136 : "Maridia Main Street Missiles",
         137 : "Maridia Main Street Super Missiles",
         138 : "Maridia Turtle Energy Tank",
@@ -106,7 +106,7 @@ class SuperMetroidConstants:
         141 : "Maridia Watering Hole Missiles",
         142 : "Maridia Pseudo-Spark Missiles",
         143 : "Maridia Plasma Beam",
-        
+
         144 : "Maridia West Sandtrap Missiles",
         145 : "Maridia Reserve Tank",
         146 : "Maridia East Sandtrap Missiles",
@@ -115,10 +115,10 @@ class SuperMetroidConstants:
         149 : "Maridia Aqeuduct Super Misiles",
         150 : "Maridia Springball",
         151 : "Maridia Precious Missiles",
-        
+
         152 : "Maridia Botwoon Energy Tank",
         154 : "Maridia Space Jump"}
-    
+
     # List of ammo items, ordered by ascending Message ID
     ammoItemList = [
         "Energy Tank",
@@ -127,7 +127,7 @@ class SuperMetroidConstants:
         "Power Bomb Expansion",
         "Reserve Tank"
     ]
-    
+
     # List of toggle items, ordered by ascending Message ID
     toggleItemList = [
         "Grapple Beam",
@@ -147,10 +147,10 @@ class SuperMetroidConstants:
         "Morph Ball Bombs",
         "Gravity Suit"
     ]
-    
+
     # Combined list, in order of ascending Message ID
     itemList = ammoItemList[0:4] + toggleItemList[0:15] + [ammoItemList[4]] + [toggleItemList[15]]
-    
+
     # Dictionary of nonstandard message box sizes
     # TODO: Replace this with something more elegant? Possibly.
     itemMessageNonstandardSizes = {
@@ -161,7 +161,7 @@ class SuperMetroidConstants:
         "Speed Booster"           : "0100",
         "Grapple Beam"            : "0100",
         "X-Ray Scope"             : "0100"}
-    
+
     # Dictionary of item message locations
     itemMessageAddresses = {
         "Energy Tank"             : "877F",
@@ -185,7 +185,7 @@ class SuperMetroidConstants:
         "Morph Ball Bombs"        : "907F",
         "Reserve Tank"            : "94FF",
         "Gravity Suit"            : "953F"}
-    
+
     itemMessageIDs = {
         "Energy Tank"             : "0001",
         "Missile Expansion"       : "0002",
@@ -208,7 +208,7 @@ class SuperMetroidConstants:
         "Morph Ball Bombs"        : "0013",
         "Reserve Tank"            : "0019",
         "Gravity Suit"            : "001A"}
-    
+
     # Widths for all messages, either "Small" or "Large".
     # Small boxes have a width of 19 tiles,
     # Large boxes have a width of 26 tiles.
@@ -240,36 +240,7 @@ class SuperMetroidConstants:
         "Morph Ball Bombs"        : "Large",
         "Reserve Tank"            : "Small",
         "Gravity Suit"            : "Small"}
-    
-    itemPLMIDs = {
-        "Energy Tank"             : "EED7",
-        "Missile Expansion"       : "EEDB",
-        "Super Missile Expansion" : "EEDF",
-        "Power Bomb Expansion"    : "EEE3",
-        "Morph Ball Bombs"        : "EEE7",
-        "Charge Beam"             : "EEEB",
-        "Ice Beam"                : "EEEF",
-        "Hi-Jump Boots"           : "EEF3",
-        "Speed Booster"           : "EEF7",
-        "Wave Beam"               : "EEFB",
-        "Spazer Beam"             : "EEFF",
-        "Spring Ball"             : "EF03",
-        "Varia Suit"              : "EF07",
-        "Gravity Suit"            : "EF0B",
-        "X-Ray Scope"             : "EF0F",
-        "Plasma Beam"             : "EF13",
-        "Grapple Beam"            : "EF17",
-        "Space Jump"              : "EF1B",
-        "Screw Attack"            : "EF1F",
-        "Morph Ball"              : "EF23",
-        "Reserve Tank"            : "EF27",
-        # This will replace the item with nothing at all.
-        # Its space will simply be empty, nothing will be there.
-        # This is NOT the same as the "No Item" routine, which is
-        # Attached to an actual item, but simply does nothing when picked up
-        # To affect the player's current gamestate.
-        "No Item"                 : "B62F"}
-    
+
     # List of all possible item locations as they are ordered in memory.
     # This looks really good if you have a monospace font.
     # If you don't have one you're a chump.
@@ -290,7 +261,7 @@ class SuperMetroidConstants:
         "88", "89", "8A", "8B", "8C", "8D", "8E", "8F",
         "90", "91", "92", "93", "94", "95", "96", "97",
         "98",       "9A"]
-    
+
     # List of item PLM type offsets.
     # Used to set items as shot block or chozo orbs when necessary,
     # Depending upon which location an item is placed into.
@@ -311,11 +282,10 @@ class SuperMetroidConstants:
         0, 0, 0, 2, 0, 0, 0, 1,
         0, 1, 0, 0, 0, 0, 1, 2,
         0,       1]
-    
+
     # Item index list
     # A list of all valid item indices, in order
-    itemIndexList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 24, 25, 26, 27, 28, 29, 30, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 70, 73, 74, 75, 76, 77, 78, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 154]
-    
+    itemIndexList = sorted(bitflagIndexToLocationNameDict, key=bitflagIndexToLocationNameDict.get)
     # List of item PLM Locations in ROM.
     # This is where we place each item's entity so that it will show up in the room.
     # Doing so overwrites the item that would have been there previously (i.e. in an unpatched ROM).
@@ -325,18 +295,18 @@ class SuperMetroidConstants:
         "7851E", "7852C", "78532", "78538",          "78608", "7860E", "78614",
         "7865E", "78676", "786DE", "7874C", "78798", "7879E", "787C2", "787D0",
                  "787FA", "78802", "78824", "78836", "7883C", "78876", "788CA",
-        "7890E", "78914", "7896E", "7899C", "789EC",             
+        "7890E", "78914", "7896E", "7899C", "789EC",
         "78ACA", "78AE4", "78B24", "78B46", "78BA4", "78BAC", "78BC0", "78BE6",
         "78BEC", "78C04", "78C14", "78C2A", "78C36", "78C3E", "78C44", "78C52",
         "78C66", "78C74", "78C82", "78CBC", "78CCA",          "78E6E", "78E74",
                  "78F30", "78FCA", "78FD2", "790C0", "79100", "79108", "79110",
-        
+
         "79184",
         "7C265", "7C2E9", "7C2EF", "7C319", "7C337", "7C357", "7C365", "7C36D",
         "7C437", "7C43D", "7C47D", "7C483", "7C4AF", "7C4B5", "7C533", "7C559",
         "7C5DD", "7C5E3", "7C5EB", "7C5F1", "7C603", "7C609", "7C6E5", "7C74D",
         "7C755",          "7C7A7"]
-    
+
     locationNamesList = [
         "Crateria Landing Site Power Bombs",
         "Crateria Ocean Underwater Missiles",
@@ -346,7 +316,7 @@ class SuperMetroidConstants:
         "Crateria Gauntlet Energy Tank",
         "Crateria Mother Brain Missiles",
         "Crateria Morph Ball Bombs",
-        
+
         "Crateria Terminator Energy Tank",
         "Crateria Gauntlet Right Missiles",
         "Crateria Gauntlet Left Missiles",
@@ -355,7 +325,7 @@ class SuperMetroidConstants:
         "Green Brinstar Etecoons Power Bombs",
         "Pink Brinstar Spore Spawn Super Missiles",
         "Green Brinstar Early Supers Crumble Bridge Missiles",
-        
+
         "Green Brinstar Early Supers Super Missiles",
         "Green Brinstar Reserve Tank",
         "Green Brinstar Reserve Tank Missiles 2",
@@ -363,7 +333,7 @@ class SuperMetroidConstants:
         "Pink Brinstar Big Pink Grapple Missiles",
         "Pink Brinstar Big Pink Bottom Missiles",
         "Pink Brinstar Charge Beam",
-        
+
         "Pink Brinstar Big Pink Grapple Power Bombs",
         "Green Brinstar Green Hill Zone Missiles",
         "Blue Brinstar Morph Ball",
@@ -372,7 +342,7 @@ class SuperMetroidConstants:
         "Blue Brinstar Energy Tank",
         "Green Brinstar Etecoons Energy Tank",
         "Green Brinstar Etecoons Super Missiles",
-        
+
         "Pink Brinstar Waterway Energy Tank",
         "Blue Brinstar First Missiles",
         "Pink Brinstar Wavegate Energy Tank",
@@ -380,13 +350,13 @@ class SuperMetroidConstants:
         "Blue Brinstar Billy Mayes' Double Offer Missiles",
         "Red Brinstar X-Ray Scope",
         "Red Brinstar Samus Eater Power Bombs",
-        
+
         "Red Brinstar Alpha Power Bombs",
         "Red Brinstar Behind Alpha Power Bombs Missiles",
         "Red Brinstar Spazer",
         "Warehouse Brinstar Energy Tank",
         "Warehouse Brinstar Missiles",
-        
+
         "Warehouse Brinstar Varia Suit",
         "Norfair Cathedral Missiles",
         "Norfair Ice Beam",
@@ -395,7 +365,7 @@ class SuperMetroidConstants:
         "Norfair Hi-Jump Boots",
         "Norfair Crocomire Escape Missiles",
         "Norfair Hi-Jump Missiles",
-        
+
         "Norfair Hi-Jump Energy Tank",
         "Norfair Crocomire Power Bombs",
         "Norfair Crocomire Cosine Missiles",
@@ -404,7 +374,7 @@ class SuperMetroidConstants:
         "Norfair Bubble Mountain Reserve Tank",
         "Norfair Bubble Mountain Reserve Missiles",
         "Norfair Bubble Mountain Grapple Missiles",
-        
+
         "Norfair Bubble Mountain Missiles",
         "Norfair Speedboost Missiles",
         "Norfair Speed Booster",
@@ -412,7 +382,7 @@ class SuperMetroidConstants:
         "Norfair Wave Beam",
         "Norfair Golden Torizo Missiles",
         "Norfair Golden Torizo Super Missiles",
-        
+
         "Norfair Mickey Mouse Missiles",
         "Norfair Springball Maze Missiles",
         "Norfair Lower Escape Power Bombs",
@@ -420,9 +390,9 @@ class SuperMetroidConstants:
         "Norfair FrankerZ Missiles",
         "Norfair Ridley Energy Tank",
         "Norfair Screw Attack",
-        
+
         "Norfair Dark Room Energy Tank",
-        
+
         "Wrecked Ship Spooky Missiles",
         "Wrecked Ship Reserve Tank",
         "Wrecked Ship Bowling Missiles",
@@ -431,7 +401,7 @@ class SuperMetroidConstants:
         "Wrecked Ship West Super Missiles",
         "Wrecked Ship East Super Missiles",
         "Wrecked Ship Gravity Suit",
-        
+
         "Maridia Main Street Missiles",
         "Maridia Main Street Super Missiles",
         "Maridia Turtle Energy Tank",
@@ -440,7 +410,7 @@ class SuperMetroidConstants:
         "Maridia Watering Hole Missiles",
         "Maridia Pseudo-Spark Missiles",
         "Maridia Plasma Beam",
-        
+
         "Maridia West Sandtrap Missiles",
         "Maridia Reserve Tank",
         "Maridia East Sandtrap Missiles",
@@ -449,10 +419,10 @@ class SuperMetroidConstants:
         "Maridia Aqeuduct Super Misiles",
         "Maridia Springball",
         "Maridia Precious Missiles",
-        
+
         "Maridia Botwoon Energy Tank",
         "Maridia Space Jump"]
-    
+
     regionToHexDict = {
         "Crateria"     : "0000",
         "Brinstar"     : "0100",
@@ -460,9 +430,9 @@ class SuperMetroidConstants:
         "Wrecked Ship" : "0300",
         "Maridia"      : "0400",
         "Tourian"      : "0500"
-        
+
     }
-    
+
     itemNameToQuantityName = {
         "Energy Tank"             : "Energy",
         "Missile Expansion"       : "Missiles",
@@ -470,7 +440,7 @@ class SuperMetroidConstants:
         "Power Bomb Expansion"    : "Power Bombs",
         "Reserve Tank"            : "Reserve Energy"
     }
-    
+
     defaultAmmoItemToQuantity = {
         "Energy Tank"             : 100,
         "Missile Expansion"       : 5,
@@ -478,7 +448,7 @@ class SuperMetroidConstants:
         "Power Bomb Expansion"    : 5,
         "Reserve Tank"            : 100
     }
-    
+
     # Address to current quantity of indicated type.
     # Max quantity is stored 2 bytes after current quantity in all cases.
     ammoItemAddresses = {
@@ -488,10 +458,10 @@ class SuperMetroidConstants:
         "Power Bomb Expansion"    : "F509CE",
         "Reserve Tank"            : "F509D4"
     }
-    
+
     # What address we should look at to find equipment (from SNI's perspective, it's complicated)
     toggleItemBaseAddress = "F509A2"
-    
+
     # Formatted offsets for where to read/write toggleable items.
     # Stored as a tuple.
     # First  value: Byte offset.
@@ -518,7 +488,7 @@ class SuperMetroidConstants:
         "Morph Ball Bombs" : (1, 4),
         "Gravity Suit"     : (0, 5)
     }
-    
+
     vanillaPickupList = [
         "Power Bomb Expansion",
         "Missile Expansion",
@@ -528,7 +498,7 @@ class SuperMetroidConstants:
         "Energy Tank",
         "Missile Expansion",
         "Morph Ball Bombs",
-        
+
         "Energy Tank",
         "Missile Expansion",
         "Missile Expansion",
@@ -537,7 +507,7 @@ class SuperMetroidConstants:
         "Power Bomb Expansion",
         "Super Missile Expansion",
         "Missile Expansion",
-        
+
         "Super Missile Expansion",
         "Reserve Tank",
         "Missile Expansion",
@@ -545,7 +515,7 @@ class SuperMetroidConstants:
         "Missile Expansion",
         "Missile Expansion",
         "Charge Beam",
-        
+
         "Power Bomb Expansion",
         "Missile Expansion",
         "Morph Ball",
@@ -554,7 +524,7 @@ class SuperMetroidConstants:
         "Energy Tank",
         "Energy Tank",
         "Super Missile Expansion",
-        
+
         "Energy Tank",
         "Missile Expansion",
         "Energy Tank",
@@ -562,13 +532,13 @@ class SuperMetroidConstants:
         "Missile Expansion",
         "X-Ray Scope",
         "Power Bomb Expansion",
-        
+
         "Power Bomb Expansion",
         "Missile Expansion",
         "Spazer Beam",
         "Energy Tank",
         "Missile Expansion",
-        
+
         "Varia Suit",
         "Missile Expansion",
         "Ice Beam",
@@ -577,7 +547,7 @@ class SuperMetroidConstants:
         "Hi-Jump Boots",
         "Missile Expansion",
         "Missile Expansion",
-        
+
         "Energy Tank",
         "Power Bomb Expansion",
         "Missile Expansion",
@@ -586,7 +556,7 @@ class SuperMetroidConstants:
         "Reserve Tank",
         "Missile Expansion",
         "Missile Expansion",
-        
+
         "Missile Expansion",
         "Missile Expansion",
         "Speed Booster",
@@ -594,7 +564,7 @@ class SuperMetroidConstants:
         "Wave Beam",
         "Missile Expansion",
         "Super Missile Expansion",
-        
+
         "Missile Expansion",
         "Missile Expansion",
         "Power Bomb Expansion",
@@ -602,9 +572,9 @@ class SuperMetroidConstants:
         "Missile Expansion",
         "Energy Tank",
         "Screw Attack",
-        
+
         "Missile Expansion",
-        
+
         "Missile Expansion",
         "Reserve Tank",
         "Missile Expansion",
@@ -613,7 +583,7 @@ class SuperMetroidConstants:
         "Super Missile Expansion",
         "Super Missile Expansion",
         "Gravity Suit",
-        
+
         "Missile Expansion",
         "Super Missile Expansion",
         "Energy Tank",
@@ -622,7 +592,7 @@ class SuperMetroidConstants:
         "Missile Expansion",
         "Missile Expansion",
         "Plasma Beam",
-        
+
         "Missile Expansion",
         "Reserve Tank",
         "Missile Expansion",
@@ -631,9 +601,6 @@ class SuperMetroidConstants:
         "Super Missile Expansion",
         "Spring Ball",
         "Missile Expansion",
-        
+
         "Energy Tank",
         "Space Jump"]
-    
-    
-        
