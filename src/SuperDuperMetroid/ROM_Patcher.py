@@ -57,6 +57,7 @@ import sys
 import os
 from hexhelper import HexHelper
 from SM_Constants import SuperMetroidConstants
+from IPS_Patcher import IPSPatcher
 
 class MessageBoxGenerator:
     # List of characters that messages are allowed to have.
@@ -421,7 +422,6 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
         f.write(f2.read())
     return inFilePLMHeaderOffset
 
-
 # Places the items into the game.
 def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerName = None):
     # Initialize MessageBoxGenerator
@@ -614,7 +614,6 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
-        # FIXME
         itemList = genVanillaGame()
         startingItems = None
         print("Item list was not supplied to ROM patcher. Generating Vanilla placement with no starting items.")
@@ -667,9 +666,9 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
 
     # Flags have their endianness reversed before being written.
     itemGetRoutinesDict = {}
-    # I hate this code
-    # This is just all possible get routines, excluding filled ammo templates, of which only those deemed necessary are included.
-    # Not all routines here are written to ROM
+    # Not all routines here are written to ROM,
+    # Only those which we determine are used in game.
+    # This is why passing items from multiworld session that this player receives is necessary.
     # availableItemGetRoutinesDict = {}
 
     beamBitFlagsDict       = {
@@ -730,7 +729,6 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # This is because I'm lazy and we absolutely have room for it.
     for pickup in itemList:
         if pickup.ownerName is None or pickup.ownerName == playerName:
-
             if pickup.pickupItemEffect == "Default":
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
                     if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
@@ -768,6 +766,7 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # Address and file pointer we had from before.
     # We may want to move these somewhere else later.
     itemGetRoutineAddressesDict = {}
+    # Use this to make sure the item data tables, which contain data about pickups, isn't overwritten.
     passedTables = False
     for itemName, routine in itemGetRoutinesDict.items():
         # Don't overwrite the tables
@@ -853,7 +852,19 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # Apply static patches.
     # Many of these patches are provided by community members -
     # See top of document for details.
-    # TODO
+    # Dictionary of files associated with static patch names:
+    staticPatchDict = {
+        "InstantG4" : "Patches/g4_skip.ips",
+        "MaxAmmoDisplay" : "Patches/max_ammo_display.ips"
+    }
+    if "staticPatches" in kwargs:
+        staticPatches = kwargs["staticPatches"]
+        for patch in staticPatches:
+            if patch in staticPatchDict:
+                IPSPatcher.applyIPSPatch(staticPatchDict[patch], ROMFilePath)
+            else:
+                print(f"Provided patch {patch} does not exist!")
+
 
     # Replace references with actual addresses.
     for i in range(len(overwriteRoutines)):
@@ -906,5 +917,6 @@ if __name__ == "__main__":
     else:
         print("Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program.")
         filePath = input()
-    patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres")
+    patchesToApply = ["InstantG4", "MaxAmmoDisplay"]
+    patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", staticPatches = patchesToApply)
     #patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", customSaveStart = ["Brinstar", 0])

@@ -49,6 +49,7 @@ class IPSPatcher:
         if (IPSPatcher.verifyFormat(ipsFile)):
             while IPSPatcher.readAndApplyHunk(ipsFile, romFile):
                 pass
+            print(f"Finished applying patch {ipsPath} successfully.")
         else:
             print(f"CRITICAL ERROR: Provided IPS file {ipsPath} does not match the format specification!")
         ipsFile.close()
