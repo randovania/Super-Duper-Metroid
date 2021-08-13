@@ -573,7 +573,7 @@ class SuperMetroidConstants:
         "Energy Tank",
         "Screw Attack",
 
-        "Missile Expansion",
+        "Energy Tank",
 
         "Missile Expansion",
         "Reserve Tank",
