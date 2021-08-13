@@ -16,6 +16,6 @@ You can now run scripts from the project from terminal, using the virtual enviro
 # Credit
 Credit goes to Samuel Roy for writing most of this code.  
 Kazuto wrote the More Efficient Item PLMs Hack, which is recreated in parts of this code.  
-Metroid Construction and Jathys provided a lot of documentation which I made use of.  
+Metroid Construction and Kejardon provided a lot of documentation which I made use of.  
 PHOSPHOTiDYL wrote the Skip Intro Saves hack, which is included in this program.  
 Total, Fusda, and Leodox were responsible for the IPS patches.  
