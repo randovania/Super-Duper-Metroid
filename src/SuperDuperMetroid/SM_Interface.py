@@ -30,16 +30,15 @@
 #   -Item Routine Address Dict
 #   -List of non-vanilla items in game
 
-import threading
 import json
-import pprint
-import websocket
-import time
-import sys
 import os
-from websocket import create_connection
-from SuperDuperMetroid.hexhelper import HexHelper
+import sys
+import threading
+import time
+
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.hexhelper import HexHelper
+from websocket import create_connection
 
 
 class SuperMetroidInterface:

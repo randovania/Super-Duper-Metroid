@@ -1,5 +1,3 @@
-import sys
-import os
 from SuperDuperMetroid.hexhelper import HexHelper
 
 

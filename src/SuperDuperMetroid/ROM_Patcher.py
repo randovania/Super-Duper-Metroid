@@ -51,13 +51,12 @@
 # Kazuto's More Efficient PLMs patch is applied, and changes are present
 # in banks $84 and $89.
 
-import random
 import json
-import sys
 import os
-from SuperDuperMetroid.hexhelper import HexHelper
-from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+
 from SuperDuperMetroid.IPS_Patcher import IPSPatcher
+from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.hexhelper import HexHelper
 
 
 class MessageBoxGenerator:
