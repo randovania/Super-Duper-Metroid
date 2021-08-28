@@ -1,6 +1,6 @@
 import sys
 import os
-from hexhelper import HexHelper
+from SuperDuperMetroid.hexhelper import HexHelper
 
 
 class IPSPatcher:

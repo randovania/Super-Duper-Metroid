@@ -38,8 +38,8 @@ import time
 import sys
 import os
 from websocket import create_connection
-from hexhelper import HexHelper
-from SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.hexhelper import HexHelper
+from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
 
 
 class SuperMetroidInterface:

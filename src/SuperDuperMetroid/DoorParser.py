@@ -1,5 +1,5 @@
-from SM_Room_Header_Data import SuperMetroidRooms
-from hexhelper import HexHelper
+from SuperDuperMetroid.SM_Room_Header_Data import SuperMetroidRooms
+from SuperDuperMetroid.hexhelper import HexHelper
 import os
 
 

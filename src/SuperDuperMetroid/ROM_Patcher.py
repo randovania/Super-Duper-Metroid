@@ -55,9 +55,9 @@ import random
 import json
 import sys
 import os
-from hexhelper import HexHelper
-from SM_Constants import SuperMetroidConstants
-from IPS_Patcher import IPSPatcher
+from SuperDuperMetroid.hexhelper import HexHelper
+from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.IPS_Patcher import IPSPatcher
 
 
 class MessageBoxGenerator:
