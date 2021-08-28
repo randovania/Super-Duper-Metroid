@@ -17,7 +17,7 @@ class HexHelper:
     # Converts binary data to a hexadecimal string.
     @staticmethod
     def dataToHex(dataToConvert):
-        return ''.join('{:02x}'.format(x) for x in dataToConvert).upper()
+        return "".join("{:02x}".format(x) for x in dataToConvert).upper()
 
     # Reverses the endianness of a hexadecimal string.
     @staticmethod
@@ -36,6 +36,6 @@ class HexHelper:
     @staticmethod
     def padHex(hexToPad, numHexCharacters):
         returnHex = hexToPad
-        while len(returnHex) < numHexCharacters:   
+        while len(returnHex) < numHexCharacters:
             returnHex = "0" + returnHex
         return returnHex
