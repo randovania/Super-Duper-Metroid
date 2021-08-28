@@ -51,96 +51,130 @@
 # Kazuto's More Efficient PLMs patch is applied, and changes are present
 # in banks $84 and $89.
 
-import random
 import json
-import sys
 import os
-from hexhelper import HexHelper
-from SM_Constants import SuperMetroidConstants
-from IPS_Patcher import IPSPatcher
+
+from SuperDuperMetroid.IPS_Patcher import IPSPatcher
+from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.hexhelper import HexHelper
+
 
 class MessageBoxGenerator:
     # List of characters that messages are allowed to have.
     # Note that messages will be converted to uppercase
     # Before removing invalid characters.
-    allowedCharacterList = ['0', '1', '2', '3', '4', '5',
-                            '6', '7', '8', '9', 'A', 'B',
-                            'C', 'D', 'E', 'F', 'G', 'H',
-                            'I', 'J', 'K', 'L', 'M', 'N',
-                            'O', 'P', 'Q', 'R', 'S', 'T',
-                            'U', 'V', 'W', 'X', 'Y', 'Z',
-                            '%', ' ', '&', '-', '.', ',',
-                            '\'', '?', '!']
+    allowedCharacterList = [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "%",
+        " ",
+        "&",
+        "-",
+        ".",
+        ",",
+        "'",
+        "?",
+        "!",
+    ]
 
     # First digit of tuple is row in tilemap, second is column.
     # The messagebox character tilemap is 16x16.
     characterToTilemapPosDict = {
-        '1'  : ( 0,  0),
-        '2'  : ( 0,  1),
-        '3'  : ( 0,  2),
-        '4'  : ( 0,  3),
-        '5'  : ( 0,  4),
-        '6'  : ( 0,  5),
-        '7'  : ( 0,  6),
-        '8'  : ( 0,  7),
-        '9'  : ( 0,  8),
-        '0'  : ( 0,  9),
-        '%'  : ( 0, 10),
-        ' '  : ( 4, 14),
-        '&'  : (12,  8),
-        '-'  : (12, 15),
-        'A'  : (14,  0),
-        'B'  : (14,  1),
-        'C'  : (14,  2),
-        'D'  : (14,  3),
-        'E'  : (14,  4),
-        'F'  : (14,  5),
-        'G'  : (14,  6),
-        'H'  : (14,  7),
-        'I'  : (14,  8),
-        'J'  : (14,  9),
-        'K'  : (14, 10),
-        'L'  : (14, 11),
-        'M'  : (14, 12),
-        'N'  : (14, 13),
-        'O'  : (14, 14),
-        'P'  : (14, 15),
-        'Q'  : (15,  0),
-        'R'  : (15,  1),
-        'S'  : (15,  2),
-        'T'  : (15,  3),
-        'U'  : (15,  4),
-        'V'  : (15,  5),
-        'W'  : (15,  6),
-        'X'  : (15,  7),
-        'Y'  : (15,  8),
-        'Z'  : (15,  9),
-        '.'  : (15, 10),
-        ','  : (15, 11),
-        '\'' : (15, 12),
-        '?'  : (15, 14),
-        '!'  : (15, 15)
+        "1": (0, 0),
+        "2": (0, 1),
+        "3": (0, 2),
+        "4": (0, 3),
+        "5": (0, 4),
+        "6": (0, 5),
+        "7": (0, 6),
+        "8": (0, 7),
+        "9": (0, 8),
+        "0": (0, 9),
+        "%": (0, 10),
+        " ": (4, 14),
+        "&": (12, 8),
+        "-": (12, 15),
+        "A": (14, 0),
+        "B": (14, 1),
+        "C": (14, 2),
+        "D": (14, 3),
+        "E": (14, 4),
+        "F": (14, 5),
+        "G": (14, 6),
+        "H": (14, 7),
+        "I": (14, 8),
+        "J": (14, 9),
+        "K": (14, 10),
+        "L": (14, 11),
+        "M": (14, 12),
+        "N": (14, 13),
+        "O": (14, 14),
+        "P": (14, 15),
+        "Q": (15, 0),
+        "R": (15, 1),
+        "S": (15, 2),
+        "T": (15, 3),
+        "U": (15, 4),
+        "V": (15, 5),
+        "W": (15, 6),
+        "X": (15, 7),
+        "Y": (15, 8),
+        "Z": (15, 9),
+        ".": (15, 10),
+        ",": (15, 11),
+        "'": (15, 12),
+        "?": (15, 14),
+        "!": (15, 15),
     }
 
-    maxMessageLengths = {
-        "Small" : 19,
-        "Large" : 26
-    }
+    maxMessageLengths = {"Small": 19, "Large": 26}
 
     # Maximum length in characters of a standard message box.
     # Technically some, like the missile pickup, are bigger, but we're ignoring those.
     messageBoxMaxLength = 19
 
-
     # Create the message box generator.
     # TODO: Place initial method *after* appended messagebox routines.
-    def __init__(self, ROMFile, initialAddress = "029643"):
+    def __init__(self, ROMFile, initialAddress="029643"):
         self.currentAddress = initialAddress
         self.messageBoxList = {}
         self.file = ROMFile
         self.smallMessagePointerTable = {}
         self.largeMessagePointerTable = {}
-
 
     # Change this message to be usable.
     def conformMessageToFormat(self, messageText, messageBoxSize):
@@ -153,17 +187,22 @@ class MessageBoxGenerator:
             if messageChar in self.allowedCharacterList:
                 strippedMessage += messageChar
         # Tell the user if their message contains unsupported characters
-        if (len(messageText) > len(strippedMessage)):
-            print("Warning Message box text " + messageText + " contains unsupported characters. These will be stripped from the message.\nMessage boxes support the latin alphabet (will be converted to uppercase only), the arabic numerals 0-9, spaces, and a limited set of miscellaneous characters: ?!,.'&-%")
+        if len(messageText) > len(strippedMessage):
+            print(
+                "Warning Message box text "
+                + messageText
+                + " contains unsupported characters. These will be stripped from the message.\nMessage boxes support the latin alphabet (will be converted to uppercase only), the arabic numerals 0-9, spaces, and a limited set of miscellaneous characters: ?!,.'&-%"
+            )
         messageText = strippedMessage
 
         # If the message is too long, cut it off.
         # We'll also include a warning if this happens.
-        if (len(messageText) > maxMessageLengths(messageBoxSize)):
-            print(f"Warning: Message box text {messageText} exceeds maximum length of message box. Message will be cut to first 19 characters.")
-            messageText = messageText[:maxMessageLengths(messageBoxSize)]
+        if len(messageText) > maxMessageLengths(messageBoxSize):
+            print(
+                f"Warning: Message box text {messageText} exceeds maximum length of message box. Message will be cut to first 19 characters."
+            )
+            messageText = messageText[: maxMessageLengths(messageBoxSize)]
         return messageText
-
 
     # Generate and write the hex of a line of message to the file.
     def generateMessagebox(self, messageText, messageBoxSize):
@@ -200,24 +239,30 @@ class MessageBoxGenerator:
         elif messageBoxSize == "Large":
             messagHex = (paddingHex * 3) + messageHex + (paddingHex * 3)
         else:
-            print(f"Warning: You are attempting to create a message with size paramater {messageBoxSize}, which is not a supported size.\nSupported sizes are Small and Large")
+            print(
+                f"Warning: You are attempting to create a message with size paramater {messageBoxSize}, which is not a supported size.\nSupported sizes are Small and Large"
+            )
             return
 
         # Record our addition of this message.
         if messageBoxSize == "Small":
             if messageText in smallMessagePointerTable.keys():
-                print(f"Warning: The message {messageText} has already been added to this ROM.\nPlease consult the current maintainer of this patcher.")
+                print(
+                    f"Warning: The message {messageText} has already been added to this ROM.\nPlease consult the current maintainer of this patcher."
+                )
             else:
                 self.smallMessagePointerTable[messageText] = messageText
         elif messageBoxSize == "Large":
             if messageText in largeMessagePointerTable.keys():
-                print(f"Warning: The message {messageText} has already been added to this ROM.\nPlease consult the current maintainer of this patcher.")
+                print(
+                    f"Warning: The message {messageText} has already been added to this ROM.\nPlease consult the current maintainer of this patcher."
+                )
             else:
                 self.largeMessagePointerTable[messageText] = messageText
 
         # Write hex to ROM
         self.file.seek(int(self.currentAddress, 16))
-        self.file.write(bytes.fromhex(format(messageHex, 'x')))
+        self.file.write(bytes.fromhex(format(messageHex, "x")))
 
         # Update address for next message box write.
         self.currentAddress = (hex(int(self.currentAddress, 16) + 64)[2:]).upper()
@@ -226,39 +271,56 @@ class MessageBoxGenerator:
         if len(self.currentAddress) == 5:
             self.currentAddress = "0" + self.currentAddress
 
+
 class ItemType:
-    itemName  = None
+    itemName = None
     GFXOffset = None
     # Most items use this all 00's palette, so just have it as the defaultl.
     paletteBytes = ["00", "00", "00", "00", "00", "00", "00", "00"]
-    def __init__(self, itemName, GFXOffset, paletteBytes = None):
-        self.itemName  = itemName
+
+    def __init__(self, itemName, GFXOffset, paletteBytes=None):
+        self.itemName = itemName
         self.GFXOffset = GFXOffset
         if paletteBytes is not None:
             self.paletteBytes = paletteBytes
 
+
 # Class which represents items being passed to the game from the generator
 # TODO: Implement this more fully
 class PickupPlacementData:
-    def __init__(self, quantityGiven, pickupIndex, itemName, pickupItemEffect = "Default", nativeGraphics = True, ownerName = None, graphicsFileName = None, nativeSpriteName = "Default"):
-        self.quantityGiven    = quantityGiven
-        self.pickupIndex      = pickupIndex
-        self.itemName         = itemName
+    def __init__(
+        self,
+        quantityGiven,
+        pickupIndex,
+        itemName,
+        pickupItemEffect="Default",
+        nativeGraphics=True,
+        ownerName=None,
+        graphicsFileName=None,
+        nativeSpriteName="Default",
+    ):
+        self.quantityGiven = quantityGiven
+        self.pickupIndex = pickupIndex
+        self.itemName = itemName
         self.pickupItemEffect = pickupItemEffect
-        self.nativeGraphics   = nativeGraphics
-        self.ownerName        = ownerName
+        self.nativeGraphics = nativeGraphics
+        self.ownerName = ownerName
         self.graphicsFileName = graphicsFileName
         self.nativeSpriteName = nativeSpriteName
+
 
 # Generate a game with vanilla item placements
 def genVanillaGame():
     pickupsList = []
     for itemIndex, itemName in zip(SuperMetroidConstants.itemIndexList, SuperMetroidConstants.vanillaPickupList):
         if itemName in SuperMetroidConstants.ammoItemList:
-            pickupsList.append(PickupPlacementData(SuperMetroidConstants.defaultAmmoItemToQuantity[itemName], itemIndex, itemName))
+            pickupsList.append(
+                PickupPlacementData(SuperMetroidConstants.defaultAmmoItemToQuantity[itemName], itemIndex, itemName)
+            )
         else:
             pickupsList.append(PickupPlacementData(1, itemIndex, itemName))
     return pickupsList
+
 
 # This is just a python function that applies a modified version of
 # Kazuto's More_Efficient_PLM_Items.asm patch without an assembler.
@@ -267,16 +329,16 @@ def genVanillaGame():
 def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Where we start writing our data in the actual file.
     # Inclusive - first byte written here.
-    inFileInitialOffset     = "026099"
+    inFileInitialOffset = "026099"
 
     # Where the game believes data to be at runtime.
     # Equivalent to InFileInitialOffset in placement.
     # Influences addressing.
     # Excludes the bank address, which is implicitly 84
-    inMemoryInitialOffset   = "E099"
+    inMemoryInitialOffset = "E099"
 
     # Where we start writing PLM Headers for items.
-    inFilePLMHeaderOffset   = "EED7"
+    inFilePLMHeaderOffset = "EED7"
     inMemoryPLMHeaderOffset = "026ED7"
 
     # Each item represents two bytes in each table
@@ -288,59 +350,114 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Next Address     |                                                       |Offset of prior data |                     |Prior Data Size |
 
     # Setup
-    VRAMItemNormalAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(inMemoryInitialOffset) + HexHelper.hexToInt("04"            )), 4)
-    VRAMItemBallAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemNormalAddr   ) + HexHelper.hexToInt("0C"            )), 4)
-    startAddr          = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBallAddr     ) + HexHelper.hexToInt("10"            )), 4)
-    GFXAddr            = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(startAddr            ) + HexHelper.hexToInt("0B"            )), 4)
-    gotoAddr           = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddr              ) + HexHelper.hexToInt("08"            )), 4)
-    VRAMItemBlockAddr  = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(gotoAddr             ) + HexHelper.hexToInt("08"            )), 4)
-    respawnAddr        = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBlockAddr    ) + HexHelper.hexToInt("08"            )), 4)
-    blockLoopAddr      = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(respawnAddr          ) + HexHelper.hexToInt("04"            )), 4)
-    GFXAddrB           = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockLoopAddr        ) + HexHelper.hexToInt("13"            )), 4)
-    blockGotoAddr      = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddrB             ) + HexHelper.hexToInt("10"            )), 4)
-    getItemAddr        = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockGotoAddr        ) + HexHelper.hexToInt("04"            )), 4)
-    tablePtrAddr       = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(getItemAddr          ) + HexHelper.hexToInt("05"            )), 4)
+    VRAMItemNormalAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(inMemoryInitialOffset) + HexHelper.hexToInt("04")), 4
+    )
+    VRAMItemBallAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(VRAMItemNormalAddr) + HexHelper.hexToInt("0C")), 4
+    )
+    startAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBallAddr) + HexHelper.hexToInt("10")), 4)
+    GFXAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(startAddr) + HexHelper.hexToInt("0B")), 4)
+    gotoAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddr) + HexHelper.hexToInt("08")), 4)
+    VRAMItemBlockAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(gotoAddr) + HexHelper.hexToInt("08")), 4)
+    respawnAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBlockAddr) + HexHelper.hexToInt("08")), 4
+    )
+    blockLoopAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(respawnAddr) + HexHelper.hexToInt("04")), 4)
+    GFXAddrB = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockLoopAddr) + HexHelper.hexToInt("13")), 4)
+    blockGotoAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddrB) + HexHelper.hexToInt("10")), 4)
+    getItemAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockGotoAddr) + HexHelper.hexToInt("04")), 4)
+    tablePtrAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(getItemAddr) + HexHelper.hexToInt("05")), 4)
 
     # ASM Functions
-    tableLoadFuncAddr  = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(tablePtrAddr         ) + HexHelper.hexToInt("04"            )), 4)
-    lavaRiseFuncAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(tableLoadFuncAddr    ) + HexHelper.hexToInt("1D"            )), 4)
+    tableLoadFuncAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(tablePtrAddr) + HexHelper.hexToInt("04")), 4
+    )
+    lavaRiseFuncAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(tableLoadFuncAddr) + HexHelper.hexToInt("1D")), 4
+    )
 
     # Tables
-    itemGetTableAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(lavaRiseFuncAddr     ) + HexHelper.hexToInt("07"            )), 4)
-    itemGFXTableAddr   = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemGetTableAddr     ) + HexHelper.hexToInt(itemGetTableSize)), 4)
+    itemGetTableAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(lavaRiseFuncAddr) + HexHelper.hexToInt("07")), 4
+    )
+    itemGFXTableAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(itemGetTableAddr) + HexHelper.hexToInt(itemGetTableSize)), 4
+    )
 
     # Item Data
-    itemPLMDataAddr    = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemGFXTableAddr     ) + HexHelper.hexToInt(itemGFXTableSize)), 4)
+    itemPLMDataAddr = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(itemGFXTableAddr) + HexHelper.hexToInt(itemGFXTableSize)), 4
+    )
 
     # Write Data
     # Setup
     # Don't bother reading this, it's a 1 for 1 recreation of the Setup portion of Kazuto's asm file.
     # Or at least it should be.
     f.seek(HexHelper.hexToInt(inFileInitialOffset))
-    f.write(HexHelper.hexToData(HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGFXTableAddr)))
+    f.write(
+        HexHelper.hexToData(
+            HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGFXTableAddr)
+        )
+    )
     # VRAMItem_Normal
-    f.write(HexHelper.hexToData("7C88A9DF2E8A"                                 + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2487"         + HexHelper.reverseEndianness(startAddr)))
+    f.write(
+        HexHelper.hexToData(
+            "7C88A9DF2E8A"
+            + HexHelper.reverseEndianness(inMemoryInitialOffset)
+            + "2487"
+            + HexHelper.reverseEndianness(startAddr)
+        )
+    )
     # VRAMItem_Ball
-    f.write(HexHelper.hexToData("7C88A9DF2E8A"                                 + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2E8AAFDF2E8AC7DF"))
+    f.write(
+        HexHelper.hexToData("7C88A9DF2E8A" + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2E8AAFDF2E8AC7DF")
+    )
     # Start
-    f.write(HexHelper.hexToData("248A"                                         + HexHelper.reverseEndianness(gotoAddr)              + "C18689DF4E8716"))
+    f.write(HexHelper.hexToData("248A" + HexHelper.reverseEndianness(gotoAddr) + "C18689DF4E8716"))
     # .Gfx (1)
-    f.write(HexHelper.hexToData("4FE067E02487"                                 + HexHelper.reverseEndianness(GFXAddr)))
+    f.write(HexHelper.hexToData("4FE067E02487" + HexHelper.reverseEndianness(GFXAddr)))
     # Goto
-    f.write(HexHelper.hexToData("248AA9DF2487"                                 + HexHelper.reverseEndianness(getItemAddr)))
+    f.write(HexHelper.hexToData("248AA9DF2487" + HexHelper.reverseEndianness(getItemAddr)))
     # VRAMItem_Block
-    f.write(HexHelper.hexToData("2E8A"                                         + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2487"         + HexHelper.reverseEndianness(blockLoopAddr)))
+    f.write(
+        HexHelper.hexToData(
+            "2E8A"
+            + HexHelper.reverseEndianness(inMemoryInitialOffset)
+            + "2487"
+            + HexHelper.reverseEndianness(blockLoopAddr)
+        )
+    )
     # Respawn
     f.write(HexHelper.hexToData("2E8A32E0"))
     # BlockLoop
-    f.write(HexHelper.hexToData("2E8A07E07C88"                                 + HexHelper.reverseEndianness(respawnAddr)           + "248A"         + HexHelper.reverseEndianness(blockGotoAddr) + "C18689DF4E8716"))
+    f.write(
+        HexHelper.hexToData(
+            "2E8A07E07C88"
+            + HexHelper.reverseEndianness(respawnAddr)
+            + "248A"
+            + HexHelper.reverseEndianness(blockGotoAddr)
+            + "C18689DF4E8716"
+        )
+    )
     # .Gfx (2)
-    f.write(HexHelper.hexToData("4FE067E03F87"                                 + HexHelper.reverseEndianness(GFXAddrB)              + "2E8A20E02487" + HexHelper.reverseEndianness(blockLoopAddr)))
+    f.write(
+        HexHelper.hexToData(
+            "4FE067E03F87"
+            + HexHelper.reverseEndianness(GFXAddrB)
+            + "2E8A20E02487"
+            + HexHelper.reverseEndianness(blockLoopAddr)
+        )
+    )
     # BlockGoto
-    f.write(HexHelper.hexToData("248A"                                         + HexHelper.reverseEndianness(respawnAddr)))
+    f.write(HexHelper.hexToData("248A" + HexHelper.reverseEndianness(respawnAddr)))
     # GetItem
     f.write(HexHelper.hexToData("9988DD8B02"))
-    f.write(HexHelper.hexToData(HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGetTableAddr)))
+    f.write(
+        HexHelper.hexToData(
+            HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGetTableAddr)
+        )
+    )
 
     # ASM Functions
     # LoadItemTable
@@ -350,30 +467,36 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
 
     # Item Tables
     # Initial item table hexstrings.
-    itemTableBytes  = ""
-    GFXTableBytes   = ""
+    itemTableBytes = ""
+    GFXTableBytes = ""
 
     # Size of the data pointed to for each entry.
-    itemGetLength   = "07"
-    itemGFXLength   = "0E"
+    itemGetLength = "07"
+    itemGFXLength = "0E"
     itemTotalLength = HexHelper.intToHex(HexHelper.hexToInt(itemGetLength) + HexHelper.hexToInt(itemGFXLength))
 
     # Pointers to next item PLM data
     itemNextGetData = itemPLMDataAddr
-    itemNextGFXData = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemPLMDataAddr) + HexHelper.hexToInt(itemGetLength)), 4)
+    itemNextGFXData = HexHelper.padHex(
+        HexHelper.intToHex(HexHelper.hexToInt(itemPLMDataAddr) + HexHelper.hexToInt(itemGetLength)), 4
+    )
 
     # Get table bytes one item at a time.
     for itemType in itemTypesList:
         # Add bytes to tables
         itemTableBytes += HexHelper.reverseEndianness(itemNextGetData)
-        GFXTableBytes  += HexHelper.reverseEndianness(itemNextGFXData)
+        GFXTableBytes += HexHelper.reverseEndianness(itemNextGFXData)
         # Increment Data Pointers
-        itemNextGetData = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemNextGetData) + HexHelper.hexToInt(itemTotalLength)), 4)
-        itemNextGFXData = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(itemNextGFXData) + HexHelper.hexToInt(itemTotalLength)), 4)
+        itemNextGetData = HexHelper.padHex(
+            HexHelper.intToHex(HexHelper.hexToInt(itemNextGetData) + HexHelper.hexToInt(itemTotalLength)), 4
+        )
+        itemNextGFXData = HexHelper.padHex(
+            HexHelper.intToHex(HexHelper.hexToInt(itemNextGFXData) + HexHelper.hexToInt(itemTotalLength)), 4
+        )
 
     # Write tables to file
     f.write(HexHelper.hexToData(itemTableBytes))
-    f.write(HexHelper.hexToData(GFXTableBytes ))
+    f.write(HexHelper.hexToData(GFXTableBytes))
 
     # Item PLM Data
     # This acquire data should do nothing but display a message box.
@@ -389,7 +512,7 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     genericAcquireData = "F3880000133A8A"
     for itemType in itemTypesList:
         # Construct the item's graphics data.
-        currentItemGFXData  = "6487"
+        currentItemGFXData = "6487"
         currentItemGFXData += itemType.GFXOffset
         for paletteByte in itemType.paletteBytes:
             currentItemGFXData += paletteByte
@@ -397,7 +520,7 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
         try:
             assert (len(currentItemGFXData) // 2) == HexHelper.hexToInt(itemGFXLength)
         except:
-            errorMsg  = f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}(0x{HexHelper.padHex(HexHelper.intToHex(len(currentItemGFXData)), 2)})."
+            errorMsg = f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}(0x{HexHelper.padHex(HexHelper.intToHex(len(currentItemGFXData)), 2)})."
             print(errorMsg)
             return
         # Write to file
@@ -407,8 +530,8 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Now we write out the PLM Header Data
     f.seek(HexHelper.hexToInt(inMemoryPLMHeaderOffset))
     normalItemHex = "64EE" + HexHelper.reverseEndianness(VRAMItemNormalAddr)
-    ballItemHex   = "64EE" + HexHelper.reverseEndianness(VRAMItemBallAddr)
-    blockItemHex  = "8EEE" + HexHelper.reverseEndianness(VRAMItemBlockAddr)
+    ballItemHex = "64EE" + HexHelper.reverseEndianness(VRAMItemBallAddr)
+    blockItemHex = "8EEE" + HexHelper.reverseEndianness(VRAMItemBlockAddr)
     for itemType in itemTypesList:
         f.write(HexHelper.hexToData(normalItemHex))
     for itemType in itemTypesList:
@@ -422,8 +545,9 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
         f.write(f2.read())
     return inFilePLMHeaderOffset
 
+
 # Places the items into the game.
-def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerName = None):
+def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerName=None):
     # Initialize MessageBoxGenerator
     messageBoxGenerator = MessageBoxGenerator(f)
 
@@ -432,54 +556,54 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     # Locations of item sprites
     # Stored little-endian
     nativeItemSpriteLocations = {
-        "Energy Tank"             : "0091",
-        "Missile Expansion"       : "0092",
-        "Super Missile Expansion" : "0093",
-        "Power Bomb Expansion"    : "0094",
-        "Morph Ball Bombs"        : "0080",
-        "Charge Beam"             : "008B",
-        "Ice Beam"                : "008C",
-        "Hi-Jump Boots"           : "0084",
-        "Speed Booster"           : "008A",
-        "Wave Beam"               : "008D",
-        "Spazer Beam"             : "008F",
-        "Spring Ball"             : "0082",
-        "Varia Suit"              : "0083",
-        "Gravity Suit"            : "0081",
-        "X-Ray Scope"             : "0089",
-        "Plasma Beam"             : "008E",
-        "Grapple Beam"            : "0088",
-        "Space Jump"              : "0086",
-        "Screw Attack"            : "0085",
-        "Morph Ball"              : "0087",
-        "Reserve Tank"            : "0090"
+        "Energy Tank": "0091",
+        "Missile Expansion": "0092",
+        "Super Missile Expansion": "0093",
+        "Power Bomb Expansion": "0094",
+        "Morph Ball Bombs": "0080",
+        "Charge Beam": "008B",
+        "Ice Beam": "008C",
+        "Hi-Jump Boots": "0084",
+        "Speed Booster": "008A",
+        "Wave Beam": "008D",
+        "Spazer Beam": "008F",
+        "Spring Ball": "0082",
+        "Varia Suit": "0083",
+        "Gravity Suit": "0081",
+        "X-Ray Scope": "0089",
+        "Plasma Beam": "008E",
+        "Grapple Beam": "0088",
+        "Space Jump": "0086",
+        "Screw Attack": "0085",
+        "Morph Ball": "0087",
+        "Reserve Tank": "0090",
     }
 
     # None indicates default palette
     # Item Palettes for native sprites
     # None is eqv. to all 0's.
     nativeItemPalettes = {
-        "Energy Tank"             : None,
-        "Missile Expansion"       : None,
-        "Super Missile Expansion" : None,
-        "Power Bomb Expansion"    : None,
-        "Morph Ball Bombs"        : None,
-        "Charge Beam"             : None,
-        "Ice Beam"                : ["00", "03", "00", "00", "00", "03", "00", "00"],
-        "Hi-Jump Boots"           : None,
-        "Speed Booster"           : None,
-        "Wave Beam"               : ["00", "02", "00", "00", "00", "02", "00", "00"],
-        "Spazer Beam"             : None,
-        "Spring Ball"             : None,
-        "Varia Suit"              : None,
-        "Gravity Suit"            : None,
-        "X-Ray Scope"             : ["01", "01", "00", "00", "03", "03", "00", "00"],
-        "Plasma Beam"             : ["00", "01", "00", "00", "00", "01", "00", "00"],
-        "Grapple Beam"            : None,
-        "Space Jump"              : None,
-        "Screw Attack"            : None,
-        "Morph Ball"              : None,
-        "Reserve Tank"            : None
+        "Energy Tank": None,
+        "Missile Expansion": None,
+        "Super Missile Expansion": None,
+        "Power Bomb Expansion": None,
+        "Morph Ball Bombs": None,
+        "Charge Beam": None,
+        "Ice Beam": ["00", "03", "00", "00", "00", "03", "00", "00"],
+        "Hi-Jump Boots": None,
+        "Speed Booster": None,
+        "Wave Beam": ["00", "02", "00", "00", "00", "02", "00", "00"],
+        "Spazer Beam": None,
+        "Spring Ball": None,
+        "Varia Suit": None,
+        "Gravity Suit": None,
+        "X-Ray Scope": ["01", "01", "00", "00", "03", "03", "00", "00"],
+        "Plasma Beam": ["00", "01", "00", "00", "00", "01", "00", "00"],
+        "Grapple Beam": None,
+        "Space Jump": None,
+        "Screw Attack": None,
+        "Morph Ball": None,
+        "Reserve Tank": None,
     }
 
     # TODO: Add a placeholder-type sprite to available native graphics sprites
@@ -490,14 +614,22 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
         if not pickup.itemName in itemTypes:
             if pickup.nativeGraphics:
                 if pickup.nativeSpriteName == "Default":
-                    itemTypes[pickup.itemName] = ItemType(pickup.itemName, nativeItemSpriteLocations[pickup.itemName], nativeItemPalettes[pickup.itemName])
+                    itemTypes[pickup.itemName] = ItemType(
+                        pickup.itemName, nativeItemSpriteLocations[pickup.itemName], nativeItemPalettes[pickup.itemName]
+                    )
                 else:
-                    itemTypes[pickup.itemName] = ItemType(pickup.itemName, nativeItemSpriteLocations[pickup.nativeSpriteName], nativeItemPalettes[pickup.nativeSpriteName])
+                    itemTypes[pickup.itemName] = ItemType(
+                        pickup.itemName,
+                        nativeItemSpriteLocations[pickup.nativeSpriteName],
+                        nativeItemPalettes[pickup.nativeSpriteName],
+                    )
             else:
-                #TODO: Patch pickup graphics into ROM from file
-                #TODO: Add message box generation
+                # TODO: Patch pickup graphics into ROM from file
+                # TODO: Add message box generation
                 itemGfxAdded[pickup.itemName] = pickup.graphicsFileName
-                nextPickupGFXDataLocation = HexHelper.padHex(HexHelper.intToHex(hexHelper.hexToInt(nextPickupGFXDataLocation) + 1), 4)
+                nextPickupGFXDataLocation = HexHelper.padHex(
+                    HexHelper.intToHex(hexHelper.hexToInt(nextPickupGFXDataLocation) + 1), 4
+                )
                 pass
 
     # FOR MULTIWORLD
@@ -508,18 +640,16 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     # WIP
     # nextPLMId = "EF2B"
     # for item in itemsInOrderList:
-        # if not(item in itemPLMIDs):
-            # itemPLMIDs[item] = nextPLMId
+    # if not(item in itemPLMIDs):
+    # itemPLMIDs[item] = nextPLMId
 
-            # itemMessageIDs[item] = itemMessageIDs["Wave Beam"]
-            # itemMessageWidths[item] = "Small"
+    # itemMessageIDs[item] = itemMessageIDs["Wave Beam"]
+    # itemMessageWidths[item] = "Small"
 
-            # itemMessageAddresses = None #TODO - Create these dynamically.
+    # itemMessageAddresses = None #TODO - Create these dynamically.
 
-
-            # itemTypes.append(ItemType(item, ))
-            # nextPLMId = HexHelper.intToHex(HexHelper.hexToInt(nextPLMId) + 4)
-
+    # itemTypes.append(ItemType(item, ))
+    # nextPLMId = HexHelper.intToHex(HexHelper.hexToInt(nextPLMId) + 4)
 
     itemTypeList = itemTypes.values()
     plmHeaderOffset = writeKazutoMoreEfficientItemsHack(f, itemTypeList)
@@ -539,22 +669,24 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
 
     # Patch ROM.
     # This part of the code is ugly as sin, I apologize.
-    spoilerPath = filePath[:filePath.rfind(".")] + "_SPOILER.txt"
+    spoilerPath = filePath[: filePath.rfind(".")] + "_SPOILER.txt"
     print("Spoiler file generating at " + spoilerPath + "...")
-    spoilerFile = open(spoilerPath, 'w')
+    spoilerFile = open(spoilerPath, "w")
     for i, item in enumerate(pickupDataList):
         patcherIndex = SuperMetroidConstants.itemIndexList.index(item.pickupIndex)
         # Write PLM Data.
         f.seek(HexHelper.hexToInt(SuperMetroidConstants.itemPLMLocationList[patcherIndex]))
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
-        if (item.itemName == "No Item"):
+        if item.itemName == "No Item":
             PLMID = HexHelper.hexToInt(itemPLMIDs[item.itemName])
-            PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
+            PLMHexadecimalID = bytes.fromhex(format(PLMID, "x"))[::-1]
             f.write(PLMHexadecimalID)
             continue
-        PLMID = HexHelper.hexToInt(itemPLMIDs[item.itemName]) + (HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * SuperMetroidConstants.itemPLMBlockTypeList[patcherIndex])
-        PLMHexadecimalID = bytes.fromhex(format(PLMID, 'x'))[::-1]
+        PLMID = HexHelper.hexToInt(itemPLMIDs[item.itemName]) + (
+            HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * SuperMetroidConstants.itemPLMBlockTypeList[patcherIndex]
+        )
+        PLMHexadecimalID = bytes.fromhex(format(PLMID, "x"))[::-1]
         f.write(PLMHexadecimalID)
 
         # Write Message Box Data.
@@ -569,7 +701,9 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
         # See documentation on memory alterations at the top of this document.
 
         # Each table entry is two bytes wide, hence the doubling.
-        memoryBaseLocation = HexHelper.hexToInt("029A00") + (HexHelper.hexToInt(SuperMetroidConstants.itemLocationList[patcherIndex]) * 2)
+        memoryBaseLocation = HexHelper.hexToInt("029A00") + (
+            HexHelper.hexToInt(SuperMetroidConstants.itemLocationList[patcherIndex]) * 2
+        )
         f.seek(memoryBaseLocation)
         # TODO: Handle width and height separately.
         if item.itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
@@ -599,18 +733,18 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
                 effectiveItemName = f"{item.itemName} {item.quantityGiven}"
             f.write(HexHelper.hexToData(itemGetRoutineAddressesDict[effectiveItemName]))
 
-
         # Write spoiler log
         spoilerFile.write(f"{SuperMetroidConstants.locationNamesList[patcherIndex]}: {item.itemName}\n")
     spoilerFile.close()
 
-def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = None, **kwargs):
+
+def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **kwargs):
     # Open ROM File
-    f = open(ROMFilePath, 'r+b', buffering = 0)
+    f = open(ROMFilePath, "r+b", buffering=0)
     # Open Patcher Data Output File
-    patcherOutputPath = filePath[:filePath.rfind(".")] + "_PatcherData.json"
-    patcherOutput = open(patcherOutputPath, 'w')
-    patcherOutputJson = {"patcherData" : []}
+    patcherOutputPath = filePath[: filePath.rfind(".")] + "_PatcherData.json"
+    patcherOutput = open(patcherOutputPath, "w")
+    patcherOutputJson = {"patcherData": []}
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
@@ -642,8 +776,10 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # getMessageHeaderRoutine = -gma
     # getMessageContentRoutine = -dlt
     onPickupFoundRoutine = "8D1F1CC91C00F00AC914009006C91900B00160AF74FF7FC90100D01CAF7CFF7F8D1F1CA500DA48AF7EFF7F850068A20000FC0000FA8500605ADAA22000BF6ED87E9FCEFF7FCACAE00000D0F1AFD0FF7F38EFB0FF7FC90000F0278F8EFF7FA90100CF8EFF7FF01AC90080080A28D0F2A22000A90000EA9FAEFF7FCACAE00000D0F1A22000BFCEFF7F38FFAEFF7F9F8EFF7FCACAE00000D0ECA0F000A22000BF8EFF7FC90000D00A9838E91000A8CACA80EDBFCEFF7F9FAEFF7FBF8EFF7FC90100F004C84A80F7980A8F8EFF7FAABD00A08D1F1CFC00A2FA7A60"
-    getMessageHeaderDataRoutine  = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
-    getMessageHeaderRoutine = "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
+    getMessageHeaderDataRoutine = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
+    getMessageHeaderRoutine = (
+        "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
+    )
     getMessageContentRoutine = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
 
     routines = [onPickupFoundRoutine, getMessageHeaderDataRoutine, getMessageHeaderRoutine, getMessageContentRoutine]
@@ -655,7 +791,7 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # Calculate routine addresses
     for i in range(len(routines)):
         routineAddresses.append(HexHelper.reverseEndianness(inGameAddress))
-        inGameAddress   = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routines[i]) // 2))
+        inGameAddress = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routines[i]) // 2))
         currentAddress += int(len(routines[i]) // 2)
 
     # Replace subroutine references with their addresses and write them to the ROM file.
@@ -671,44 +807,42 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # This is why passing items from multiworld session that this player receives is necessary.
     # availableItemGetRoutinesDict = {}
 
-    beamBitFlagsDict       = {
-        "Charge Beam" : "1000",
-        "Ice Beam"    : "0002",
-        "Wave Beam"   : "0001",
-        "Spazer Beam" : "0004",
-        "Plasma Beam" : "0008"
+    beamBitFlagsDict = {
+        "Charge Beam": "1000",
+        "Ice Beam": "0002",
+        "Wave Beam": "0001",
+        "Spazer Beam": "0004",
+        "Plasma Beam": "0008",
     }
 
     equipmentBitFlagsDict = {
-        "Varia Suit"       : "0001",
-        "Spring Ball"      : "0002",
-        "Morph Ball"       : "0004",
-        "Screw Attack"     : "0008",
-        "Hi-Jump Boots"    : "0100",
-        "Space Jump"       : "0200",
-        "Speed Booster"    : "2000",
-        "Morph Ball Bombs" : "1000",
-        "Gravity Suit"     : "0020"
+        "Varia Suit": "0001",
+        "Spring Ball": "0002",
+        "Morph Ball": "0004",
+        "Screw Attack": "0008",
+        "Hi-Jump Boots": "0100",
+        "Space Jump": "0200",
+        "Speed Booster": "2000",
+        "Morph Ball Bombs": "1000",
+        "Gravity Suit": "0020",
     }
 
     ammoGetTemplates = {
-        "Energy Tank"             : "ADC4091869-qty8DC4098DC20960",
-        "Reserve Tank"            : "ADD4091869-qty8DD409ADC009D003EEC00960",
-        "Missile Expansion"       : "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
-        "Super Missile Expansion" : "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
-        "Power Bomb Expansion"    : "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060"
+        "Energy Tank": "ADC4091869-qty8DC4098DC20960",
+        "Reserve Tank": "ADD4091869-qty8DD409ADC009D003EEC00960",
+        "Missile Expansion": "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
+        "Super Missile Expansion": "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
+        "Power Bomb Expansion": "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060",
     }
 
     # For new ammo-type items.
-    customAmmoGetTemplates = {
-
-    }
+    customAmmoGetTemplates = {}
 
     # Make all the get routines and templates.
-    grappleGet           = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
-    xRayGet              = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
+    grappleGet = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
+    xRayGet = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
     equipmentGetTemplate = "ADA20909-eqp8DA209ADA40909-eqp8DA40960"
-    beamGetTemplate      = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
+    beamGetTemplate = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
 
     # Note that if items appear more than once with different implementations, things will break horribly.
     # If you want major items with different effects, give them a new name -
@@ -717,9 +851,9 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     # Will still try its damnedest if you give it conflicting info, but can't give multiple effects to an item that it thinks is the same.
     # This is why ammo item names have the quantity appended to them - since having differing quantities makes them effectively different items.
     equipmentGets = {}
-    equipmentGets["X-Ray Scope"]  = xRayGet
+    equipmentGets["X-Ray Scope"] = xRayGet
     equipmentGets["Grapple Beam"] = grappleGet
-    for itemName, bitFlags  in equipmentBitFlagsDict.items():
+    for itemName, bitFlags in equipmentBitFlagsDict.items():
         equipmentGets[itemName] = equipmentGetTemplate.replace("-eqp", HexHelper.reverseEndianness(bitFlags))
     for itemName, bitFlags in beamBitFlagsDict.items():
         equipmentGets[itemName] = beamGetTemplate.replace("-eqp", HexHelper.reverseEndianness(bitFlags))
@@ -733,16 +867,28 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
                     if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
                         print(f"{pickup.itemName} {pickup.quantityGiven}")
-                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = ammoGetTemplates[pickup.itemName].replace("-qty", HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven), 4)))
+                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = ammoGetTemplates[
+                            pickup.itemName
+                        ].replace(
+                            "-qty",
+                            HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven), 4)),
+                        )
                 elif pickup.itemName in SuperMetroidConstants.toggleItemList:
                     if not pickup.itemName in itemGetRoutinesDict:
                         itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.itemName]
                 else:
-                    print("ERROR: Cannot specify itemPickupEffect as \"Default\" for an item which does not exist in the vanilla game.")
+                    print(
+                        'ERROR: Cannot specify itemPickupEffect as "Default" for an item which does not exist in the vanilla game.'
+                    )
             else:
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
                     if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
-                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = customAmmoGetTemplates[pickup.pickupItemEffect].replace("-qty", HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven)), 4))
+                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = customAmmoGetTemplates[
+                            pickup.pickupItemEffect
+                        ].replace(
+                            "-qty",
+                            HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven)), 4),
+                        )
                 elif pickup.itemName in SuperMetroidConstants.toggleItemList:
                     # Overwrite vanilla behavior for this item if vanilla.
                     # Otherwise add new item effect for the item type.
@@ -753,7 +899,6 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
                     # Otherwise add new effect
                 else:
                     print("ERROR: Custom item pickup behaviors are not yet implemented.")
-
 
     # This is a command that will do nothing, used for items that are meant to go to other players.
     # 60 is hex for the RTS instruction. In other words when called it will immediately return.
@@ -770,21 +915,23 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     passedTables = False
     for itemName, routine in itemGetRoutinesDict.items():
         # Don't overwrite the tables
-        if (HexHelper.hexToInt(inGameAddress) + int(len(routine) // 2)) >= HexHelper.hexToInt("9A00") and not passedTables:
+        if (HexHelper.hexToInt(inGameAddress) + int(len(routine) // 2)) >= HexHelper.hexToInt(
+            "9A00"
+        ) and not passedTables:
             f.seek(HexHelper.hexToInt("2A400"))
             inGameAddress = "A400"
             passedTables = True
         itemGetRoutineAddressesDict[itemName] = HexHelper.reverseEndianness(inGameAddress)
         f.write(HexHelper.hexToData(routine))
-        inGameAddress   = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routine) // 2))
+        inGameAddress = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routine) // 2))
         currentAddress += int(len(routine) // 2)
 
     # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
     for (itemName, routineAddress) in itemGetRoutineAddressesDict.items():
-        itemRoutinesJsonOutput.append({"itemName" : itemName, "routineAddress" : routineAddress})
+        itemRoutinesJsonOutput.append({"itemName": itemName, "routineAddress": routineAddress})
         print(itemName + " has routine address " + routineAddress)
-    patcherOutputJson["patcherData"].append({"itemRoutines" : itemRoutinesJsonOutput})
+    patcherOutputJson["patcherData"].append({"itemRoutines": itemRoutinesJsonOutput})
 
     # Patch Item Placements into the ROM.
     placeItems(f, ROMFilePath, itemGetRoutineAddressesDict, itemList)
@@ -795,7 +942,7 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
 
     # Modify Message Box Routines To Allow Customizable Behavior
     overwriteJSRToPickupRoutine = "20-alp"
-    overwriteGetMessageHeaderRoutine  = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
+    overwriteGetMessageHeaderRoutine = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
     overwriteJSRToGetMessageRoutine = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
     overwriteJSRToGetHeaderRoutine = "205A82"
 
@@ -845,18 +992,28 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
         overwriteRoutines.extend([introRoutine])
         overwriteRoutineAddresses.extend([introRoutineAddress])
 
-
-    overwriteRoutines.extend([overwriteJSRToPickupRoutine, overwriteGetMessageHeaderRoutine, overwriteJSRToGetMessageRoutine, overwriteJSRToGetHeaderRoutine])
-    overwriteRoutineAddresses.extend([overwriteJSRToPickupRoutineAddress, overwriteGetMessageHeaderRoutineAddress, overwriteJSRToGetMessageRoutineAddress, overwriteJSRToGetHeaderRoutineAddress])
+    overwriteRoutines.extend(
+        [
+            overwriteJSRToPickupRoutine,
+            overwriteGetMessageHeaderRoutine,
+            overwriteJSRToGetMessageRoutine,
+            overwriteJSRToGetHeaderRoutine,
+        ]
+    )
+    overwriteRoutineAddresses.extend(
+        [
+            overwriteJSRToPickupRoutineAddress,
+            overwriteGetMessageHeaderRoutineAddress,
+            overwriteJSRToGetMessageRoutineAddress,
+            overwriteJSRToGetHeaderRoutineAddress,
+        ]
+    )
 
     # Apply static patches.
     # Many of these patches are provided by community members -
     # See top of document for details.
     # Dictionary of files associated with static patch names:
-    staticPatchDict = {
-        "InstantG4" : "Patches/g4_skip.ips",
-        "MaxAmmoDisplay" : "Patches/max_ammo_display.ips"
-    }
+    staticPatchDict = {"InstantG4": "Patches/g4_skip.ips", "MaxAmmoDisplay": "Patches/max_ammo_display.ips"}
     if "staticPatches" in kwargs:
         staticPatches = kwargs["staticPatches"]
         for patch in staticPatches:
@@ -864,7 +1021,6 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
                 IPSPatcher.applyIPSPatch(staticPatchDict[patch], ROMFilePath)
             else:
                 print(f"Provided patch {patch} does not exist!")
-
 
     # Replace references with actual addresses.
     for i in range(len(overwriteRoutines)):
@@ -892,7 +1048,6 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
 
     # Routines to append to bank $83.
 
-
     multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
     multiworldRoutineAddressStart = "01AD66"
 
@@ -907,16 +1062,25 @@ def patchROM(ROMFilePath, itemList = None, playerName = None, recipientList = No
     f.close()
     print("ROM modified successfully.")
 
+
 if __name__ == "__main__":
     # Build in this to make it faster to run.
     # Saves me some time.
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
-        f = open(os.getcwd() + "\\romfilepath.txt", 'r')
+        f = open(os.getcwd() + "\\romfilepath.txt", "r")
         filePath = f.readline().rstrip()
         f.close()
     else:
-        print("Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program.")
+        print(
+            "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
+        )
         filePath = input()
     patchesToApply = ["InstantG4", "MaxAmmoDisplay"]
-    patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", staticPatches = patchesToApply)
-    #patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", customSaveStart = ["Brinstar", 0])
+    patchROM(
+        filePath,
+        None,
+        startingItems=["Morph Ball", "Reserve Tank", "Energy Tank"],
+        introOptionChoice="Skip Intro And Ceres",
+        staticPatches=patchesToApply,
+    )
+    # patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", customSaveStart = ["Brinstar", 0])

@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=44.0.0", "wheel>=0.34.2", "Cython>=3.0a7"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 120
+target-version = ['py37']
+extend-exclude = '''
+SM_Room_Header_Data.py
+'''

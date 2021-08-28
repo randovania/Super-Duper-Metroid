@@ -1,6 +1,5 @@
-import sys
-import os
-from hexhelper import HexHelper
+from SuperDuperMetroid.hexhelper import HexHelper
+
 
 class IPSPatcher:
     # Read the next hunk's data and apply it to the ROM file.
@@ -8,9 +7,9 @@ class IPSPatcher:
     def readAndApplyHunk(ipsFile, romFile):
         # Get the offset field
         offsetField = HexHelper.dataToHex(ipsFile.read(3))
-        #print(offsetField)
+        # print(offsetField)
         # If EOF, return False
-        if offsetField == "454F46": # Spells out "EOF"
+        if offsetField == "454F46":  # Spells out "EOF"
             print("Reached EOF successfully, finishing IPS patch...")
             return False
         # Get the length field
@@ -35,7 +34,7 @@ class IPSPatcher:
     @staticmethod
     def verifyFormat(ipsFile):
         verificationBytes = HexHelper.dataToHex(ipsFile.read(5))
-        if verificationBytes == "5041544348": # Spells out "PATCH"
+        if verificationBytes == "5041544348":  # Spells out "PATCH"
             return True
         else:
             return False
@@ -45,8 +44,8 @@ class IPSPatcher:
     def applyIPSPatch(ipsPath, romPath):
         print(f"Applying patch from file {ipsPath}...")
         ipsFile = open(ipsPath, "rb")
-        romFile = open(romPath, 'r+b', buffering = 0)
-        if (IPSPatcher.verifyFormat(ipsFile)):
+        romFile = open(romPath, "r+b", buffering=0)
+        if IPSPatcher.verifyFormat(ipsFile):
             while IPSPatcher.readAndApplyHunk(ipsFile, romFile):
                 pass
             print(f"Finished applying patch {ipsPath} successfully.")
@@ -54,6 +53,7 @@ class IPSPatcher:
             print(f"CRITICAL ERROR: Provided IPS file {ipsPath} does not match the format specification!")
         ipsFile.close()
         romFile.close()
+
 
 if __name__ == "__main__":
     print("Enter path to IPS file.")

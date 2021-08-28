@@ -30,56 +30,56 @@
 #   -Item Routine Address Dict
 #   -List of non-vanilla items in game
 
-import threading
 import json
-import pprint
-import websocket
-import time
-import sys
 import os
+import sys
+import threading
+import time
+
+from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.hexhelper import HexHelper
 from websocket import create_connection
-from hexhelper import HexHelper
-from SM_Constants import SuperMetroidConstants
+
 
 class SuperMetroidInterface:
-    
+
     # These get imported dynamically from a JSON file created by the patcher.
     # This is necessary because these may not always be in the same place every game.
     itemRoutineDict = {
-        "Energy Tank"             : None,
-        "Missile Expansion"       : None,
-        "Super Missile Expansion" : None,
-        "Power Bomb Expansion"    : None,
-        "Grapple Beam"            : None,
-        "X-Ray Scope"             : None,
-        "Varia Suit"              : None,
-        "Spring Ball"             : None,
-        "Morph Ball"              : None,
-        "Screw Attack"            : None,
-        "Hi-Jump Boots"           : None,
-        "Space Jump"              : None,
-        "Speed Booster"           : None,
-        "Charge Beam"             : None,
-        "Ice Beam"                : None,
-        "Wave Beam"               : None,
-        "Spazer Beam"             : None,
-        "Plasma Beam"             : None,
-        "Morph Ball Bombs"        : None,
-        "Reserve Tank"            : None,
-        "Gravity Suit"            : None,
-        "No Item"                 : None
+        "Energy Tank": None,
+        "Missile Expansion": None,
+        "Super Missile Expansion": None,
+        "Power Bomb Expansion": None,
+        "Grapple Beam": None,
+        "X-Ray Scope": None,
+        "Varia Suit": None,
+        "Spring Ball": None,
+        "Morph Ball": None,
+        "Screw Attack": None,
+        "Hi-Jump Boots": None,
+        "Space Jump": None,
+        "Speed Booster": None,
+        "Charge Beam": None,
+        "Ice Beam": None,
+        "Wave Beam": None,
+        "Spazer Beam": None,
+        "Plasma Beam": None,
+        "Morph Ball Bombs": None,
+        "Reserve Tank": None,
+        "Gravity Suit": None,
+        "No Item": None,
     }
-    
+
     # TODO: Find a clean way to send dynamically generated item list to interface from patcher, as multiworld will later involve dynamically adding items to the game, and these may be ordered differently for different players.
     # TODO: Import ammo per item from the patcher
-    
-    obtainedToggleItems  = []
-    equippedToggleItems  = []
-    
+
+    obtainedToggleItems = []
+    equippedToggleItems = []
+
     ammoItemsHeldList = []
     ammoItemCurrentCount = []
     ammoItemMaximumCount = []
-    
+
     webSocket = None
     # If true, player has booted game and connection has been initialized.
     connectionInitialized = False
@@ -96,11 +96,11 @@ class SuperMetroidInterface:
     playingGame = False
     # List of things about the device, such as device type, last known game, and system capabilities.
     deviceInfo = None
-    
+
     lastLocationsCheckedBitflags = None
-    
+
     lock = threading.Lock()
-    inGameInvokeEventThread  = None
+    inGameInvokeEventThread = None
     pollLocationChecksThread = None
     # Format of a queued event:
     # Will check to see if args or kwargs are not present, will omit them if this is the case.
@@ -108,9 +108,9 @@ class SuperMetroidInterface:
     # Just set unused things to be either empty or None
     # [function, [arg1, arg2, ...], {kw1 : kwarg1, kw2 : kwarg2, ...}]
     queuedEvents = []
-    
+
     # Small routines used to wrap simple operations for readability.
-    
+
     # Load necessary data from patcher output JSON file.
     def __init__(self, patcherOutputFilePath):
         jsonFile = open(patcherOutputFilePath)
@@ -121,27 +121,23 @@ class SuperMetroidInterface:
             itemRoutineAddress = routine["routineAddress"]
             self.itemRoutineDict[itemName] = itemRoutineAddress
         jsonFile.close()
-            
-    
+
     # These methods are used to directly interface with the game.
     # They will be called by higher-level code.
     def InitializeConnection(self):
         try:
-            self.webSocket = create_connection('ws://localhost:8080')
+            self.webSocket = create_connection("ws://localhost:8080")
             print("Connection made with SNI successfully.")
             self.connectionInitialized = True
         except Exception:
             print("ERROR: Could not connect to SNI.")
-    
+
     # After connecting to SNI, get list of devices and connect to the first.
     def ConnectToDevice(self):
         if self.connectionInitialized:
             # Get devices.
-            jsonGetDevicesCommand = {
-                "Opcode" : "DeviceList",
-                "Space"  : "SNES"
-            }
-            
+            jsonGetDevicesCommand = {"Opcode": "DeviceList", "Space": "SNES"}
+
             self.webSocket.send(json.dumps(jsonGetDevicesCommand))
             result = self.webSocket.recv()
             result = (json.loads(result))["Results"]
@@ -153,105 +149,111 @@ class SuperMetroidInterface:
                 for i, device in enumerate(result):
                     print(f"\tDevice {str(i)}: {device}")
                 print("The Super Metroid interface will default to connecting to the first device listed.\n")
-            
+
             # Connect to first device.
             deviceToConnectTo = [result[0]]
-            jsonAttachToDeviceCommand = {
-                "Opcode"   : "Attach",
-                "Space"    : "SNES",
-                "Operands" : deviceToConnectTo
-            }
+            jsonAttachToDeviceCommand = {"Opcode": "Attach", "Space": "SNES", "Operands": deviceToConnectTo}
             self.webSocket.send(json.dumps(jsonAttachToDeviceCommand))
             self.VerifyConnectedToDevice()
             self.PrintDeviceInfo()
-            if(self.connectedToDevice):
+            if self.connectedToDevice:
                 print("Successfully connected to device.")
         else:
             print("ERROR: An attempt was made to connect to a device, but no connection has been made with SNI.")
-    
+
     def PrintDeviceInfo(self):
         print("Device Info:")
         for info in self.deviceInfo:
             print("\t" + info)
-    
+
     # Get data at the specified address.
     # If checkRomRead = True, check whether the read being requested would read from ROM.
     # If it would, check to see whether the system being used allows it.
     # If it doesn't, refuse to read it, throw error.
-    def GetData(self, address, numBytes, checkRomRead = True):
+    def GetData(self, address, numBytes, checkRomRead=True):
         self.VerifyConnectedToDevice()
         if self.connectedToDevice:
             if HexHelper.hexToInt(address) < HexHelper.hexToInt("F50000") and checkRomRead:
                 if "NO_ROM_READ" in self.deviceInfo:
-                    print(f"ERROR: An attempt was made to read from ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'.")
+                    print(
+                        f"ERROR: An attempt was made to read from ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'."
+                    )
                     return None
             jsonReadDataFromAddressCommand = {
-                "Opcode" : "GetAddress",
-                "Space"  : "SNES",
-                "Operands" : [address, HexHelper.intToHex(numBytes)]
+                "Opcode": "GetAddress",
+                "Space": "SNES",
+                "Operands": [address, HexHelper.intToHex(numBytes)],
             }
             self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             result = self.webSocket.recv()
             result = HexHelper.dataToHex(result)
-            #print(f"Read from address {address} was successful.")
+            # print(f"Read from address {address} was successful.")
             return result
         else:
             print("ERROR: Connection was not initialized properly before attempting to get data. Ignoring request...")
             return None
-    
+
     # Write data to the specified address.
     # If checkRomWrite = True, check whether the write being requested would write to ROM.
     # If it would, check to see whether the system being used allows it.
     # If it doesn't, refuse to write it, throw error.
-    def SetData(self, address, hexData, checkRomWrite = True):
+    def SetData(self, address, hexData, checkRomWrite=True):
         self.VerifyConnectedToDevice()
         if self.connectedToDevice:
             if HexHelper.hexToInt(address) < HexHelper.hexToInt("F50000") and checkRomWrite:
                 if "NO_ROM_WRITE" in self.deviceInfo:
-                    print(f"ERROR: An attempt was made to write to ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'.")
+                    print(
+                        f"ERROR: An attempt was made to write to ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'."
+                    )
                     return None
             # Send Put Data Opcode
             numBytes = len(hexData) // 2
             jsonReadDataFromAddressCommand = {
-                "Opcode" : "PutAddress",
-                "Space"  : "SNES",
-                "Operands" : [address, HexHelper.intToHex(numBytes)]
+                "Opcode": "PutAddress",
+                "Space": "SNES",
+                "Operands": [address, HexHelper.intToHex(numBytes)],
             }
             self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             # Send Data
             self.webSocket.send(HexHelper.hexToData(hexData))
-            #print(f"Write to address {address} was successful.")
+            # print(f"Write to address {address} was successful.")
         else:
             print("ERROR: Connection was not initialized properly before attempting to set data. Ignoring request...")
-    
+
     # Checks for an overflow, and corrects it if one has occurred.
     # Used to check values before we alter them.
     @staticmethod
-    def CheckValueOverflow(currentValue, amountToAdd, numBytes = 2):
+    def CheckValueOverflow(currentValue, amountToAdd, numBytes=2):
         correctedAmountToAdd = amountToAdd
         if currentValue + amountToAdd < 0:
-            correctedAmountToAdd += (currentValue + amountToAdd)
+            correctedAmountToAdd += currentValue + amountToAdd
         elif currentValue + amountToAdd > ((2 ^ (numBytes * 8)) - 1):
             correctedAmountToAdd = ((2 ^ (numBytes * 8)) - 1) - currentValue
         return correctedAmountToAdd
-    
+
     # Checks memory at a specific address to see if item value has overflown, corrects it if it has.
     # Used to check values after we rely on a game routine to change them.
     # This is really more of a failsafe in case people set absurd values for expansion amounts, but it won't work in singleplayer.
     # if bigToSmall is true, we're looking to see if a value has ended up smaller than it was initially. Otherwise, we're looking for the opposite.
     # Run after a small delay to allow the SNES to perform the operation.
-    def __CheckValueAtAddressOverflow(self, address, lastValue, itemName, bigToSmall = True, numBytes = 2):
+    def __CheckValueAtAddressOverflow(self, address, lastValue, itemName, bigToSmall=True, numBytes=2):
         currentValue = HexToInt(self.GetData(address))
         if currentValue == lastValue:
-            print(f"CAUTION: Value of '{itemName}' has not updated by the time it could be checked - it is possible the CPU hasn't had time to change it, or the game state may have changed.")
+            print(
+                f"CAUTION: Value of '{itemName}' has not updated by the time it could be checked - it is possible the CPU hasn't had time to change it, or the game state may have changed."
+            )
             return
         if bigToSmall and currentValue < lastValue:
-            print(f"WARNING: Value of '{itemName}' has overflowed because it became too big. This may be due to very large values being used for this item's reward amount. Setting its value to the maximum possible...")
+            print(
+                f"WARNING: Value of '{itemName}' has overflowed because it became too big. This may be due to very large values being used for this item's reward amount. Setting its value to the maximum possible..."
+            )
             self.SetData("FF" * numBytes, address)
         elif not bigToSmall and currentValue > lastValue:
-            print(f"WARNING: Value of '{itemName}' has overflowed because it became too small. This may be due to negative values being used for this item's reward amount. Setting its value to 0...")
+            print(
+                f"WARNING: Value of '{itemName}' has overflowed because it became too small. This may be due to negative values being used for this item's reward amount. Setting its value to 0..."
+            )
             self.SetData("00" * numBytes, address)
-    
+
     # Receive an item and display a message.
     # Works for all item types.
     # For ammo-type items, energy tanks, and reserve tanks, they will award whatever amount has been set in the player's patcher.
@@ -260,7 +262,7 @@ class SuperMetroidInterface:
     # Note that this will automatically equip equipment items (will not equip Spazer and Plasma simultaneously)
     # Also note that this does not error out if player is not in game. We record entries to our queue even in menus.
     # It is the job of the inGameInvokeEventThread to check whether the state is correct before giving out the items.
-    def ReceiveItem(self, itemName, sender, showMessage = True):        
+    def ReceiveItem(self, itemName, sender, showMessage=True):
         if itemName in SuperMetroidConstants.itemList:
             # Lock this part to prevent overlapping with the event handling thread.
             print("Trying to queue Receive Item Event...")
@@ -268,31 +270,33 @@ class SuperMetroidInterface:
             try:
                 self.queuedEvents.append((self.__ReceiveItemInternal, [itemName, sender, showMessage], {}))
                 if self.inGameInvokeEventThread is None or not self.inGameInvokeEventThread.is_alive():
-                    self.inGameInvokeEventThread = threading.Thread(target = self.__InvokeInGameEvents)
+                    self.inGameInvokeEventThread = threading.Thread(target=self.__InvokeInGameEvents)
                     self.inGameInvokeEventThread.daemon = True
                     self.inGameInvokeEventThread.start()
                 print("Receive Item Event queued successfully!")
             finally:
                 self.lock.release()
         else:
-            print(f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item.")
-    
+            print(
+                f"ERROR: Super Metroid player was sent item '{itemName}', which is not known to be a valid Super Metroid item."
+            )
+
     def StartPollingGameForChecks(self):
         if self.pollLocationChecksThread is None or not self.pollLocationChecksThread.is_alive():
             # This data can be junk so we take care to set this before we start polling.
             # That way we only update once everything is actually cleared.
             # TODO: Modify code so a flag is set once we know this memory is good.
             self.lastLocationsCheckedBitflags = bin(HexHelper.hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
-            self.pollLocationChecksThread = threading.Thread(target = self.__PollGameForChecks)
+            self.pollLocationChecksThread = threading.Thread(target=self.__PollGameForChecks)
             self.pollLocationChecksThread.daemon = True
             self.pollLocationChecksThread.start()
             print("Started polling for location checks...")
-    
+
     # Poll the game to see
     def __PollGameForChecks(self):
         # TODO: I'm sure there's better syntax for doing this sort of thing.
         timeout = 1.4
-        while(True):
+        while True:
             bitflags = bin(HexHelper.hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
             time.sleep(timeout)
             if bitflags != self.lastLocationsCheckedBitflags:
@@ -304,11 +308,12 @@ class SuperMetroidInterface:
                             # As the most significant bit comes first in the string and would,
                             # Without this treatment,
                             # Act as though it were the least significant bit.
-                            trueIndex = (index // 8) * 8 + - ((index % 8) - 7)
-                            print(f"Samus Checked Location {SuperMetroidConstants.bitflagIndexToLocationNameDict[trueIndex]}")
+                            trueIndex = (index // 8) * 8 + -((index % 8) - 7)
+                            print(
+                                f"Samus Checked Location {SuperMetroidConstants.bitflagIndexToLocationNameDict[trueIndex]}"
+                            )
                 self.lastLocationsCheckedBitflags = bitflags
-    
-    
+
     # Run on its own thread.
     # Polls the game to see when it's ready,
     # Then executes events in-game.
@@ -330,26 +335,26 @@ class SuperMetroidInterface:
                     timeout *= 1.3
         finally:
             self.lock.release()
-    
+
     # The part that actually does the thing.
     # Only called from event manager, will assume that state is permissible when run.
     # Always called from within a lock.
-    def __ReceiveItemInternal(self, itemName, sender, showMessage = True):
+    def __ReceiveItemInternal(self, itemName, sender, showMessage=True):
         # Use the in-game event system to send a player their item.
         if showMessage:
             # Set message ID appropriately.
             # Needs to be a valid item ID (though not necessarily the message ID of the item the player received.)
             self.SetData("F51C1F", "1000")
-            
+
             # Set the function to be called.
             # TODO: Verify this is correct
             self.SetData("F6FF72", "65AD")
-            
+
             # Set the "Item Picked Up" word to 1.
             # Tells the game that the next item it gets will be from multi.
             self.SetData("F6FF74", "0100")
             # Give item data needed to complete pickup.
-            
+
             # Header/footer.
             # This is a standard item, so give the pointer to
             # An empty header/footer of correct width.
@@ -361,36 +366,36 @@ class SuperMetroidInterface:
                 self.SetData("F6FF76", "4080")
             elif width == "Large":
                 self.SetData("F6FF76", "0080")
-            
+
             # Content.
             # Different for each item - main message for an item pickup.
             # TODO: Import these dynamically from patcher.
             self.SetData("F6FF78", HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageAddresses[itemName]))
-            
+
             # Message box size, in bytes.
             # Dictates height.
             size = "4000"
             if itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
                 size = HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageNonstandardSizes[itemName])
             self.SetData("F6FF7A", size)
-            
+
             # Message ID. Should be accurate if it can be helped.
             # Also set to Wave Beam.
             self.SetData("F6FF7C", HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageIDs[itemName]))
-            
+
             # Get the original routine address and save it to jump to later.
             originalJumpDestination = self.GetData("F50A42", 2)
-            
+
             self.SetData("F6FF80", originalJumpDestination)
-            
+
             # Item Collection Routine.
             # What we actually call on pickup.
             self.SetData("F6FF7E", self.itemRoutineDict[itemName])
-            
+
             # Overwrite an instruction pointer in the game's RAM.
             # This is what actually causes our code to execute.
             self.SetData("F50A42", "F0FF")
-            
+
         # Otherwise, directly add the item to their inventory.
         else:
             if itemName in SuperMetroidConstants.toggleItemList:
@@ -401,15 +406,15 @@ class SuperMetroidInterface:
 
     # For displaying an arbitrary message
     # TODO: Figure out how to do this.
-    def ReceiveMessage(message, width = "Variable", size = None):
+    def ReceiveMessage(message, width="Variable", size=None):
         pass
-    
+
     # The part that actually does the thing.
     # Only called from event manager, will assume that state is permissible when run.
     # Always called from within a lock.
-    def __ReceiveMessageInternal(message, width = "Variable", size = None):
+    def __ReceiveMessageInternal(message, width="Variable", size=None):
         pass
-    
+
     # Increment (or decrement) the amount of an item that a player has.
     # NOTE: This will not work with unique items (ex. Charge Beam, Gravity Suit)
     # These types of items are stored as bitflags, not integers.
@@ -417,29 +422,39 @@ class SuperMetroidInterface:
     # If maxAmountOnly is true, this will not increment the player's current number of this item, only the capacity for this item.
     # 7E:0A12 - 7E:0A13 Mirror's Samus's health. Used to check to make hurt sound and flash.
     # TODO: Test to see if this introduces errors in HUD graphics.
-    def IncrementItem(self, itemName, incrementAmount, maxAmountOnly = False):
+    def IncrementItem(self, itemName, incrementAmount, maxAmountOnly=False):
         self.VerifyGameLoaded()
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.ammoItemList:
                 currentAmmoAddress = SuperMetroidConstants.ammoItemAddresses[itemName]
                 maxAmmoAddress = HexHelper.intToHex(HexHelper.hexToInt(currentAmmoAddress) + 2)
                 currentAmmo = HexHelper.reverseEndianness(self.GetData(currentAmmoAddress, 2))
-                maxAmmo     = HexHelper.reverseEndianness(self.GetData(maxAmmoAddress, 2))
+                maxAmmo = HexHelper.reverseEndianness(self.GetData(maxAmmoAddress, 2))
                 if maxAmountOnly:
                     newCurrentAmmo = HexHelper.reverseEndianness(currentAmmo)
                 else:
-                    newCurrentAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(currentAmmo) + incrementAmount), 4))
-                newMaxAmmo = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(maxAmmo) + incrementAmount), 4))
+                    newCurrentAmmo = HexHelper.reverseEndianness(
+                        HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(currentAmmo) + incrementAmount), 4)
+                    )
+                newMaxAmmo = HexHelper.reverseEndianness(
+                    HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(maxAmmo) + incrementAmount), 4)
+                )
                 self.SetData(currentAmmoAddress, newCurrentAmmo)
                 self.SetData(maxAmmoAddress, newMaxAmmo)
             else:
                 if itemName in SuperMetroidConstants.toggleItemList:
-                    print(f"ERROR: IncrementItem cannot be called with item '{itemName}', as this item is not represented by an integer.")
+                    print(
+                        f"ERROR: IncrementItem cannot be called with item '{itemName}', as this item is not represented by an integer."
+                    )
                 else:
-                    print(f"ERROR: Super Metroid player had item '{itemName}' incremented, but this item is not a valid Super Metroid item.")
+                    print(
+                        f"ERROR: Super Metroid player had item '{itemName}' incremented, but this item is not a valid Super Metroid item."
+                    )
         else:
-            print("ERROR: An attempt was made to increment player's {itemName} by {incrementAmount}, but their game is not loaded.")
-    
+            print(
+                "ERROR: An attempt was made to increment player's {itemName} by {incrementAmount}, but their game is not loaded."
+            )
+
     # Give a player a bitflag-type item.
     # This will also equip it.
     # TODO: Make sure Plasma and Spazer can't both be equipped simultaneously
@@ -448,7 +463,9 @@ class SuperMetroidInterface:
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.toggleItemList:
                 itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
-                equippedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0])
+                equippedByteAddress = HexHelper.intToHex(
+                    HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]
+                )
                 obtainedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2)
                 equippedByte = self.GetData(equippedByteAddress, 1)
                 obtainedByte = self.GetData(obtainedByteAddress, 1)
@@ -459,12 +476,16 @@ class SuperMetroidInterface:
                 self.SetData(obtainedByteAddress, newObtainedByte)
             else:
                 if itemName in SuperMetroidConstants.ammoItemList:
-                    print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+                    print(
+                        f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag."
+                    )
                 else:
-                    print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+                    print(
+                        f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item."
+                    )
         else:
             print(f"ERROR: An attempt was made to send player {itemName}, but their game is not loaded.")
-    
+
     # Take away a player's bitflag-type item if they have it.
     # This will also unequip it.
     def TakeAwayToggleItem(self, itemName):
@@ -472,34 +493,44 @@ class SuperMetroidInterface:
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.toggleItemList:
                 itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
-                equippedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]), 2)
-                obtainedByteAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2), 2)
+                equippedByteAddress = HexHelper.padHex(
+                    HexHelper.intToHex(HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]),
+                    2,
+                )
+                obtainedByteAddress = HexHelper.padHex(
+                    HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2), 2
+                )
                 equippedByte = self.GetData(equippedByteAddress, 1)
                 obtainedByte = self.GetData(obtainedByteAddress, 1)
                 bitflag = 1 << itemOffset[1]
                 # Do bitwise and with all ones (except the bitflag we want to turn off)
-                newEquippedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByte) & (255 - bitflag)), 4)
-                newObtainedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) & (255 - bitflag)), 4)
+                newEquippedByte = HexHelper.padHex(
+                    HexHelper.intToHex(HexHelper.hexToInt(equippedByte) & (255 - bitflag)), 4
+                )
+                newObtainedByte = HexHelper.padHex(
+                    HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) & (255 - bitflag)), 4
+                )
                 self.SetData(equippedByteAddress, newEquippedByte)
                 self.SetData(obtainedByteAddress, newObtainedByte)
             else:
                 if itemName in SuperMetroidConstants.ammoItemList:
-                    print(f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag.")
+                    print(
+                        f"ERROR: TakeAwayItem cannot be called with item '{itemName}', as this item is represented by an integer and not a bitflag."
+                    )
                 else:
-                    print(f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item.")
+                    print(
+                        f"ERROR: Super Metroid player had item '{itemName}' taken away, but this item is not a valid Super Metroid item."
+                    )
         else:
             print(f"ERROR: An attempt was made to take away player's {itemName}, but their game is not loaded.")
-    
+
     # Sends an info request.
     # Returns true if it receives a result.
     # Returns false if the request fails.
     def VerifyConnectedToDevice(self):
         if self.connectionInitialized:
             try:
-                jsonGetDeviceInfoCommand = {
-                    "Opcode" : "Info",
-                    "Space"  : "SNES"
-                }
+                jsonGetDeviceInfoCommand = {"Opcode": "Info", "Space": "SNES"}
                 self.webSocket.send(json.dumps(jsonGetDeviceInfoCommand))
                 result = self.webSocket.recv()
                 result = (json.loads(result))["Results"]
@@ -517,38 +548,42 @@ class SuperMetroidInterface:
                 self.deviceInfo = None
                 return False
         else:
-            print("ERROR: Cannot verify that device has been connected, as the connection to SNI has not been initialized. Attempting to reestablish connection...")
+            print(
+                "ERROR: Cannot verify that device has been connected, as the connection to SNI has not been initialized. Attempting to reestablish connection..."
+            )
             self.ConnectToDevice()
-            #self.deviceInfo = None
-            #self.connectedToDevice = False
+            # self.deviceInfo = None
+            # self.connectedToDevice = False
             return False
-        
+
     # Check game to make sure it's Super Metroid.
     def VerifyCorrectGame(self):
         self.VerifyConnectedToDevice()
         if self.connectedToDevice:
             gameType = self.deviceInfo[2].strip()
             if gameType == "No Info":
-                #print("CAUTION: Could not determine current game. This could be because the device connected is an SNES Classic, or because the interface hasn't exposed this information.")
+                # print("CAUTION: Could not determine current game. This could be because the device connected is an SNES Classic, or because the interface hasn't exposed this information.")
                 self.inSuperMetroid = True
                 return True
             if gameType == "Super Metroid":
                 self.inSuperMetroid = True
                 return True
             else:
-                print(f"ERROR: Could not verify game being played as Super Metroid. According to SNI, this device is currently running {gameType}.")
+                print(
+                    f"ERROR: Could not verify game being played as Super Metroid. According to SNI, this device is currently running {gameType}."
+                )
                 self.inSuperMetroid = False
                 return False
         else:
             self.inSuperMetroid = False
             return False
-    
+
     # Check game version.
     # Either NTSC or PAL
     # Note that NTSC-U and NTSC-J are identical.
     def GetGameVersion(self):
         pass
-    
+
     # Check to see if player is ready to have an event inserted.
     def IsPlayerReadyForEvent(self):
         self.VerifyInGameplay()
@@ -563,7 +598,7 @@ class SuperMetroidInterface:
                 return False
         else:
             return False
-    
+
     # Query if the player is currently in a fully loaded save.
     # This ensures that we can read important values from RAM, such as item counts, without fearing garbage data.
     def VerifyGameLoaded(self):
@@ -584,7 +619,7 @@ class SuperMetroidInterface:
         else:
             self.gameLoaded = False
             return False
-    
+
     # Query if the player is currently in normal gameplay.
     # Will not return true if player is in a cutscene, in a transition, loading, paused, in a menu, etc.
     def VerifyInGameplay(self):
@@ -600,7 +635,7 @@ class SuperMetroidInterface:
         else:
             self.playingGame = False
             return False
-        
+
     # Get what state the player is in.
     # Returns a string.
     # TODO: Convert to a dict
@@ -608,13 +643,13 @@ class SuperMetroidInterface:
         self.VerifyCorrectGame()
         if self.inSuperMetroid:
             status = HexHelper.hexToInt(self.GetData("F50998", 1))
-            if   status == 1:
+            if status == 1:
                 return "Title Screen"
             elif status == 4:
                 return "In Menu"
             elif status == 5:
                 return "Loading a Area"
-            elif status == 6: 
+            elif status == 6:
                 return "Loading a Save Game"
             elif status == 7:
                 return "Initializing from a Save Game"
@@ -622,7 +657,7 @@ class SuperMetroidInterface:
                 return "In Game"
             elif status == 9:
                 return "In Room Transition"
-            elif status == 10 or  status == 11:
+            elif status == 10 or status == 11:
                 return "On Elevator"
             elif status >= 12 and status <= 14:
                 return "Pausing"
@@ -639,8 +674,10 @@ class SuperMetroidInterface:
             else:
                 return "Status Not Known"
         else:
-            print("ERROR: An attempt was made to query game state, but something other than the game Super Metroid seems to be loaded.")
-    
+            print(
+                "ERROR: An attempt was made to query game state, but something other than the game Super Metroid seems to be loaded."
+            )
+
     # Returns a pretty string saying where player is.
     # Room and region name.
     # 7E:07BD - 7E:07BF : 3 byte pointer to room tilemap.
@@ -654,11 +691,11 @@ class SuperMetroidInterface:
             self.GetPlayerToggleItems()
         else:
             print("ERROR: An attempt was made to query the player's inventory, but they aren't in the game yet.")
-    
+
     def GetPlayerAmmoCounts(self):
         self.VerifyGameLoaded()
         if self.gameLoaded:
-            ammoItemList         = []
+            ammoItemList = []
             ammoItemCurrentCount = []
             ammoItemMaximumCount = []
             # Get player's ammo counts.
@@ -672,15 +709,20 @@ class SuperMetroidInterface:
                 # Reserve energy is backwards, for some reason.
                 if itemName == "Reserve Tank":
                     index = len(ammoItemCurrentCount) - 1
-                    ammoItemCurrentCount[index], ammoItemMaximumCount[index] = ammoItemMaximumCount[index], ammoItemCurrentCount[index]
+                    ammoItemCurrentCount[index], ammoItemMaximumCount[index] = (
+                        ammoItemMaximumCount[index],
+                        ammoItemCurrentCount[index],
+                    )
             for i in range(len(ammoItemList)):
-                print(f"Samus has {str(ammoItemCurrentCount[i])} {SuperMetroidConstants.itemNameToQuantityName[(ammoItemList[i])]} out of {str(ammoItemMaximumCount[i])}.")
-            self.ammoItemsHeldList         = ammoItemList
+                print(
+                    f"Samus has {str(ammoItemCurrentCount[i])} {SuperMetroidConstants.itemNameToQuantityName[(ammoItemList[i])]} out of {str(ammoItemMaximumCount[i])}."
+                )
+            self.ammoItemsHeldList = ammoItemList
             self.ammoItemCurrentCount = ammoItemCurrentCount
             self.ammoItemMaximumCount = ammoItemMaximumCount
         else:
             print("ERROR: An attempt was made to query the player's ammo counts, but they aren't in the game yet.")
-    
+
     def GetPlayerToggleItems(self):
         self.VerifyGameLoaded()
         if self.gameLoaded:
@@ -690,9 +732,9 @@ class SuperMetroidInterface:
             for itemName, byteBitOffsetPair in SuperMetroidConstants.toggleItemBitflagOffsets.items():
                 obtainedByte = toggleItemHex[((byteBitOffsetPair[0] * 2) + 4) : ((byteBitOffsetPair[0] * 2) + 6)]
                 equippedByte = toggleItemHex[(byteBitOffsetPair[0] * 2) : ((byteBitOffsetPair[0] * 2) + 2)]
-                obtainedVal  = HexHelper.hexToInt(obtainedByte)
-                equippedVal  = HexHelper.hexToInt(equippedByte)
-                bitToCheck   = 1 << byteBitOffsetPair[1]
+                obtainedVal = HexHelper.hexToInt(obtainedByte)
+                equippedVal = HexHelper.hexToInt(equippedByte)
+                bitToCheck = 1 << byteBitOffsetPair[1]
                 if (obtainedVal & bitToCheck) != 0:
                     obtainedItems.append(itemName)
                 if (equippedVal & bitToCheck) != 0:
@@ -732,33 +774,34 @@ class SuperMetroidInterface:
     # TODO: Make more observations about data format
     def GetMapCompletion(self):
         pass
-    
+
     # Check if player has automap enabled.
     def GetAutomapEnabled(self):
         pass
-    
+
     # Used to take away X-Ray Scope and Grapple Beam.
     # 7E:09D2 - 7E:09D3 : Currently selected status bar item
     # TODO: Check whether this is necessary.
     # def __SetStatusBarSelection(self):
     #     pass
-    
+
     # Close interface, shut down any threads
     def Close(self):
         self.CloseConnection()
         sys.exit()
-    
+
     # I don't know if this is strictly necessary, but it can't possibly hurt.
     def CloseConnection(self):
         if self.connectionInitialized:
             self.webSocket.close()
         else:
             print("WARNING: Connection cannot be closed, as no connection was initialized. Ignoring request...")
-    
+
     # This method handles making sure requests don't overlap, and that requests wait for one another to finish.
     # Not all requests need to be handled this way, such as those which only read from memory.
     def HandleRequestQueue(self):
         pass
+
 
 def temp(interface):
     interface.ReceiveItem("Wave Beam", "Galactic Federation HQ")
@@ -807,18 +850,19 @@ def temp(interface):
     interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
     interface.ReceiveItem("Power Bomb Expansion", "Galactic Federation HQ")
 
+
 if __name__ == "__main__":
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
-        f = open(os.getcwd() + "\\romfilepath.txt", 'r')
+        f = open(os.getcwd() + "\\romfilepath.txt", "r")
         patchFilePath = f.readline().rstrip()
-        patchFilePath = patchFilePath[-len(patchFilePath):-4]
+        patchFilePath = patchFilePath[-len(patchFilePath) : -4]
         patchFilePath += "_PatcherData.json"
         f.close()
     else:
         print("Enter the path to the PatchData file that was generated when you patched your ROM.")
         patchFilePath = input()
     interface = SuperMetroidInterface(patchFilePath)
-    menu  = "C: Initialize Connection\n"
+    menu = "C: Initialize Connection\n"
     menu += "D: Attach to a Device\n"
     menu += "I: Query Inventory\n"
     menu += "S: Query Gamestate\n"
@@ -833,7 +877,7 @@ if __name__ == "__main__":
     while lastInput != "Q":
         print(menu)
         lastInput = input()[0]
-        if   lastInput == "C":
+        if lastInput == "C":
             print("\nAttempting to connect...")
             interface.InitializeConnection()
         elif lastInput == "D":
@@ -850,7 +894,7 @@ if __name__ == "__main__":
         elif lastInput == "R":
             print("\nQuerying whether Samus is ready for an item...")
             readiness = interface.IsPlayerReadyForEvent()
-            if   readiness == True:
+            if readiness == True:
                 print("Samus is ready to receive an item.")
             elif readiness == False:
                 print("Samus isn't ready to receive an item.")

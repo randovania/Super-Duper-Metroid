@@ -1,6 +1,8 @@
-from SM_Room_Header_Data import SuperMetroidRooms
-from hexhelper import HexHelper
 import os
+
+from SuperDuperMetroid.SM_Room_Header_Data import SuperMetroidRooms
+from SuperDuperMetroid.hexhelper import HexHelper
+
 
 class DoorParser:
     # Crawls through each room's MDB to get the address of every door's DDB entry.
@@ -29,15 +31,18 @@ class DoorParser:
             allDoorAddressesByRoomDict[mdbAddress] = doorsInRoom
         return allDoorAddressesByRoomDict
 
+
 if __name__ == "__main__":
     # Build in this to make it faster to run.
     # Saves me some time.
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
-        f = open(os.getcwd() + "\\romfilepath.txt", 'r')
+        f = open(os.getcwd() + "\\romfilepath.txt", "r")
         filePath = f.readline().rstrip()
         f.close()
     else:
-        print("Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program.")
+        print(
+            "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
+        )
         filePath = input()
-    f = open(filePath, "rb", buffering = 0)
+    f = open(filePath, "rb", buffering=0)
     DoorParser.getDoorPointers(f)
