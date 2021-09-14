@@ -276,7 +276,7 @@ class ItemType:
     itemName = None
     GFXOffset = None
     # Most items use this all 00's palette, so just have it as the defaultl.
-    paletteBytes = ["00", "00", "00", "00", "00", "00", "00", "00"]
+    paletteBytes = bytearray([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
 
     def __init__(self, itemName, GFXOffset, paletteBytes=None):
         self.itemName = itemName
@@ -308,6 +308,10 @@ class PickupPlacementData:
         self.graphicsFileName = graphicsFileName
         self.nativeSpriteName = nativeSpriteName
 
+# Substitutes every incidence of a keyword in a string with a hex version of the passed number.
+def replaceWithHex(originalString, keyword, number, numHexDigits = 4):
+    numHexString = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(number), numHexDigits))
+    return originalString.replace(keyword, numHexString)
 
 # Generate a game with vanilla item placements
 def genVanillaGame():
@@ -329,174 +333,134 @@ def genVanillaGame():
 def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Where we start writing our data in the actual file.
     # Inclusive - first byte written here.
-    inFileInitialOffset = "026099"
+    inFileInitialOffset = 0x026099
 
     # Where the game believes data to be at runtime.
     # Equivalent to InFileInitialOffset in placement.
     # Influences addressing.
     # Excludes the bank address, which is implicitly 84
-    inMemoryInitialOffset = "E099"
+    inMemoryInitialOffset = 0xE099
 
     # Where we start writing PLM Headers for items.
-    inFilePLMHeaderOffset = "EED7"
-    inMemoryPLMHeaderOffset = "026ED7"
+    inMemoryPLMHeaderOffset = 0xEED7
+    inFilePLMHeaderOffset = 0x026ED7
 
     # Each item represents two bytes in each table
-    itemGetTableSize = HexHelper.intToHex(len(itemTypesList) * 2)
+    itemGetTableSize = len(itemTypesList) * 2
     itemGFXTableSize = itemGetTableSize
 
     # Calculate addresses of some important things.
-    # Format:
-    # Next Address     |                                                       |Offset of prior data |                     |Prior Data Size |
-
-    # Setup
-    VRAMItemNormalAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(inMemoryInitialOffset) + HexHelper.hexToInt("04")), 4
-    )
-    VRAMItemBallAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(VRAMItemNormalAddr) + HexHelper.hexToInt("0C")), 4
-    )
-    startAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBallAddr) + HexHelper.hexToInt("10")), 4)
-    GFXAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(startAddr) + HexHelper.hexToInt("0B")), 4)
-    gotoAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddr) + HexHelper.hexToInt("08")), 4)
-    VRAMItemBlockAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(gotoAddr) + HexHelper.hexToInt("08")), 4)
-    respawnAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(VRAMItemBlockAddr) + HexHelper.hexToInt("08")), 4
-    )
-    blockLoopAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(respawnAddr) + HexHelper.hexToInt("04")), 4)
-    GFXAddrB = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockLoopAddr) + HexHelper.hexToInt("13")), 4)
-    blockGotoAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(GFXAddrB) + HexHelper.hexToInt("10")), 4)
-    getItemAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(blockGotoAddr) + HexHelper.hexToInt("04")), 4)
-    tablePtrAddr = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(getItemAddr) + HexHelper.hexToInt("05")), 4)
+    VRAMItemNormalAddr = inMemoryInitialOffset + 0x04
+    VRAMItemBallAddr = VRAMItemNormalAddr + 0x0C
+    startAddr = VRAMItemBallAddr + 0x10
+    GFXAddr = startAddr + 0x0B
+    gotoAddr = GFXAddr + 0x08
+    VRAMItemBlockAddr = gotoAddr + 0x08
+    respawnAddr = VRAMItemBlockAddr + 0x08
+    blockLoopAddr = respawnAddr + 0x04
+    GFXAddrB = blockLoopAddr + 0x13
+    blockGotoAddr = GFXAddrB + 0x10
+    getItemAddr = blockGotoAddr + 0x04
+    tablePtrAddr = getItemAddr + 0x05
 
     # ASM Functions
-    tableLoadFuncAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(tablePtrAddr) + HexHelper.hexToInt("04")), 4
-    )
-    lavaRiseFuncAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(tableLoadFuncAddr) + HexHelper.hexToInt("1D")), 4
-    )
+    tableLoadFuncAddr = tablePtrAddr + 0x04
+    lavaRiseFuncAddr = tableLoadFuncAddr + 0x1D
 
     # Tables
-    itemGetTableAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(lavaRiseFuncAddr) + HexHelper.hexToInt("07")), 4
-    )
-    itemGFXTableAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(itemGetTableAddr) + HexHelper.hexToInt(itemGetTableSize)), 4
-    )
+    itemGetTableAddr = lavaRiseFuncAddr + 0x07
+    itemGFXTableAddr = itemGetTableAddr + itemGetTableSize
 
     # Item Data
-    itemPLMDataAddr = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(itemGFXTableAddr) + HexHelper.hexToInt(itemGFXTableSize)), 4
-    )
+    itemPLMDataAddr = itemGFXTableAddr + itemGFXTableSize
 
     # Write Data
     # Setup
     # Don't bother reading this, it's a 1 for 1 recreation of the Setup portion of Kazuto's asm file.
     # Or at least it should be.
-    f.seek(HexHelper.hexToInt(inFileInitialOffset))
-    f.write(
-        HexHelper.hexToData(
-            HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGFXTableAddr)
-        )
-    )
+    f.seek(inFileInitialOffset)
+    f.write(tableLoadFuncAddr.to_bytes(2, "little") + itemGFXTableAddr.to_bytes(2, "little"))
     # VRAMItem_Normal
     f.write(
-        HexHelper.hexToData(
-            "7C88A9DF2E8A"
-            + HexHelper.reverseEndianness(inMemoryInitialOffset)
-            + "2487"
-            + HexHelper.reverseEndianness(startAddr)
-        )
+        bytearray([0x7C, 0x88, 0xA9, 0xDF, 0x2E, 0x8A])
+        + inMemoryInitialOffset.to_bytes(2, "little")
+        + bytearray([0x24, 0x87])
+        + startAddr.to_bytes(2, "little")
     )
     # VRAMItem_Ball
     f.write(
-        HexHelper.hexToData("7C88A9DF2E8A" + HexHelper.reverseEndianness(inMemoryInitialOffset) + "2E8AAFDF2E8AC7DF")
+        bytearray([0x7C, 0x88, 0xA9, 0xDF, 0x2E, 0x8A]) + inMemoryInitialOffset.to_bytes(2, "little") + bytearray([0x2E, 0x8A, 0xAF, 0xDF, 0x2E, 0x8A, 0xC7, 0xDF])
     )
     # Start
-    f.write(HexHelper.hexToData("248A" + HexHelper.reverseEndianness(gotoAddr) + "C18689DF4E8716"))
+    f.write(bytearray([0x24, 0x8A]) + gotoAddr.to_bytes(2, "little") + bytearray([0xC1, 0x86, 0x89, 0xDF, 0x4E, 0x87, 0x16]))
     # .Gfx (1)
-    f.write(HexHelper.hexToData("4FE067E02487" + HexHelper.reverseEndianness(GFXAddr)))
+    f.write(bytearray([0x4F, 0xE0, 0x67, 0xE0, 0x24, 0x87]) + GFXAddr.to_bytes(2, "little"))
     # Goto
-    f.write(HexHelper.hexToData("248AA9DF2487" + HexHelper.reverseEndianness(getItemAddr)))
+    f.write(bytearray([0x24, 0x8A, 0xA9, 0xDF, 0x24, 0x87]) + getItemAddr.to_bytes(2, "little"))
     # VRAMItem_Block
     f.write(
-        HexHelper.hexToData(
-            "2E8A"
-            + HexHelper.reverseEndianness(inMemoryInitialOffset)
-            + "2487"
-            + HexHelper.reverseEndianness(blockLoopAddr)
-        )
+        bytearray([0x2E, 0x8A])
+        + inMemoryInitialOffset.to_bytes(2, "little")
+        + bytearray([0x24, 0x87])
+        + blockLoopAddr.to_bytes(2, "little")
     )
     # Respawn
-    f.write(HexHelper.hexToData("2E8A32E0"))
+    f.write(bytearray([0x2E, 0x8A, 0x32, 0xE0]))
     # BlockLoop
     f.write(
-        HexHelper.hexToData(
-            "2E8A07E07C88"
-            + HexHelper.reverseEndianness(respawnAddr)
-            + "248A"
-            + HexHelper.reverseEndianness(blockGotoAddr)
-            + "C18689DF4E8716"
-        )
+        bytearray([0x2E, 0x8A, 0x07, 0xE0, 0x7C, 0x88])
+        + respawnAddr.to_bytes(2, "little")
+        + bytearray([0x24, 0x8A])
+        + blockGotoAddr.to_bytes(2, "little")
+        + bytearray([0xC1, 0x86, 0x89, 0xDF, 0x4E, 0x87, 0x16])
     )
     # .Gfx (2)
     f.write(
-        HexHelper.hexToData(
-            "4FE067E03F87"
-            + HexHelper.reverseEndianness(GFXAddrB)
-            + "2E8A20E02487"
-            + HexHelper.reverseEndianness(blockLoopAddr)
-        )
+        bytearray([0x4F, 0xE0, 0x67, 0xE0, 0x3F, 0x87])
+        + GFXAddrB.to_bytes(2, "little")
+        + bytearray([0x2E, 0x8A, 0x20, 0xE0, 0x24, 0x87])
+        + blockLoopAddr.to_bytes(2, "little")
     )
     # BlockGoto
-    f.write(HexHelper.hexToData("248A" + HexHelper.reverseEndianness(respawnAddr)))
+    f.write(bytearray([0x24, 0x8A]) + respawnAddr.to_bytes(2, "little"))
     # GetItem
-    f.write(HexHelper.hexToData("9988DD8B02"))
-    f.write(
-        HexHelper.hexToData(
-            HexHelper.reverseEndianness(tableLoadFuncAddr) + HexHelper.reverseEndianness(itemGetTableAddr)
-        )
-    )
+    f.write(bytearray([0x99, 0x88, 0xDD, 0x8B, 0x02]))
+    f.write(tableLoadFuncAddr.to_bytes(2, "little") + itemGetTableAddr.to_bytes(2, "little"))
 
     # ASM Functions
     # LoadItemTable
     f.write(HexHelper.hexToData("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
     # LavaRise
-    f.write(HexHelper.hexToData("A9E0FF8D7C1960"))
+    f.write(bytearray([0xA9, 0xE0, 0xFF, 0x8D, 0x7C, 0x19, 0x60]))
 
     # Item Tables
     # Initial item table hexstrings.
-    itemTableBytes = ""
-    GFXTableBytes = ""
+    itemTableBytes = []
+    GFXTableBytes = []
 
     # Size of the data pointed to for each entry.
-    itemGetLength = "07"
-    itemGFXLength = "0E"
-    itemTotalLength = HexHelper.intToHex(HexHelper.hexToInt(itemGetLength) + HexHelper.hexToInt(itemGFXLength))
+    itemGetLength = 0x07
+    itemGFXLength = 0x0E
+    itemTotalLength = itemGetLength + itemGFXLength
 
     # Pointers to next item PLM data
     itemNextGetData = itemPLMDataAddr
-    itemNextGFXData = HexHelper.padHex(
-        HexHelper.intToHex(HexHelper.hexToInt(itemPLMDataAddr) + HexHelper.hexToInt(itemGetLength)), 4
-    )
+    itemNextGFXData = itemPLMDataAddr + itemGetLength
 
     # Get table bytes one item at a time.
     for itemType in itemTypesList:
         # Add bytes to tables
-        itemTableBytes += HexHelper.reverseEndianness(itemNextGetData)
-        GFXTableBytes += HexHelper.reverseEndianness(itemNextGFXData)
+        itemTableBytes.append(itemNextGetData.to_bytes(2, "little"))
+        GFXTableBytes.append(itemNextGFXData.to_bytes(2, "little"))
         # Increment Data Pointers
-        itemNextGetData = HexHelper.padHex(
-            HexHelper.intToHex(HexHelper.hexToInt(itemNextGetData) + HexHelper.hexToInt(itemTotalLength)), 4
-        )
-        itemNextGFXData = HexHelper.padHex(
-            HexHelper.intToHex(HexHelper.hexToInt(itemNextGFXData) + HexHelper.hexToInt(itemTotalLength)), 4
-        )
+        itemNextGetData = itemNextGetData + itemTotalLength
+        itemNextGFXData = itemNextGFXData + itemTotalLength
 
     # Write tables to file
-    f.write(HexHelper.hexToData(itemTableBytes))
-    f.write(HexHelper.hexToData(GFXTableBytes))
+    for itemTableBytePair in itemTableBytes:
+        f.write(itemTableBytePair)
+    for GFXTableBytePair in GFXTableBytes:
+        f.write(GFXTableBytePair)
 
     # Item PLM Data
     # This acquire data should do nothing but display a message box.
@@ -509,41 +473,41 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # Works for the player receiving items from others, as the only thing
     # That actually happens is that a Messagebox appears for the player (i.e.
     # There is no actual item entity in the game world being picked up).
-    genericAcquireData = "F3880000133A8A"
+    genericAcquireData = bytearray([0xF3, 0x88, 0x00, 0x00, 0x13, 0x3A, 0x8A])
     for itemType in itemTypesList:
         # Construct the item's graphics data.
-        currentItemGFXData = "6487"
-        currentItemGFXData += itemType.GFXOffset
+        currentItemGFXData = [0x64, 0x87]
+        currentItemGFXData += itemType.GFXOffset.to_bytes(2, "big")
         for paletteByte in itemType.paletteBytes:
-            currentItemGFXData += paletteByte
-        currentItemGFXData += "3A8A"
+            currentItemGFXData.append(paletteByte)
+        currentItemGFXData += [0x3A, 0x8A]
         try:
-            assert (len(currentItemGFXData) // 2) == HexHelper.hexToInt(itemGFXLength)
+            assert len(currentItemGFXData) == itemGFXLength
         except:
-            errorMsg = f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}(0x{HexHelper.padHex(HexHelper.intToHex(len(currentItemGFXData)), 2)})."
-            print(errorMsg)
+            print(f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}.")
             return
         # Write to file
-        f.write(HexHelper.hexToData(genericAcquireData))
-        f.write(HexHelper.hexToData(currentItemGFXData))
+        f.write(genericAcquireData)
+        f.write(bytearray(currentItemGFXData))
 
     # Now we write out the PLM Header Data
-    f.seek(HexHelper.hexToInt(inMemoryPLMHeaderOffset))
-    normalItemHex = "64EE" + HexHelper.reverseEndianness(VRAMItemNormalAddr)
-    ballItemHex = "64EE" + HexHelper.reverseEndianness(VRAMItemBallAddr)
-    blockItemHex = "8EEE" + HexHelper.reverseEndianness(VRAMItemBlockAddr)
+    f.seek(inFilePLMHeaderOffset)
+    normalItemHex = bytearray([0x64, 0xEE]) + VRAMItemNormalAddr.to_bytes(2, "little")
+    ballItemHex = bytearray([0x64, 0xEE]) + VRAMItemBallAddr.to_bytes(2, "little")
+    blockItemHex = bytearray([0x8E, 0xEE]) + VRAMItemBlockAddr.to_bytes(2, "little")
     for itemType in itemTypesList:
-        f.write(HexHelper.hexToData(normalItemHex))
+        f.write(normalItemHex)
     for itemType in itemTypesList:
-        f.write(HexHelper.hexToData(ballItemHex))
+        f.write(ballItemHex)
     for itemType in itemTypesList:
-        f.write(HexHelper.hexToData(blockItemHex))
+        f.write(blockItemHex)
     # Write native item graphics that aren't already in the ROM
     # This is primarily for what were originally CRE items like Missile Expansions.
-    f.seek(HexHelper.hexToInt("049100"))
-    with open("C:\\Users\\Dood\\Dropbox\\SM Modding\\Publish\\VramItems.bin", "rb") as f2:
+    f.seek(0x049100)
+    # FIXME - REMOVE DEPENDENCE ON CURRENT WORKING DIRECTORY!
+    with open(os.getcwd() + "\\VramItems.bin", "rb") as f2:
         f.write(f2.read())
-    return inFilePLMHeaderOffset
+    return inMemoryPLMHeaderOffset
 
 
 # Places the items into the game.
@@ -556,27 +520,27 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     # Locations of item sprites
     # Stored little-endian
     nativeItemSpriteLocations = {
-        "Energy Tank": "0091",
-        "Missile Expansion": "0092",
-        "Super Missile Expansion": "0093",
-        "Power Bomb Expansion": "0094",
-        "Morph Ball Bombs": "0080",
-        "Charge Beam": "008B",
-        "Ice Beam": "008C",
-        "Hi-Jump Boots": "0084",
-        "Speed Booster": "008A",
-        "Wave Beam": "008D",
-        "Spazer Beam": "008F",
-        "Spring Ball": "0082",
-        "Varia Suit": "0083",
-        "Gravity Suit": "0081",
-        "X-Ray Scope": "0089",
-        "Plasma Beam": "008E",
-        "Grapple Beam": "0088",
-        "Space Jump": "0086",
-        "Screw Attack": "0085",
-        "Morph Ball": "0087",
-        "Reserve Tank": "0090",
+        "Energy Tank": 0x0091,
+        "Missile Expansion": 0x0092,
+        "Super Missile Expansion": 0x0093,
+        "Power Bomb Expansion": 0x0094,
+        "Morph Ball Bombs": 0x0080,
+        "Charge Beam": 0x008B,
+        "Ice Beam": 0x008C,
+        "Hi-Jump Boots": 0x0084,
+        "Speed Booster": 0x008A,
+        "Wave Beam": 0x008D,
+        "Spazer Beam": 0x008F,
+        "Spring Ball": 0x0082,
+        "Varia Suit": 0x0083,
+        "Gravity Suit": 0x0081,
+        "X-Ray Scope": 0x0089,
+        "Plasma Beam": 0x008E,
+        "Grapple Beam": 0x0088,
+        "Space Jump": 0x0086,
+        "Screw Attack": 0x0085,
+        "Morph Ball": 0x0087,
+        "Reserve Tank": 0x0090,
     }
 
     # None indicates default palette
@@ -589,16 +553,16 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
         "Power Bomb Expansion": None,
         "Morph Ball Bombs": None,
         "Charge Beam": None,
-        "Ice Beam": ["00", "03", "00", "00", "00", "03", "00", "00"],
+        "Ice Beam": bytearray([0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00]),
         "Hi-Jump Boots": None,
         "Speed Booster": None,
-        "Wave Beam": ["00", "02", "00", "00", "00", "02", "00", "00"],
+        "Wave Beam": bytearray([0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00]),
         "Spazer Beam": None,
         "Spring Ball": None,
         "Varia Suit": None,
         "Gravity Suit": None,
-        "X-Ray Scope": ["01", "01", "00", "00", "03", "03", "00", "00"],
-        "Plasma Beam": ["00", "01", "00", "00", "00", "01", "00", "00"],
+        "X-Ray Scope": bytearray([0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x00, 0x00]),
+        "Plasma Beam": bytearray([0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00]),
         "Grapple Beam": None,
         "Space Jump": None,
         "Screw Attack": None,
@@ -659,13 +623,13 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
 
     for itemType in itemTypeList:
         itemPLMIDs[itemType.itemName] = plmHeaderOffset
-        plmHeaderOffset = HexHelper.intToHex(HexHelper.hexToInt(plmHeaderOffset) + 4)
-    itemPLMIDs["No Item"] = "B62F"
+        plmHeaderOffset += 4
+    itemPLMIDs["No Item"] = 0xB62F
 
     # How much an increment for each slot above increases the value of the PLM ID.
     # We will calculate this on the fly depending on how many new items are added to this ROM.
     # TODO: Rewrite this based on len(itemTypes)
-    itemPLMBlockTypeMultiplier = hex((int("54", 16) + 0 * 4))[2:].upper()
+    itemPLMBlockTypeMultiplier = 0x54
 
     # Patch ROM.
     # This part of the code is ugly as sin, I apologize.
@@ -675,20 +639,13 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     for i, item in enumerate(pickupDataList):
         patcherIndex = SuperMetroidConstants.itemIndexList.index(item.pickupIndex)
         # Write PLM Data.
-        f.seek(HexHelper.hexToInt(SuperMetroidConstants.itemPLMLocationList[patcherIndex]))
+        f.seek(SuperMetroidConstants.itemPLMLocationList[patcherIndex])
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
         if item.itemName == "No Item":
-            PLMID = HexHelper.hexToInt(itemPLMIDs[item.itemName])
-            PLMHexadecimalID = bytes.fromhex(format(PLMID, "x"))[::-1]
-            f.write(PLMHexadecimalID)
+            f.write(itemPLMIDs[item.itemName].to_bytes(2, "little"))
             continue
-        PLMID = HexHelper.hexToInt(itemPLMIDs[item.itemName]) + (
-            HexHelper.hexToInt(itemPLMBlockTypeMultiplier) * SuperMetroidConstants.itemPLMBlockTypeList[patcherIndex]
-        )
-        PLMHexadecimalID = bytes.fromhex(format(PLMID, "x"))[::-1]
-        f.write(PLMHexadecimalID)
-
+        f.write((itemPLMIDs[item.itemName] + itemPLMBlockTypeMultiplier * SuperMetroidConstants.itemPLMBlockTypeList[patcherIndex]).to_bytes(2, "little"))
         # Write Message Box Data.
         # ITEM TABLE FORMAT
         # 2 PAGES PER TABLE
@@ -701,37 +658,36 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
         # See documentation on memory alterations at the top of this document.
 
         # Each table entry is two bytes wide, hence the doubling.
-        memoryBaseLocation = HexHelper.hexToInt("029A00") + (
-            HexHelper.hexToInt(SuperMetroidConstants.itemLocationList[patcherIndex]) * 2
-        )
+        memoryBaseLocation = 0x029A00 + SuperMetroidConstants.itemLocationList[patcherIndex] * 2
+
         f.seek(memoryBaseLocation)
         # TODO: Handle width and height separately.
         if item.itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
-            f.write(bytes.fromhex("8000")[::-1])
-            f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
-            f.write(bytes.fromhex(SuperMetroidConstants.itemMessageNonstandardSizes[item.itemName])[::-1])
+            f.write((0x0080).to_bytes(2, "big"))
+            f.seek(memoryBaseLocation + 0x400)
+            f.write(SuperMetroidConstants.itemMessageNonstandardSizes[item.itemName].to_bytes(2, "little"))
         else:
-            f.write(bytes.fromhex("8040")[::-1])
-            f.seek(memoryBaseLocation + HexHelper.hexToInt("400"))
-            f.write(bytes.fromhex("0040")[::-1])
+            f.write((0x4080).to_bytes(2, "big"))
+            f.seek(memoryBaseLocation + 0x400)
+            f.write((0x4000).to_bytes(2, "big"))
 
-        f.seek(memoryBaseLocation + HexHelper.hexToInt("200"))
-        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageAddresses[item.itemName])[::-1])
+        f.seek(memoryBaseLocation + 0x200)
+        f.write(SuperMetroidConstants.itemMessageAddresses[item.itemName].to_bytes(2, "little"))
 
-        f.seek(memoryBaseLocation + HexHelper.hexToInt("600"))
-        f.write(bytes.fromhex(SuperMetroidConstants.itemMessageIDs[item.itemName])[::-1])
+        f.seek(memoryBaseLocation + 0x600)
+        f.write(SuperMetroidConstants.itemMessageIDs[item.itemName].to_bytes(2, "little"))
 
-        f.seek(memoryBaseLocation + HexHelper.hexToInt("800"))
+        f.seek(memoryBaseLocation + 0x800)
         # If item is meant for a different player, it will do nothing at all.
         # This is not the same as there not being an item in this position -
         # The item will be there, it will just have no effect for the SM player.
         if playerName is not None and not item.ownerName == playerName:
-            f.write(HexHelper.hexToData(itemGetRoutineAddressesDict["No Item"]))
+            f.write(itemGetRoutineAddressesDict["No Item"].to_bytes(2, "little"))
         else:
             effectiveItemName = item.itemName
             if item.itemName in SuperMetroidConstants.ammoItemList:
                 effectiveItemName = f"{item.itemName} {item.quantityGiven}"
-            f.write(HexHelper.hexToData(itemGetRoutineAddressesDict[effectiveItemName]))
+            f.write(itemGetRoutineAddressesDict[effectiveItemName].to_bytes(2, "little"))
 
         # Write spoiler log
         spoilerFile.write(f"{SuperMetroidConstants.locationNamesList[patcherIndex]}: {item.itemName}\n")
@@ -761,7 +717,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Now write our new routines to memory.
     # First we append new routines to free space
     # At the end of bank 85.
-    baseRoutineWritingAddress = "029643"
+    baseRoutineWritingAddress = 0x029643
 
     # Routines stored as hexadecimal.
     #
@@ -781,23 +737,23 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
         "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
     )
     getMessageContentRoutine = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
-
+    # KEY NOTE: WRITE ROUTINE ADDRESSES LITTLE ENDIAN!!!
     routines = [onPickupFoundRoutine, getMessageHeaderDataRoutine, getMessageHeaderRoutine, getMessageContentRoutine]
     routineAddresses = []
     routineAddressRefs = ["-alp", "-bta", "-gma", "-dlt"]
-    currentAddress = HexHelper.hexToInt(baseRoutineWritingAddress)
-    inGameAddress = "9643"
+    currentAddress = baseRoutineWritingAddress
+    inGameAddress = 0x9643
     f.seek(currentAddress)
     # Calculate routine addresses
     for i in range(len(routines)):
-        routineAddresses.append(HexHelper.reverseEndianness(inGameAddress))
-        inGameAddress = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routines[i]) // 2))
-        currentAddress += int(len(routines[i]) // 2)
+        routineAddresses.append(inGameAddress)
+        inGameAddress += len(routines[i]) // 2
+        currentAddress += len(routines[i]) // 2
 
     # Replace subroutine references with their addresses and write them to the ROM file.
     for i in range(len(routines)):
         for j in range(len(routines)):
-            routines[i] = (routines[i]).replace(routineAddressRefs[j], routineAddresses[j])
+            routines[i] = replaceWithHex(routines[i], routineAddressRefs[j], routineAddresses[j])
         f.write(HexHelper.hexToData(routines[i]))
 
     # Flags have their endianness reversed before being written.
@@ -808,23 +764,23 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # availableItemGetRoutinesDict = {}
 
     beamBitFlagsDict = {
-        "Charge Beam": "1000",
-        "Ice Beam": "0002",
-        "Wave Beam": "0001",
-        "Spazer Beam": "0004",
-        "Plasma Beam": "0008",
+        "Charge Beam": 0x1000,
+        "Ice Beam": 0x0002,
+        "Wave Beam": 0x0001,
+        "Spazer Beam": 0x0004,
+        "Plasma Beam": 0x0008,
     }
 
     equipmentBitFlagsDict = {
-        "Varia Suit": "0001",
-        "Spring Ball": "0002",
-        "Morph Ball": "0004",
-        "Screw Attack": "0008",
-        "Hi-Jump Boots": "0100",
-        "Space Jump": "0200",
-        "Speed Booster": "2000",
-        "Morph Ball Bombs": "1000",
-        "Gravity Suit": "0020",
+        "Varia Suit": 0x0001,
+        "Spring Ball": 0x0002,
+        "Morph Ball": 0x0004,
+        "Screw Attack": 0x0008,
+        "Hi-Jump Boots": 0x0100,
+        "Space Jump": 0x0200,
+        "Speed Booster": 0x2000,
+        "Morph Ball Bombs": 0x1000,
+        "Gravity Suit": 0x0020,
     }
 
     ammoGetTemplates = {
@@ -851,12 +807,14 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Will still try its damnedest if you give it conflicting info, but can't give multiple effects to an item that it thinks is the same.
     # This is why ammo item names have the quantity appended to them - since having differing quantities makes them effectively different items.
     equipmentGets = {}
-    equipmentGets["X-Ray Scope"] = xRayGet
-    equipmentGets["Grapple Beam"] = grappleGet
+    equipmentGets["X-Ray Scope"] = bytes.fromhex(xRayGet)
+    equipmentGets["Grapple Beam"] = bytes.fromhex(grappleGet)
     for itemName, bitFlags in equipmentBitFlagsDict.items():
-        equipmentGets[itemName] = equipmentGetTemplate.replace("-eqp", HexHelper.reverseEndianness(bitFlags))
+        equipmentHex = replaceWithHex(equipmentGetTemplate, "-eqp", bitFlags)
+        equipmentGets[itemName] = bytes.fromhex(equipmentHex)
     for itemName, bitFlags in beamBitFlagsDict.items():
-        equipmentGets[itemName] = beamGetTemplate.replace("-eqp", HexHelper.reverseEndianness(bitFlags))
+        equipmentHex = replaceWithHex(equipmentGetTemplate, "-eqp", bitFlags)
+        equipmentGets[itemName] = bytes.fromhex(equipmentHex)
 
     # Create individual routines from ASM templates.
     # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
@@ -865,14 +823,11 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
         if pickup.ownerName is None or pickup.ownerName == playerName:
             if pickup.pickupItemEffect == "Default":
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
-                    if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
-                        print(f"{pickup.itemName} {pickup.quantityGiven}")
-                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = ammoGetTemplates[
-                            pickup.itemName
-                        ].replace(
-                            "-qty",
-                            HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven), 4)),
-                        )
+                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
+                    if not effectivePickupName in itemGetRoutinesDict:
+                        print(effectivePickupName)
+                        pickupHex = replaceWithHex(ammoGetTemplates[pickup.itemName], "-qty", pickup.quantityGiven)
+                        itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
                 elif pickup.itemName in SuperMetroidConstants.toggleItemList:
                     if not pickup.itemName in itemGetRoutinesDict:
                         itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.itemName]
@@ -882,13 +837,10 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
                     )
             else:
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
-                    if not f"{pickup.itemName} {pickup.quantityGiven}" in itemGetRoutinesDict:
-                        itemGetRoutinesDict[f"{pickup.itemName} {pickup.quantityGiven}"] = customAmmoGetTemplates[
-                            pickup.pickupItemEffect
-                        ].replace(
-                            "-qty",
-                            HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(pickup.quantityGiven)), 4),
-                        )
+                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
+                    if not effectivePickupName in itemGetRoutinesDict:
+                        pickupHex = replaceWithHex(customAmmoGetTemplates[pickup.pickupItemEffect], "-qty", pickup.quantityGiven)
+                        itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
                 elif pickup.itemName in SuperMetroidConstants.toggleItemList:
                     # Overwrite vanilla behavior for this item if vanilla.
                     # Otherwise add new item effect for the item type.
@@ -902,7 +854,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
     # This is a command that will do nothing, used for items that are meant to go to other players.
     # 60 is hex for the RTS instruction. In other words when called it will immediately return.
-    itemGetRoutinesDict["No Item"] = "60"
+    itemGetRoutinesDict["No Item"] = (0x60).to_bytes(1, "little")
 
     # Write them to memory and store their addresses in a dict.
     # This is critical, as we will use these addresses to store to a table that dictates
@@ -915,22 +867,21 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     passedTables = False
     for itemName, routine in itemGetRoutinesDict.items():
         # Don't overwrite the tables
-        if (HexHelper.hexToInt(inGameAddress) + int(len(routine) // 2)) >= HexHelper.hexToInt(
-            "9A00"
-        ) and not passedTables:
-            f.seek(HexHelper.hexToInt("2A400"))
-            inGameAddress = "A400"
+        if (inGameAddress + len(routine) // 2) >= 0x9A00 and not passedTables:
+            f.seek(0x2A400)
+            inGameAddress = 0xA400
             passedTables = True
-        itemGetRoutineAddressesDict[itemName] = HexHelper.reverseEndianness(inGameAddress)
-        f.write(HexHelper.hexToData(routine))
-        inGameAddress = HexHelper.intToHex(HexHelper.hexToInt(inGameAddress) + (len(routine) // 2))
-        currentAddress += int(len(routine) // 2)
+        # KEY CHANGE HERE - BIG NOT LITTLE ENDIAN STORED HERE!
+        itemGetRoutineAddressesDict[itemName] = inGameAddress
+        f.write(routine)
+        inGameAddress += len(routine)
+        currentAddress += len(routine)
 
     # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
     for (itemName, routineAddress) in itemGetRoutineAddressesDict.items():
-        itemRoutinesJsonOutput.append({"itemName": itemName, "routineAddress": routineAddress})
-        print(itemName + " has routine address " + routineAddress)
+        itemRoutinesJsonOutput.append({"itemName": itemName, "routineAddress": HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(routineAddress), 4))})
+        print(itemName + " has routine address " + HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(routineAddress), 4)))
     patcherOutputJson["patcherData"].append({"itemRoutines": itemRoutinesJsonOutput})
 
     # Patch Item Placements into the ROM.
@@ -1025,7 +976,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Replace references with actual addresses.
     for i in range(len(overwriteRoutines)):
         for j in range(len(routines)):
-            overwriteRoutines[i] = (overwriteRoutines[i]).replace(routineAddressRefs[j], routineAddresses[j])
+            overwriteRoutines[i] = replaceWithHex(overwriteRoutines[i], routineAddressRefs[j], routineAddresses[j])
 
     # Write to file
     for i, routine in enumerate(overwriteRoutines):
@@ -1035,25 +986,20 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
     # MULTIWORLD ROUTINES:
     # Appended to bank 90. Used to work the game's events in our favor.
-    # TODO: Convert this to an ips patch
+    # TODO: Convert this to an ips patch?
     multiworldExecuteArbitraryFunctionRoutine = "E220A98348C220AF72FF7F486B"
-    # Address relative to start of bank 90
-    multiworldExecuteArbitraryFunctionRoutineAddress = "FFF0"
 
-    if len(multiworldExecuteArbitraryFunctionRoutine) // 2 > 16:
-        print("ERROR: Multiworld Function Redirect Function exceeds its maximum size.")
-
-    f.seek(HexHelper.hexToInt("087FF0"))
+    f.seek(0x087FF0)
     f.write(HexHelper.hexToData(multiworldExecuteArbitraryFunctionRoutine))
 
     # Routines to append to bank $83.
 
     multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
-    multiworldRoutineAddressStart = "01AD66"
+    multiworldRoutineAddressStart = 0x01AD66
 
     multiworldRoutines = [multiworldItemGetRoutine]
 
-    f.seek(HexHelper.hexToInt(multiworldRoutineAddressStart))
+    f.seek(multiworldRoutineAddressStart)
     for routine in multiworldRoutines:
         f.write(HexHelper.hexToData(routine))
 
@@ -1064,7 +1010,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
 
 if __name__ == "__main__":
-    # Build in this to make it faster to run.
+    # Build in this to make it faster to test.
     # Saves me some time.
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
         f = open(os.getcwd() + "\\romfilepath.txt", "r")
