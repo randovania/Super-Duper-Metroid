@@ -37,8 +37,42 @@ import threading
 import time
 
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
-from SuperDuperMetroid.hexhelper import HexHelper
 from websocket import create_connection
+
+# Converts a hexadecimal string to a base 10 integer.
+def hexToInt(hexToConvert):
+    return int(hexToConvert, 16)
+
+# Converts an integer to a hexadecimal string.
+def intToHex(intToConvert):
+    return (hex(intToConvert)[2:]).upper()
+
+# Converts a hexadecimal string to binary data.
+def hexToData(hexToConvert):
+    return bytes.fromhex(hexToConvert)
+
+# Converts binary data to a hexadecimal string.
+def dataToHex(dataToConvert):
+    return "".join("{:02x}".format(x) for x in dataToConvert).upper()
+
+# Reverses the endianness of a hexadecimal string.
+def reverseEndianness(hexToReverse):
+    assert (len(hexToReverse) % 2) == 0
+    hexPairs = []
+    for i in range(len(hexToReverse) // 2):
+        hexPairs.append(hexToReverse[2 * i] + hexToReverse[2 * i + 1])
+    reversedHexPairs = hexPairs[::-1]
+    outputString = ""
+    for pair in reversedHexPairs:
+        outputString += pair
+    return outputString
+
+# Pads a hexadecimal string with 0's until it meets the provided length.
+def padHex(hexToPad, numHexCharacters):
+    returnHex = hexToPad
+    while len(returnHex) < numHexCharacters:
+        returnHex = "0" + returnHex
+    return returnHex
 
 
 class SuperMetroidInterface:
@@ -173,7 +207,7 @@ class SuperMetroidInterface:
     def GetData(self, address, numBytes, checkRomRead=True):
         self.VerifyConnectedToDevice()
         if self.connectedToDevice:
-            if HexHelper.hexToInt(address) < HexHelper.hexToInt("F50000") and checkRomRead:
+            if hexToInt(address) < hexToInt("F50000") and checkRomRead:
                 if "NO_ROM_READ" in self.deviceInfo:
                     print(
                         f"ERROR: An attempt was made to read from ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'."
@@ -182,11 +216,11 @@ class SuperMetroidInterface:
             jsonReadDataFromAddressCommand = {
                 "Opcode": "GetAddress",
                 "Space": "SNES",
-                "Operands": [address, HexHelper.intToHex(numBytes)],
+                "Operands": [address, intToHex(numBytes)],
             }
             self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             result = self.webSocket.recv()
-            result = HexHelper.dataToHex(result)
+            result = dataToHex(result)
             # print(f"Read from address {address} was successful.")
             return result
         else:
@@ -200,7 +234,7 @@ class SuperMetroidInterface:
     def SetData(self, address, hexData, checkRomWrite=True):
         self.VerifyConnectedToDevice()
         if self.connectedToDevice:
-            if HexHelper.hexToInt(address) < HexHelper.hexToInt("F50000") and checkRomWrite:
+            if hexToInt(address) < hexToInt("F50000") and checkRomWrite:
                 if "NO_ROM_WRITE" in self.deviceInfo:
                     print(
                         f"ERROR: An attempt was made to write to ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'."
@@ -211,11 +245,11 @@ class SuperMetroidInterface:
             jsonReadDataFromAddressCommand = {
                 "Opcode": "PutAddress",
                 "Space": "SNES",
-                "Operands": [address, HexHelper.intToHex(numBytes)],
+                "Operands": [address, intToHex(numBytes)],
             }
             self.webSocket.send(json.dumps(jsonReadDataFromAddressCommand))
             # Send Data
-            self.webSocket.send(HexHelper.hexToData(hexData))
+            self.webSocket.send(hexToData(hexData))
             # print(f"Write to address {address} was successful.")
         else:
             print("ERROR: Connection was not initialized properly before attempting to set data. Ignoring request...")
@@ -286,7 +320,7 @@ class SuperMetroidInterface:
             # This data can be junk so we take care to set this before we start polling.
             # That way we only update once everything is actually cleared.
             # TODO: Modify code so a flag is set once we know this memory is good.
-            self.lastLocationsCheckedBitflags = bin(HexHelper.hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
+            self.lastLocationsCheckedBitflags = bin(hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
             self.pollLocationChecksThread = threading.Thread(target=self.__PollGameForChecks)
             self.pollLocationChecksThread.daemon = True
             self.pollLocationChecksThread.start()
@@ -297,7 +331,7 @@ class SuperMetroidInterface:
         # TODO: I'm sure there's better syntax for doing this sort of thing.
         timeout = 1.4
         while True:
-            bitflags = bin(HexHelper.hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
+            bitflags = bin(hexToInt(self.GetData("F6FFD0", 32)))[2:].zfill(256)
             time.sleep(timeout)
             if bitflags != self.lastLocationsCheckedBitflags:
                 # Convert to a binary string so we can easily check flags
@@ -370,18 +404,18 @@ class SuperMetroidInterface:
             # Content.
             # Different for each item - main message for an item pickup.
             # TODO: Import these dynamically from patcher.
-            self.SetData("F6FF78", HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageAddresses[itemName]))
+            self.SetData("F6FF78", reverseEndianness(SuperMetroidConstants.itemMessageAddresses[itemName]))
 
             # Message box size, in bytes.
             # Dictates height.
             size = "4000"
             if itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
-                size = HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageNonstandardSizes[itemName])
+                size = reverseEndianness(SuperMetroidConstants.itemMessageNonstandardSizes[itemName])
             self.SetData("F6FF7A", size)
 
             # Message ID. Should be accurate if it can be helped.
             # Also set to Wave Beam.
-            self.SetData("F6FF7C", HexHelper.reverseEndianness(SuperMetroidConstants.itemMessageIDs[itemName]))
+            self.SetData("F6FF7C", reverseEndianness(SuperMetroidConstants.itemMessageIDs[itemName]))
 
             # Get the original routine address and save it to jump to later.
             originalJumpDestination = self.GetData("F50A42", 2)
@@ -427,17 +461,17 @@ class SuperMetroidInterface:
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.ammoItemList:
                 currentAmmoAddress = SuperMetroidConstants.ammoItemAddresses[itemName]
-                maxAmmoAddress = HexHelper.intToHex(HexHelper.hexToInt(currentAmmoAddress) + 2)
-                currentAmmo = HexHelper.reverseEndianness(self.GetData(currentAmmoAddress, 2))
-                maxAmmo = HexHelper.reverseEndianness(self.GetData(maxAmmoAddress, 2))
+                maxAmmoAddress = intToHex(hexToInt(currentAmmoAddress) + 2)
+                currentAmmo = reverseEndianness(self.GetData(currentAmmoAddress, 2))
+                maxAmmo = reverseEndianness(self.GetData(maxAmmoAddress, 2))
                 if maxAmountOnly:
-                    newCurrentAmmo = HexHelper.reverseEndianness(currentAmmo)
+                    newCurrentAmmo = reverseEndianness(currentAmmo)
                 else:
-                    newCurrentAmmo = HexHelper.reverseEndianness(
-                        HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(currentAmmo) + incrementAmount), 4)
+                    newCurrentAmmo = reverseEndianness(
+                        padHex(intToHex(hexToInt(currentAmmo) + incrementAmount), 4)
                     )
-                newMaxAmmo = HexHelper.reverseEndianness(
-                    HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(maxAmmo) + incrementAmount), 4)
+                newMaxAmmo = reverseEndianness(
+                    padHex(intToHex(hexToInt(maxAmmo) + incrementAmount), 4)
                 )
                 self.SetData(currentAmmoAddress, newCurrentAmmo)
                 self.SetData(maxAmmoAddress, newMaxAmmo)
@@ -463,15 +497,15 @@ class SuperMetroidInterface:
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.toggleItemList:
                 itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
-                equippedByteAddress = HexHelper.intToHex(
-                    HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]
+                equippedByteAddress = intToHex(
+                    hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]
                 )
-                obtainedByteAddress = HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2)
+                obtainedByteAddress = intToHex(hexToInt(equippedByteAddress) + 2)
                 equippedByte = self.GetData(equippedByteAddress, 1)
                 obtainedByte = self.GetData(obtainedByteAddress, 1)
                 bitflag = 1 << itemOffset[1]
-                newEquippedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(equippedByte) | bitflag), 2)
-                newObtainedByte = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) | bitflag), 2)
+                newEquippedByte = padHex(intToHex(hexToInt(equippedByte) | bitflag), 2)
+                newObtainedByte = padHex(intToHex(hexToInt(obtainedByte) | bitflag), 2)
                 self.SetData(equippedByteAddress, newEquippedByte)
                 self.SetData(obtainedByteAddress, newObtainedByte)
             else:
@@ -493,22 +527,22 @@ class SuperMetroidInterface:
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.toggleItemList:
                 itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
-                equippedByteAddress = HexHelper.padHex(
-                    HexHelper.intToHex(HexHelper.hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]),
+                equippedByteAddress = padHex(
+                    intToHex(hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]),
                     2,
                 )
-                obtainedByteAddress = HexHelper.padHex(
-                    HexHelper.intToHex(HexHelper.hexToInt(equippedByteAddress) + 2), 2
+                obtainedByteAddress = padHex(
+                    intToHex(hexToInt(equippedByteAddress) + 2), 2
                 )
                 equippedByte = self.GetData(equippedByteAddress, 1)
                 obtainedByte = self.GetData(obtainedByteAddress, 1)
                 bitflag = 1 << itemOffset[1]
                 # Do bitwise and with all ones (except the bitflag we want to turn off)
-                newEquippedByte = HexHelper.padHex(
-                    HexHelper.intToHex(HexHelper.hexToInt(equippedByte) & (255 - bitflag)), 4
+                newEquippedByte = padHex(
+                    intToHex(hexToInt(equippedByte) & (255 - bitflag)), 4
                 )
-                newObtainedByte = HexHelper.padHex(
-                    HexHelper.intToHex(HexHelper.hexToInt(obtainedByte) & (255 - bitflag)), 4
+                newObtainedByte = padHex(
+                    intToHex(hexToInt(obtainedByte) & (255 - bitflag)), 4
                 )
                 self.SetData(equippedByteAddress, newEquippedByte)
                 self.SetData(obtainedByteAddress, newObtainedByte)
@@ -642,7 +676,7 @@ class SuperMetroidInterface:
     def GetGameState(self):
         self.VerifyCorrectGame()
         if self.inSuperMetroid:
-            status = HexHelper.hexToInt(self.GetData("F50998", 1))
+            status = hexToInt(self.GetData("F50998", 1))
             if status == 1:
                 return "Title Screen"
             elif status == 4:
@@ -702,10 +736,10 @@ class SuperMetroidInterface:
             for itemName, address in SuperMetroidConstants.ammoItemAddresses.items():
                 ammoItemList.append(itemName)
                 currentAmmo = self.GetData(address, 2)
-                ammoItemCurrentCount.append(HexHelper.hexToInt(HexHelper.reverseEndianness(currentAmmo)))
-                maxAmmoAddress = HexHelper.padHex(HexHelper.intToHex(HexHelper.hexToInt(address) + 2), 6)
+                ammoItemCurrentCount.append(hexToInt(reverseEndianness(currentAmmo)))
+                maxAmmoAddress = padHex(intToHex(hexToInt(address) + 2), 6)
                 maximumAmmo = self.GetData(maxAmmoAddress, 2)
-                ammoItemMaximumCount.append(HexHelper.hexToInt(HexHelper.reverseEndianness(maximumAmmo)))
+                ammoItemMaximumCount.append(hexToInt(reverseEndianness(maximumAmmo)))
                 # Reserve energy is backwards, for some reason.
                 if itemName == "Reserve Tank":
                     index = len(ammoItemCurrentCount) - 1
@@ -732,8 +766,8 @@ class SuperMetroidInterface:
             for itemName, byteBitOffsetPair in SuperMetroidConstants.toggleItemBitflagOffsets.items():
                 obtainedByte = toggleItemHex[((byteBitOffsetPair[0] * 2) + 4) : ((byteBitOffsetPair[0] * 2) + 6)]
                 equippedByte = toggleItemHex[(byteBitOffsetPair[0] * 2) : ((byteBitOffsetPair[0] * 2) + 2)]
-                obtainedVal = HexHelper.hexToInt(obtainedByte)
-                equippedVal = HexHelper.hexToInt(equippedByte)
+                obtainedVal = hexToInt(obtainedByte)
+                equippedVal = hexToInt(equippedByte)
                 bitToCheck = 1 << byteBitOffsetPair[1]
                 if (obtainedVal & bitToCheck) != 0:
                     obtainedItems.append(itemName)

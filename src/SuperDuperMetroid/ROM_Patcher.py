@@ -56,8 +56,6 @@ import os
 
 from SuperDuperMetroid.IPS_Patcher import IPSPatcher
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
-from SuperDuperMetroid.hexhelper import HexHelper
-
 
 class MessageBoxGenerator:
     # List of characters that messages are allowed to have.
@@ -308,9 +306,40 @@ class PickupPlacementData:
         self.graphicsFileName = graphicsFileName
         self.nativeSpriteName = nativeSpriteName
 
+# Converts a hexadecimal string to a base 10 integer.
+def hexToInt(hexToConvert):
+    return int(hexToConvert, 16)
+
+# Converts an integer to a hexadecimal string.
+def intToHex(intToConvert):
+    return (hex(intToConvert)[2:]).upper()
+
+# Converts a hexadecimal string to binary data.
+def hexToData(hexToConvert):
+    return bytes.fromhex(hexToConvert)
+
+# Reverses the endianness of a hexadecimal string.
+def reverseEndianness(hexToReverse):
+    assert (len(hexToReverse) % 2) == 0
+    hexPairs = []
+    for i in range(len(hexToReverse) // 2):
+        hexPairs.append(hexToReverse[2 * i] + hexToReverse[2 * i + 1])
+    reversedHexPairs = hexPairs[::-1]
+    outputString = ""
+    for pair in reversedHexPairs:
+        outputString += pair
+    return outputString
+
+# Pads a hexadecimal string with 0's until it meets the provided length.
+def padHex(hexToPad, numHexCharacters):
+    returnHex = hexToPad
+    while len(returnHex) < numHexCharacters:
+        returnHex = "0" + returnHex
+    return returnHex
+
 # Substitutes every incidence of a keyword in a string with a hex version of the passed number.
 def replaceWithHex(originalString, keyword, number, numHexDigits = 4):
-    numHexString = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(number), numHexDigits))
+    numHexString = reverseEndianness(padHex(intToHex(number), numHexDigits))
     return originalString.replace(keyword, numHexString)
 
 # Generate a game with vanilla item placements
@@ -429,7 +458,7 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
 
     # ASM Functions
     # LoadItemTable
-    f.write(HexHelper.hexToData("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
+    f.write(hexToData("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
     # LavaRise
     f.write(bytearray([0xA9, 0xE0, 0xFF, 0x8D, 0x7C, 0x19, 0x60]))
 
@@ -591,8 +620,8 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
                 # TODO: Patch pickup graphics into ROM from file
                 # TODO: Add message box generation
                 itemGfxAdded[pickup.itemName] = pickup.graphicsFileName
-                nextPickupGFXDataLocation = HexHelper.padHex(
-                    HexHelper.intToHex(hexHelper.hexToInt(nextPickupGFXDataLocation) + 1), 4
+                nextPickupGFXDataLocation = padHex(
+                    intToHex(hexToInt(nextPickupGFXDataLocation) + 1), 4
                 )
                 pass
 
@@ -613,7 +642,7 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     # itemMessageAddresses = None #TODO - Create these dynamically.
 
     # itemTypes.append(ItemType(item, ))
-    # nextPLMId = HexHelper.intToHex(HexHelper.hexToInt(nextPLMId) + 4)
+    # nextPLMId = intToHex(hexToInt(nextPLMId) + 4)
 
     itemTypeList = itemTypes.values()
     plmHeaderOffset = writeKazutoMoreEfficientItemsHack(f, itemTypeList)
@@ -754,7 +783,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     for i in range(len(routines)):
         for j in range(len(routines)):
             routines[i] = replaceWithHex(routines[i], routineAddressRefs[j], routineAddresses[j])
-        f.write(HexHelper.hexToData(routines[i]))
+        f.write(hexToData(routines[i]))
 
     # Flags have their endianness reversed before being written.
     itemGetRoutinesDict = {}
@@ -880,8 +909,8 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
     for (itemName, routineAddress) in itemGetRoutineAddressesDict.items():
-        itemRoutinesJsonOutput.append({"itemName": itemName, "routineAddress": HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(routineAddress), 4))})
-        print(itemName + " has routine address " + HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(routineAddress), 4)))
+        itemRoutinesJsonOutput.append({"itemName": itemName, "routineAddress": reverseEndianness(padHex(intToHex(routineAddress), 4))})
+        print(itemName + " has routine address " + reverseEndianness(padHex(intToHex(routineAddress), 4)))
     patcherOutputJson["patcherData"].append({"itemRoutines": itemRoutinesJsonOutput})
 
     # Patch Item Placements into the ROM.
@@ -931,7 +960,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
             if "customSaveStart" in kwargs:
                 customStart = kwargs["customSaveStart"]
                 regionHex = SuperMetroidConstants.regionToHexDict[customStart[0]]
-                saveHex = HexHelper.reverseEndianness(HexHelper.padHex(HexHelper.intToHex(customStart[1]), 4))
+                saveHex = reverseEndianness(padHex(intToHex(customStart[1]), 4))
                 introRoutine = introRoutine.replace("-rgn", regionHex)
                 introRoutine = introRoutine.replace("-sav", saveHex)
             else:
@@ -980,9 +1009,9 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
     # Write to file
     for i, routine in enumerate(overwriteRoutines):
-        currentAddress = HexHelper.hexToInt(overwriteRoutineAddresses[i])
+        currentAddress = hexToInt(overwriteRoutineAddresses[i])
         f.seek(currentAddress)
-        f.write(HexHelper.hexToData(routine))
+        f.write(hexToData(routine))
 
     # MULTIWORLD ROUTINES:
     # Appended to bank 90. Used to work the game's events in our favor.
@@ -990,7 +1019,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     multiworldExecuteArbitraryFunctionRoutine = "E220A98348C220AF72FF7F486B"
 
     f.seek(0x087FF0)
-    f.write(HexHelper.hexToData(multiworldExecuteArbitraryFunctionRoutine))
+    f.write(hexToData(multiworldExecuteArbitraryFunctionRoutine))
 
     # Routines to append to bank $83.
 
@@ -1001,7 +1030,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
     f.seek(multiworldRoutineAddressStart)
     for routine in multiworldRoutines:
-        f.write(HexHelper.hexToData(routine))
+        f.write(hexToData(routine))
 
     json.dump(patcherOutputJson, patcherOutput, indent=4, sort_keys=True)
     patcherOutput.close()
