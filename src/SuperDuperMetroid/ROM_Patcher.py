@@ -269,7 +269,6 @@ class MessageBoxGenerator:
         if len(self.currentAddress) == 5:
             self.currentAddress = "0" + self.currentAddress
 
-
 class ItemType:
     itemName = None
     GFXOffset = None
@@ -281,7 +280,6 @@ class ItemType:
         self.GFXOffset = GFXOffset
         if paletteBytes is not None:
             self.paletteBytes = paletteBytes
-
 
 # Class which represents items being passed to the game from the generator
 # TODO: Implement this more fully
@@ -354,7 +352,32 @@ def genVanillaGame():
             pickupsList.append(PickupPlacementData(1, itemIndex, itemName))
     return pickupsList
 
-
+# Adds the ability to start the game with items
+# Takes a list of PickupPlacementData
+# Irrelevent fields need not be specified.
+def addStartingInventory(f, pickups, itemGetRoutineAddressesDict):
+    if len(pickups) > 100:
+        print("ERROR: Unreasonable amount of starting items detected. Starting items will not be placed. Did you send correct information to the patcher?")
+        return
+    f.seek(0x1C0000)
+    f.write(len(pickups).to_bytes(2, "little"))
+    for startingItem in pickups:
+        itemName = startingItem.itemName
+        if itemName in SuperMetroidConstants.ammoItemList:
+            itemName += (" " + str(startingItem.quantityGiven))
+        routineAddress = itemGetRoutineAddressesDict[itemName] - 1
+        f.write(routineAddress.to_bytes(2, "little"))
+    
+    awardStartingInventoryRoutine = "AF0080B8AAE00000F020DAE220A99048C220A9FAFF48E220A98548C2208A0AAABF0080B8486BFACA80DB6B"
+    functionToReturnProperly = "A95FF6486B"
+    awardStartingInventoryRoutineAddress = 0x08763A
+    functionToReturnProperlyAddress = 0x02FFFB
+    
+    f.seek(awardStartingInventoryRoutineAddress)
+    f.write(hexToData(awardStartingInventoryRoutine))
+    f.seek(functionToReturnProperlyAddress)
+    f.write(hexToData(functionToReturnProperly))
+    
 # This is just a python function that applies a modified version of
 # Kazuto's More_Efficient_PLM_Items.asm patch without an assembler.
 # Please, send lots of thanks to Kazuto for this, I could not have done
@@ -848,7 +871,10 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Create individual routines from ASM templates.
     # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
     # This is because I'm lazy and we absolutely have room for it.
-    for pickup in itemList:
+    allItemsList = itemList.copy()
+    if "startingItems" in kwargs:
+        allItemsList += kwargs["startingItems"]
+    for pickup in allItemsList:
         if pickup.ownerName is None or pickup.ownerName == playerName:
             if pickup.pickupItemEffect == "Default":
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
@@ -915,7 +941,14 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
     # Patch Item Placements into the ROM.
     placeItems(f, ROMFilePath, itemGetRoutineAddressesDict, itemList)
-
+    
+    # Add starting items patch
+    if "startingItems" in kwargs:
+        addStartingInventory(f, kwargs["startingItems"], itemGetRoutineAddressesDict)
+    else:
+        f.seek(0x1C0000)
+        f.write((0).to_bytes(2, "little"))
+    
     # Modify/overwrite existing routines.
     overwriteRoutines = []
     overwriteRoutineAddresses = []
@@ -944,14 +977,14 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     if introOptionChoice != "Vanilla":
         if introOptionChoice == "Skip Intro":
             # TODO: Convert this to static patch.
-            introRoutine = "9CE20DADDA09D017A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+            introRoutine = "9CE20DADDA09D01B223AF690A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
 
             introRoutineAddress = "016EB4"
 
             overwriteRoutines.extend([introRoutine])
             overwriteRoutineAddresses.extend([introRoutineAddress])
         elif introOptionChoice == "Skip Intro And Ceres":
-            introRoutine = "9CE20DADDA09D01AA9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+            introRoutine = "9CE20DADDA09D01E223AF690A9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
             introRoutineAddress = "016EB4"
             # Custom save start should be a list/tuple with two values:
             # Region name and save station index
@@ -1054,7 +1087,7 @@ if __name__ == "__main__":
     patchROM(
         filePath,
         None,
-        startingItems=["Morph Ball", "Reserve Tank", "Energy Tank"],
+        startingItems=[PickupPlacementData(1, -1, "Morph Ball")],
         introOptionChoice="Skip Intro And Ceres",
         staticPatches=patchesToApply,
     )

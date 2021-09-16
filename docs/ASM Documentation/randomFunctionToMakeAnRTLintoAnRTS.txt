@@ -1,0 +1,3 @@
+LDA #$F65F | A9 5F F6
+PHA        | 48
+RTL        | 6B
