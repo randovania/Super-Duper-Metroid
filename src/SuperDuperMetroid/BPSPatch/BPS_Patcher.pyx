@@ -138,7 +138,7 @@ class BPSPatcher:
     # Read the first 4 bytes to verify that this is an BPS file.
     @staticmethod
     def verifyFormat(bpsFile):
-        verificationBytes = HexHelper.dataToHex(bpsFile.read(4))
+        verificationBytes = dataToHex(bpsFile.read(4))
         if verificationBytes == "42505331": # Spells out "BPS1
             return True
         else:
@@ -187,10 +187,10 @@ class BPSPatcher:
         value = 0
         shift = 1
         while (True):
-            byte = HexHelper.hexToInt(HexHelper.dataToHex(bpsFile.read(1)))
+            byte = hexToInt(dataToHex(bpsFile.read(1)))
             #print(byte)
-            value += (byte & HexHelper.hexToInt("7F")) * shift
-            if byte & HexHelper.hexToInt("80") > 0:
+            value += (byte & hexToInt("7F")) * shift
+            if byte & hexToInt("80") > 0:
                 break
             shift <<= 7
             value += shift
@@ -202,9 +202,9 @@ class BPSPatcher:
         # Seek to the beginning of the footer
         bpsFile.seek(-12, 2)
         # Nab the CRCs from the bps file
-        romFooterCRC = HexHelper.hexToInt(HexHelper.reverseEndianness(HexHelper.dataToHex(bpsFile.read(4))))
-        targetFooterCRC = HexHelper.hexToInt(HexHelper.reverseEndianness(HexHelper.dataToHex(bpsFile.read(4))))
-        bpsFooterCRC = HexHelper.hexToInt(HexHelper.reverseEndianness(HexHelper.dataToHex(bpsFile.read(4))))
+        romFooterCRC = hexToInt(reverseEndianness(dataToHex(bpsFile.read(4))))
+        targetFooterCRC = hexToInt(reverseEndianness(dataToHex(bpsFile.read(4))))
+        bpsFooterCRC = hexToInt(reverseEndianness(dataToHex(bpsFile.read(4))))
         # Calculate CRCs on the data
         romFile = open(romPath, 'rb', buffering = 0)
         targetFile = open(targetPath, 'rb', buffering = 0)
@@ -215,11 +215,11 @@ class BPSPatcher:
         # Compare calculated CRCs to those stored within the bps file.
         failedCheck = False
         if romFooterCRC != romCRC:
-            print(f"ERROR: ROM failed CRC check.\n\tExpected CRC: {HexHelper.padHex(HexHelper.intToHex(romFooterCRC), 4)}\n\tCalculated CRC: {HexHelper.padHex(HexHelper.intToHex(romCRC), 4)}")
+            print(f"ERROR: ROM failed CRC check.\n\tExpected CRC: {padHex(intToHex(romFooterCRC), 4)}\n\tCalculated CRC: {padHex(intToHex(romCRC), 4)}")
         if targetFooterCRC != targetCRC:
-            print(f"ERROR: Target File failed CRC check.\n\tExpected CRC: {HexHelper.padHex(HexHelper.intToHex(targetFooterCRC), 4)}\n\tCalculated CRC: {HexHelper.padHex(HexHelper.intToHex(targetCRC), 4)}")
+            print(f"ERROR: Target File failed CRC check.\n\tExpected CRC: {padHex(intToHex(targetFooterCRC), 4)}\n\tCalculated CRC: {padHex(intToHex(targetCRC), 4)}")
         if bpsFooterCRC != bpsCRC:
-            print(f"ERROR: BPS Patch failed CRC check.\n\tExpected CRC: {HexHelper.padHex(HexHelper.intToHex(bpsFooterCRC), 4)}\n\tCalculated CRC: {HexHelper.padHex(HexHelper.intToHex(bpsCRC), 4)}")
+            print(f"ERROR: BPS Patch failed CRC check.\n\tExpected CRC: {padHex(intToHex(bpsFooterCRC), 4)}\n\tCalculated CRC: {padHex(intToHex(bpsCRC), 4)}")
 
     # numBytesToExclude is the number of bytes at the end of the file which are not counted for computing the crc.
     # the bpsCRC included does not hash itself, for obvious reasons, so it is necessary for that.

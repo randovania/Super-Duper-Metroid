@@ -11,8 +11,8 @@ BCS CALCFROMITEMLIST                                                            
 // IF WE'RE HERE, WE LEAVE $1C1F AS IS.                                                 | 
 // WE NEEDN'T CONCERN OURSELVES GREATLY WITH ITEM TABLE.                                | 
 RTS                                                                                     | 60
-																						| 
-																						| 
+                                                                                        | 
+                                                                                        | 
 LBL CALCFROMITEMLIST                                                                    | 
 // FIRST CHECK TO SEE IF ITEM WAS GIVEN VIA MULTIWORLD EVENT.                           | 
 // IT MAY BE THEORETICALLY POSSIBLE TO CAUSE AN ORDER FUCKUP IF ITEM IS RECEIVED AT SAME| 
@@ -21,11 +21,11 @@ LBL CALCFROMITEMLIST                                                            
 LDA $7FFF74                                                                             | AF 74 FF 7F
 CMP #$0001                                                                              | C9 01 00
 BNE ITEMINGAME                                                                          | D0 1C
-																						| 
+                                                                                        | 
 // GET ITEM ID AND STORE IT.                                                            | 
 LDA $7FFF7C                                                                             | AF 7C FF 7F
 STA $1C1F                                                                               | 8D 1F 1C
-																						| 
+                                                                                        | 
 // GET FUNC POINTER AND JUMP LONG                                                       | 
 // THIS GIVES PLAYER SOME SHIT                                                          | 
 LDA $00                                                                                 | A5 00
@@ -39,9 +39,9 @@ JSR ($0000, X)                                                                  
 PLX                                                                                     | FA
 STA $00                                                                                 | 85 00
 RTS                                                                                     | 60
-																						| 
-																						| 
-																						| 
+                                                                                        | 
+                                                                                        | 
+                                                                                        | 
 LBL ITEMINGAME                                                                          | 
 // COPY CURRENT ITEM ARRAY TO HERE.                                                     |  
 PHY                                                                                     | 5A
@@ -54,41 +54,98 @@ DEX                                                                             
 DEX                                                                                     | CA
 CPX #$0000                                                                              | E0 00 00
 BNE COPY ITEM ARRAY                                                                     | D0 F1
-																						| 
-// CHECK IF THIS MEMORY CONTAINS HORSESHIT OR NOT.                                      | 
-LDA $7FFFD0                                                                             | AF D0 FF 7F
+                                                                                        | 
+// CHECK IF THIS MEMORY CONTAINS GARBAGE OR NOT.                                        | 
+LDX #$0020                                                                              | A2 20 00
+LDY #$0000                                                                              | A0 00 00
+LBL DATA CHECK LOOP HEAD                                                                | 
+LDA $7FFFCE, X                                                                          | BF CE FF 7F
 SEC                                                                                     | 38
-SBC $7FFFB0                                                                             | EF B0 FF 7F
+SBC $7FFFAE, X                                                                          | FF AE FF 7F
 // IF DATA IS NON-BUGGERED, DIFFERENCE BETWEEN THESE TWO VALUES SHOULD BE A POWER OF 2. | 
 CMP #$0000                                                                              | C9 00 00
-BEQ SKIP DATA CLEAR                                                                     | F0 27
+BEQ DIFF IS 0                              !!!!                                         | F0 02
+BRA DO SUBLOOP                                                                          | 80 04
+LBL DIFF IS 0                                                                           | 
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+BRA SUBLOOP OVER                                                                        | 80 1A
+LBL DO SUBLOOP                                                                          | 
 STA $7FFF8E                                                                             | 8F 8E FF 7F
 LDA #$0001                                                                              | A9 01 00
-LBL DATA CHECK LOOP HEAD                                                                | 
+                                                                                        | 
+LBL DATA CHECK SUBLOOP HEAD                                                             | 
 CMP $7FFF8E                                                                             | CF 8E FF 7F
-BEQ SKIP DATA CLEAR                                                                     | F0 1A
+BEQ DATA CHECK PASSED                           !!!!                                    | F0 08
 CMP #$8000                                                                              | C9 00 80
 PHP                                                                                     | 08
 ASL                                                                                     | 0A
 PLP                                                                                     | 28
-BNE DATA CHECK LOOP HEAD                                                                | D0 F2
-																						| 
-																						| 
-// REPLACE DATA WITH ZEROES                                                             | 
-LDX #$0020                                                                              | A2 20 00
-LBL RESET DATA LOOP                                                                     | 
-LDA #$0000                                                                              | A9 00 00
-NOP																						| EA
-STA $7FFFAE, X                                                                          | 9F AE FF 7F
+BRA DATA CHECK FAILED                                                                   | 80 03
+LBL DATA CHECK PASSED                                                                   | 
+INY                                                                                     | C8
+BRA SUBLOOP OVER                                                                        | 80 02
+LBL DATA CHECK FAILED                                                                   | 
+BNE DATA CHECK SUBLOOP HEAD                                                             | D0 ED
+                                                                                        | 
+LBL SUBLOOP OVER                                                                        | 
 DEX                                                                                     | CA
 DEX                                                                                     | CA
 CPX #$0000                                                                              | E0 00 00
-BNE RESET DATA LOOP                                                                     | D0 F1
-																						| 
-																						| 
-																						| 
+BNE DATA CHECK LOOP HEAD                                                                | D0 CB
+                                                                                        | 
+                                                                                        | 
+CPY #$0001                                                                              | CC 01 00
+BEQ SKIP DATA CLEAR                                                                     | F0 43
+// REPLACE DATA WITH MOST RECENT SAVE DATA                                              | 
+LDA $7E0952 // LOAD CURRENT SAVE SLOT NUMBER                                            | AF 52 09 7E 
+TAX                                                                                     | AA
+LDA #$00DE                                                                              | A9 DE 00
+CPX #$0000                                                                              | E0 00 00
+BEQ RESET DATA                                                                          | F0 0A
+LBL GET SRAM OFFSET                                                                     | 
+CLC                                                                                     | 18
+ADC #$065C                                                                              | 69 5C 06
+DEX                                                                                     | CA
+CPX #$0000                                                                              | E0 00 00
+BNE GET SRAM OFFSET                                                                     | D0 F6
+                                                                                        | 
+                                                                                        |
+LBL RESET DATA                                                                          | 
+TAX                                                                                     | AA
+LDY #$0020                                                                              | A0 20 00
+LBL RESET DATA LOOP                                                                     | 
+LDA $700000, X                                                                          | BF 00 00 70
+PHX                                                                                     | DA
+PHY                                                                                     | 5A
+PLX                                                                                     | FA
+PLY                                                                                     | 7A
+STA $7FFFAE, X                                                                          | 9F AE FF 7F
+PHX                                                                                     | DA
+PHY                                                                                     | 5A
+PLX                                                                                     | FA
+PLY                                                                                     | 7A
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+DEY                                                                                     | 88
+DEY                                                                                     | 88
+CPY #$0000                                                                              | C0 00 00
+BNE RESET DATA LOOP                                                                     | D0 E7
+																						|
+																						|
+LDX #$0020                                                                              | A2 20 00
+LDA #$0000                                                                              | A9 00 00
+LBL CLEAR UNIQUE BIT                                                                    |
+STA $7FFF8E, Y                                                                          | 9F 8E FF 7F
+DEX                                                                                     | CA
+DEX                                                                                     | CA
+CPX #$0000                                                                              | E0 00 00
+BNE CLEAR UNIQUE BIT                                                                    | D0 F5
+                                                                                        | 
+                                                                                        | 
+                                                                                        | 
 LBL SKIP DATA CLEAR                                                                     | 
-																						| 
+                                                                                        | 
 // MAKE EVERY BIT OTHER THAN THE NEW ITEM EQUAL TO ZERO.                                | 
 // STORE RESULTANT TO PROCESSED ITEM ARRAY.                                             | 
 LDX #$0020                                                                              | A2 20 00
@@ -101,7 +158,7 @@ DEX                                                                             
 DEX                                                                                     | CA
 CPX #$0000                                                                              | E0 00 00
 BNE ISOLATEBITLOOP                                                                      | D0 EC
-																						| 
+                                                                                        | 
 // NOW LOOK FOR THE ONE THAT'S NOT EQUAL TO 0.                                          | 
 // FOR EACH THAT IS EQUAL TO 0, ADD 8 TO FINAL ADDRESS.                                 | 
 LDY #$00F0 // THIS WILL BE HOLDING THE CALCULATED ADDRESS.                              | A0 F0 00
@@ -118,13 +175,13 @@ TAY                                                                             
 DEX                                                                                     | CA
 DEX                                                                                     | CA
 BRA GETITEMOFFSETLOOP                                                                   | 80 ED
-																						| 
+                                                                                        | 
 // CALCULATE OFFSET BY BIT POSITION                                                     | 
 // NOTE: POINTER TABLE STARTS WITH LSB (I.E. 00000001) AND ENDS AT MSB (I.E. 10000000)  | 
 // CALCULATE THIS BY NUMBER OF TIMES WE HAVE TO SHIFT THE BIT FOR IT TO BE EQUAL TO 1.  | 
-																						| 
+                                                                                        | 
 LBL FOUNDITEMBIT                                                                        | 
-																						| 
+                                                                                        | 
 // UPDATE LAST ITEM ARRAY.                                                              | 
 LDA $7FFFCE, X                                                                          | BF CE FF 7F
 STA $7FFFAE, X                                                                          | 9F AE FF 7F
@@ -135,23 +192,23 @@ BEQ FOUND BIT OFFSET                                                            
 INY                                                                                     | C8
 LSR A                                                                                   | 4A
 BRA FIND BIT OFFSET                                                                     | 80 F7
-																						| 
+                                                                                        | 
 // WE HAVE OUR OFFSET. IT'S IN Y.                                                       | 
 LBL FOUND BIT OFFSET                                                                    | 
-																						| 
+                                                                                        | 
 TYA                                                                                     | 98
 ASL A // DOUBLE OUR OFFSET BECAUSE VALUES IN TABLES ARE TWO BYTES LONG.                 | 0A
 STA $7FFF8E                                                                             | 8F 8E FF 7F
-																						| 
+                                                                                        | 
 // GET ITEM ID AND STORE IT.                                                            | 
 TAX                                                                                     | AA
 LDA $A000, X                                                                            | BD 00 A0
 STA $1C1F                                                                               | 8D 1F 1C
-																						|
+                                                                                        |
 // GET FUNC POINTER AND JUMP LONG                                                       |
 // THIS GIVES PLAYER SOME SHIT                                                          |
 JSR ($A200, X)                                                                          | FC 00 A2
-																						|
+                                                                                        |
 // RETURN OUR ASSES                                                                     |
 PLX                                                                                     | FA
 PLY                                                                                     | 7A
