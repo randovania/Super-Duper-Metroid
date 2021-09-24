@@ -53,9 +53,13 @@
 
 import json
 import os
+from pathlib import Path
 
 from SuperDuperMetroid.IPS_Patcher import IPSPatcher
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+
+VRAM_ITEMS_PATH = Path(__file__).with_name(name="VramItems.bin")
+
 
 class MessageBoxGenerator:
     # List of characters that messages are allowed to have.
@@ -285,15 +289,15 @@ class ItemType:
 # TODO: Implement this more fully
 class PickupPlacementData:
     def __init__(
-        self,
-        quantityGiven,
-        pickupIndex,
-        itemName,
-        pickupItemEffect="Default",
-        nativeGraphics=True,
-        ownerName=None,
-        graphicsFileName=None,
-        nativeSpriteName="Default",
+            self,
+            quantityGiven,
+            pickupIndex,
+            itemName,
+            pickupItemEffect="Default",
+            nativeGraphics=True,
+            ownerName=None,
+            graphicsFileName=None,
+            nativeSpriteName="Default",
     ):
         self.quantityGiven = quantityGiven
         self.pickupIndex = pickupIndex
@@ -304,17 +308,21 @@ class PickupPlacementData:
         self.graphicsFileName = graphicsFileName
         self.nativeSpriteName = nativeSpriteName
 
+
 # Converts a hexadecimal string to a base 10 integer.
 def hexToInt(hexToConvert):
     return int(hexToConvert, 16)
+
 
 # Converts an integer to a hexadecimal string.
 def intToHex(intToConvert):
     return (hex(intToConvert)[2:]).upper()
 
+
 # Converts a hexadecimal string to binary data.
 def hexToData(hexToConvert):
     return bytes.fromhex(hexToConvert)
+
 
 # Reverses the endianness of a hexadecimal string.
 def reverseEndianness(hexToReverse):
@@ -328,6 +336,7 @@ def reverseEndianness(hexToReverse):
         outputString += pair
     return outputString
 
+
 # Pads a hexadecimal string with 0's until it meets the provided length.
 def padHex(hexToPad, numHexCharacters):
     returnHex = hexToPad
@@ -335,10 +344,12 @@ def padHex(hexToPad, numHexCharacters):
         returnHex = "0" + returnHex
     return returnHex
 
+
 # Substitutes every incidence of a keyword in a string with a hex version of the passed number.
-def replaceWithHex(originalString, keyword, number, numHexDigits = 4):
+def replaceWithHex(originalString, keyword, number, numHexDigits=4):
     numHexString = reverseEndianness(padHex(intToHex(number), numHexDigits))
     return originalString.replace(keyword, numHexString)
+
 
 # Generate a game with vanilla item placements
 def genVanillaGame():
@@ -441,10 +452,12 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     )
     # VRAMItem_Ball
     f.write(
-        bytearray([0x7C, 0x88, 0xA9, 0xDF, 0x2E, 0x8A]) + inMemoryInitialOffset.to_bytes(2, "little") + bytearray([0x2E, 0x8A, 0xAF, 0xDF, 0x2E, 0x8A, 0xC7, 0xDF])
+        bytearray([0x7C, 0x88, 0xA9, 0xDF, 0x2E, 0x8A]) + inMemoryInitialOffset.to_bytes(2, "little") + bytearray(
+            [0x2E, 0x8A, 0xAF, 0xDF, 0x2E, 0x8A, 0xC7, 0xDF])
     )
     # Start
-    f.write(bytearray([0x24, 0x8A]) + gotoAddr.to_bytes(2, "little") + bytearray([0xC1, 0x86, 0x89, 0xDF, 0x4E, 0x87, 0x16]))
+    f.write(bytearray([0x24, 0x8A]) + gotoAddr.to_bytes(2, "little") + bytearray(
+        [0xC1, 0x86, 0x89, 0xDF, 0x4E, 0x87, 0x16]))
     # .Gfx (1)
     f.write(bytearray([0x4F, 0xE0, 0x67, 0xE0, 0x24, 0x87]) + GFXAddr.to_bytes(2, "little"))
     # Goto
@@ -536,7 +549,8 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
         try:
             assert len(currentItemGFXData) == itemGFXLength
         except:
-            print(f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}.")
+            print(
+                f"ERROR: Invalid-size graphics data supplied for item type {itemType.itemName}:\n {currentItemGFXData} should be only 14(0x0E) bytes, is instead {str(len(currentItemGFXData))}.")
             return
         # Write to file
         f.write(genericAcquireData)
@@ -557,7 +571,8 @@ def writeKazutoMoreEfficientItemsHack(f, itemTypesList):
     # This is primarily for what were originally CRE items like Missile Expansions.
     f.seek(0x049100)
     # FIXME - REMOVE DEPENDENCE ON CURRENT WORKING DIRECTORY!
-    with open(os.getcwd() + "\\VramItems.bin", "rb") as f2:
+
+    with VRAM_ITEMS_PATH.open("rb") as f2:
         f.write(f2.read())
     return inMemoryPLMHeaderOffset
 
@@ -697,7 +712,8 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
         if item.itemName == "No Item":
             f.write(itemPLMIDs[item.itemName].to_bytes(2, "little"))
             continue
-        f.write((itemPLMIDs[item.itemName] + itemPLMBlockTypeMultiplier * SuperMetroidConstants.itemPLMBlockTypeList[patcherIndex]).to_bytes(2, "little"))
+        f.write((itemPLMIDs[item.itemName] + itemPLMBlockTypeMultiplier * SuperMetroidConstants.itemPLMBlockTypeList[
+            patcherIndex]).to_bytes(2, "little"))
         # Write Message Box Data.
         # ITEM TABLE FORMAT
         # 2 PAGES PER TABLE
@@ -750,7 +766,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Open ROM File
     f = open(ROMFilePath, "r+b", buffering=0)
     # Open Patcher Data Output File
-    patcherOutputPath = filePath[: filePath.rfind(".")] + "_PatcherData.json"
+    patcherOutputPath = ROMFilePath[: ROMFilePath.rfind(".")] + "_PatcherData.json"
     patcherOutput = open(patcherOutputPath, "w")
     patcherOutputJson = {"patcherData": []}
     # Generate item placement if none has been provided.
@@ -894,7 +910,8 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
                 if pickup.itemName in SuperMetroidConstants.ammoItemList:
                     effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
                     if not effectivePickupName in itemGetRoutinesDict:
-                        pickupHex = replaceWithHex(customAmmoGetTemplates[pickup.pickupItemEffect], "-qty", pickup.quantityGiven)
+                        pickupHex = replaceWithHex(customAmmoGetTemplates[pickup.pickupItemEffect], "-qty",
+                                                   pickup.quantityGiven)
                         itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
                 elif pickup.itemName in SuperMetroidConstants.toggleItemList:
                     # Overwrite vanilla behavior for this item if vanilla.
@@ -935,7 +952,8 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
     for (itemName, routineAddress) in itemGetRoutineAddressesDict.items():
-        itemRoutinesJsonOutput.append({"itemName": itemName, "routineAddress": reverseEndianness(padHex(intToHex(routineAddress), 4))})
+        itemRoutinesJsonOutput.append(
+            {"itemName": itemName, "routineAddress": reverseEndianness(padHex(intToHex(routineAddress), 4))})
         print(itemName + " has routine address " + reverseEndianness(padHex(intToHex(routineAddress), 4)))
     patcherOutputJson["patcherData"].append({"itemRoutines": itemRoutinesJsonOutput})
 
@@ -1026,12 +1044,14 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Many of these patches are provided by community members -
     # See top of document for details.
     # Dictionary of files associated with static patch names:
-    staticPatchDict = {"InstantG4": "Patches/g4_skip.ips", "MaxAmmoDisplay": "Patches/max_ammo_display.ips"}
+    staticPatchDict = {"InstantG4": "g4_skip.ips", "MaxAmmoDisplay": "max_ammo_display.ips"}
+    patches_dir = Path(__file__).parent.joinpath("Patches")
+
     if "staticPatches" in kwargs:
         staticPatches = kwargs["staticPatches"]
         for patch in staticPatches:
             if patch in staticPatchDict:
-                IPSPatcher.applyIPSPatch(staticPatchDict[patch], ROMFilePath)
+                IPSPatcher.applyIPSPatch(patches_dir.joinpath(staticPatchDict[patch]), ROMFilePath)
             else:
                 print(f"Provided patch {patch} does not exist!")
 
