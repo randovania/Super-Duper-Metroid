@@ -308,6 +308,107 @@ class PickupPlacementData:
         self.graphicsFileName = graphicsFileName
         self.nativeSpriteName = nativeSpriteName
 
+def rawVanillaItemPickupData():
+    return [PickupPlacementData(1, 0, "Grapple Beam"),
+            PickupPlacementData(1, 1, "Reserve Tank"),
+            PickupPlacementData(5, 2, "Missile Expansion"),
+            PickupPlacementData(1, 3, "Energy Tank"),
+            PickupPlacementData(5, 4, "Missile Expansion"),
+            PickupPlacementData(5, 5, "Missile Expansion"),
+            PickupPlacementData(5, 6, "Power Bomb Expansion"),
+            PickupPlacementData(5, 7, "Missile Expansion"),
+            PickupPlacementData(1, 8, "Energy Tank"),
+            PickupPlacementData(5, 9, "Missile Expansion"),
+            PickupPlacementData(5, 10, "Missile Expansion"),
+            PickupPlacementData(5, 11, "Missile Expansion"),
+            PickupPlacementData(5, 12, "Missile Expansion"),
+            PickupPlacementData(1, 13, "Energy Tank"),
+            PickupPlacementData(5, 14, "Super Missile Expansion"),
+            PickupPlacementData(1, 15, "Energy Tank"),
+            PickupPlacementData(1, 16, "Energy Tank"),
+            PickupPlacementData(6, 17, "Missile Expansion"),
+            PickupPlacementData(5, 18, "Super Missile Expansion"),
+            PickupPlacementData(1, 19, "Spazer Beam"),
+            PickupPlacementData(6, 21, "Missile Expansion"),
+            PickupPlacementData(1, 22, "Speed Booster"),
+            PickupPlacementData(1, 23, "Energy Tank"),
+            PickupPlacementData(6, 24, "Missile Expansion"),
+            PickupPlacementData(5, 25, "Super Missile Expansion"),
+            PickupPlacementData(1, 26, "Morph Ball"),
+            PickupPlacementData(6, 27, "Missile Expansion"),
+            PickupPlacementData(1, 28, "Hi-Jump Boots"),
+            PickupPlacementData(6, 29, "Missile Expansion"),
+            PickupPlacementData(6, 30, "Missile Expansion"),
+            PickupPlacementData(5, 31, "Power Bomb Expansion"),
+            PickupPlacementData(1, 33, "Reserve Tank"),
+            PickupPlacementData(1, 34, "Morph Ball Bombs"),
+            PickupPlacementData(6, 35, "Missile Expansion"),
+            PickupPlacementData(1, 36, "Energy Tank"),
+            PickupPlacementData(5, 37, "Power Bomb Expansion"),
+            PickupPlacementData(1, 38, "Plasma Beam"),
+            PickupPlacementData(5, 39, "Super Missile Expansion"),
+            PickupPlacementData(5, 40, "Super Missile Expansion"),
+            PickupPlacementData(6, 41, "Missile Expansion"),
+            PickupPlacementData(6, 42, "Missile Expansion"),
+            PickupPlacementData(6, 43, "Missile Expansion"),
+            PickupPlacementData(5, 44, "Power Bomb Expansion"),
+            PickupPlacementData(1, 48, "Energy Tank"),
+            PickupPlacementData(6, 49, "Missile Expansion"),
+            PickupPlacementData(5, 50, "Power Bomb Expansion"),
+            PickupPlacementData(6, 51, "Missile Expansion"),
+            PickupPlacementData(1, 52, "X-Ray Scope"),
+            PickupPlacementData(1, 53, "Space Jump"),
+            PickupPlacementData(6, 54, "Missile Expansion"),
+            PickupPlacementData(1, 55, "Varia Suit"),
+            PickupPlacementData(5, 56, "Missile Expansion"),
+            PickupPlacementData(5, 57, "Missile Expansion"),
+            PickupPlacementData(5, 58, "Super Missile Expansion"),
+            PickupPlacementData(5, 59, "Missile Expansion"),
+            PickupPlacementData(1, 60, "Screw Attack"),
+            PickupPlacementData(1, 61, "Energy Tank"),
+            PickupPlacementData(5, 62, "Power Bomb Expansion"),
+            PickupPlacementData(6, 63, "Missile Expansion"),
+            PickupPlacementData(1, 64, "Reserve Tank"),
+            PickupPlacementData(1, 65, "Gravity Suit"),
+            PickupPlacementData(5, 66, "Missile Expansion"),
+            PickupPlacementData(5, 67, "Super Missile Expansion"),
+            PickupPlacementData(1, 68, "Ice Beam"),
+            PickupPlacementData(1, 70, "Energy Tank"),
+            PickupPlacementData(5, 71, "Missile Expansion"),
+            PickupPlacementData(6, 73, "Missile Expansion"),
+            PickupPlacementData(5, 74, "Missile Expansion"),
+            PickupPlacementData(5, 75, "Power Bomb Expansion"),
+            PickupPlacementData(1, 76, "Energy Tank"),
+            PickupPlacementData(5, 77, "Power Bomb Expansion"),
+            PickupPlacementData(5, 78, "Missile Expansion"),
+            PickupPlacementData(5, 79, "Missile Expansion"),
+            PickupPlacementData(5, 80, "Missile Expansion"),
+            PickupPlacementData(5, 128, "Super Missile Expansion"),
+            PickupPlacementData(5, 129, "Missile Expansion"),
+            PickupPlacementData(1, 130, "Charge Beam"),
+            PickupPlacementData(5, 131, "Missile Expansion"),
+            PickupPlacementData(5, 132, "Power Bomb Expansion"),
+            PickupPlacementData(5, 133, "Missile Expansion"),
+            PickupPlacementData(5, 134, "Missile Expansion"),
+            PickupPlacementData(1, 135, "Spring Ball"),
+            PickupPlacementData(6, 136, "Missile Expansion"),
+            PickupPlacementData(6, 137, "Missile Expansion"),
+            PickupPlacementData(1, 138, "Reserve Tank"),
+            PickupPlacementData(1, 139, "Energy Tank"),
+            PickupPlacementData(5, 140, "Super Missile Expansion"),
+            PickupPlacementData(1, 141, "Wave Beam"),
+            PickupPlacementData(6, 142, "Missile Expansion"),
+            PickupPlacementData(1, 143, "Energy Tank"),
+            PickupPlacementData(5, 144, "Power Bomb Expansion"),
+            PickupPlacementData(5, 145, "Super Missile Expansion"),
+            PickupPlacementData(6, 146, "Missile Expansion"),
+            PickupPlacementData(6, 147, "Missile Expansion"),
+            PickupPlacementData(6, 148, "Missile Expansion"),
+            PickupPlacementData(1, 149, "Energy Tank"),
+            PickupPlacementData(6, 150, "Missile Expansion"),
+            PickupPlacementData(6, 151, "Missile Expansion"),
+            PickupPlacementData(6, 152, "Missile Expansion"),
+            PickupPlacementData(6, 154, "Missile Expansion")]
 
 # Converts a hexadecimal string to a base 10 integer.
 def hexToInt(hexToConvert):
@@ -703,8 +804,10 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     spoilerPath = filePath[: filePath.rfind(".")] + "_SPOILER.txt"
     print("Spoiler file generating at " + spoilerPath + "...")
     spoilerFile = open(spoilerPath, "w")
+    print(type(SuperMetroidConstants.itemIndexList))
     for i, item in enumerate(pickupDataList):
         patcherIndex = SuperMetroidConstants.itemIndexList.index(item.pickupIndex)
+        print(f"pickupIndex: {item.pickupIndex}, patcherIndex: {patcherIndex}, location: {SuperMetroidConstants.locationNamesList[patcherIndex]}")
         # Write PLM Data.
         f.seek(SuperMetroidConstants.itemPLMLocationList[patcherIndex])
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
@@ -976,12 +1079,14 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     overwriteGetMessageHeaderRoutine = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
     overwriteJSRToGetMessageRoutine = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
     overwriteJSRToGetHeaderRoutine = "205A82"
+    overwriteCrateriaWakeupRoutine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
 
     # Addresses to write routines to in Headerless ROM file.
     overwriteJSRToPickupRoutineAddress = "028086"
     overwriteGetMessageHeaderRoutineAddress = "02825A"
     overwriteJSRToGetMessageRoutineAddress = "0282E5"
     overwriteJSRToGetHeaderRoutineAddress = "028250"
+    overwriteCrateriaWakeupRoutineAddress = "07E652"
 
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
     # Default behavior is to skip straight to landing site.
@@ -1029,6 +1134,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
             overwriteGetMessageHeaderRoutine,
             overwriteJSRToGetMessageRoutine,
             overwriteJSRToGetHeaderRoutine,
+            overwriteCrateriaWakeupRoutine,
         ]
     )
     overwriteRoutineAddresses.extend(
@@ -1037,6 +1143,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
             overwriteGetMessageHeaderRoutineAddress,
             overwriteJSRToGetMessageRoutineAddress,
             overwriteJSRToGetHeaderRoutineAddress,
+            overwriteCrateriaWakeupRoutineAddress,
         ]
     )
 
@@ -1106,7 +1213,7 @@ if __name__ == "__main__":
     patchesToApply = ["InstantG4", "MaxAmmoDisplay"]
     patchROM(
         filePath,
-        None,
+        rawVanillaItemPickupData(),
         startingItems=[PickupPlacementData(1, -1, "Morph Ball")],
         introOptionChoice="Skip Intro And Ceres",
         staticPatches=patchesToApply,
