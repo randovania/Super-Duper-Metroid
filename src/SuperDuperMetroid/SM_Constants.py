@@ -473,7 +473,7 @@ class SuperMetroidConstants:
         0x78608,
         0x7860E,
         0x78614,
-        0x7865E,
+        0x7865C,
         0x78676,
         0x786DE,
         0x7874C,

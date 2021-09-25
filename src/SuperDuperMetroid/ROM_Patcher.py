@@ -1213,7 +1213,7 @@ if __name__ == "__main__":
     patchesToApply = ["InstantG4", "MaxAmmoDisplay"]
     patchROM(
         filePath,
-        rawVanillaItemPickupData(),
+        rawRandomizedExampleItemPickupData(),
         startingItems=[PickupPlacementData(1, -1, "Morph Ball")],
         introOptionChoice="Skip Intro And Ceres",
         staticPatches=patchesToApply,
