@@ -308,7 +308,7 @@ class PickupPlacementData:
         self.graphicsFileName = graphicsFileName
         self.nativeSpriteName = nativeSpriteName
 
-def rawVanillaItemPickupData():
+def rawRandomizedExampleItemPickupData():
     return [PickupPlacementData(1, 0, "Grapple Beam"),
             PickupPlacementData(100, 1, "Reserve Tank"),
             PickupPlacementData(5, 2, "Missile Expansion"),
