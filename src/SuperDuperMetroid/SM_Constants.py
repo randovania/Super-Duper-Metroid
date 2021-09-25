@@ -445,7 +445,7 @@ class SuperMetroidConstants:
 
     # Item index list
     # A list of all valid item indices, in order
-    itemIndexList = sorted(bitflagIndexToLocationNameDict, key=bitflagIndexToLocationNameDict.get)
+    itemIndexList = sorted(bitflagIndexToLocationNameDict)
     # List of item PLM Locations in ROM.
     # This is where we place each item's entity so that it will show up in the room.
     # Doing so overwrites the item that would have been there previously (i.e. in an unpatched ROM).
