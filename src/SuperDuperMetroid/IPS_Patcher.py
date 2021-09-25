@@ -2,9 +2,11 @@
 def hexToInt(hexToConvert):
     return int(hexToConvert, 16)
 
+
 # Converts binary data to a hexadecimal string.
 def dataToHex(dataToConvert):
     return "".join("{:02x}".format(x) for x in dataToConvert).upper()
+
 
 # Reverses the endianness of a hexadecimal string.
 def reverseEndianness(hexToReverse):
@@ -18,12 +20,14 @@ def reverseEndianness(hexToReverse):
         outputString += pair
     return outputString
 
+
 # Pads a hexadecimal string with 0's until it meets the provided length.
 def padHex(hexToPad, numHexCharacters):
     returnHex = hexToPad
     while len(returnHex) < numHexCharacters:
         returnHex = "0" + returnHex
     return returnHex
+
 
 class IPSPatcher:
     # Read the next hunk's data and apply it to the ROM file.

@@ -43,17 +43,21 @@ from websocket import create_connection
 def hexToInt(hexToConvert):
     return int(hexToConvert, 16)
 
+
 # Converts an integer to a hexadecimal string.
 def intToHex(intToConvert):
     return (hex(intToConvert)[2:]).upper()
+
 
 # Converts a hexadecimal string to binary data.
 def hexToData(hexToConvert):
     return bytes.fromhex(hexToConvert)
 
+
 # Converts binary data to a hexadecimal string.
 def dataToHex(dataToConvert):
     return "".join("{:02x}".format(x) for x in dataToConvert).upper()
+
 
 # Reverses the endianness of a hexadecimal string.
 def reverseEndianness(hexToReverse):
@@ -66,6 +70,7 @@ def reverseEndianness(hexToReverse):
     for pair in reversedHexPairs:
         outputString += pair
     return outputString
+
 
 # Pads a hexadecimal string with 0's until it meets the provided length.
 def padHex(hexToPad, numHexCharacters):
@@ -467,12 +472,8 @@ class SuperMetroidInterface:
                 if maxAmountOnly:
                     newCurrentAmmo = reverseEndianness(currentAmmo)
                 else:
-                    newCurrentAmmo = reverseEndianness(
-                        padHex(intToHex(hexToInt(currentAmmo) + incrementAmount), 4)
-                    )
-                newMaxAmmo = reverseEndianness(
-                    padHex(intToHex(hexToInt(maxAmmo) + incrementAmount), 4)
-                )
+                    newCurrentAmmo = reverseEndianness(padHex(intToHex(hexToInt(currentAmmo) + incrementAmount), 4))
+                newMaxAmmo = reverseEndianness(padHex(intToHex(hexToInt(maxAmmo) + incrementAmount), 4))
                 self.SetData(currentAmmoAddress, newCurrentAmmo)
                 self.SetData(maxAmmoAddress, newMaxAmmo)
             else:
@@ -497,9 +498,7 @@ class SuperMetroidInterface:
         if self.gameLoaded:
             if itemName in SuperMetroidConstants.toggleItemList:
                 itemOffset = SuperMetroidConstants.toggleItemBitflagOffsets[itemName]
-                equippedByteAddress = intToHex(
-                    hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]
-                )
+                equippedByteAddress = intToHex(hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0])
                 obtainedByteAddress = intToHex(hexToInt(equippedByteAddress) + 2)
                 equippedByte = self.GetData(equippedByteAddress, 1)
                 obtainedByte = self.GetData(obtainedByteAddress, 1)
@@ -531,19 +530,13 @@ class SuperMetroidInterface:
                     intToHex(hexToInt(SuperMetroidConstants.toggleItemBaseAddress) + itemOffset[0]),
                     2,
                 )
-                obtainedByteAddress = padHex(
-                    intToHex(hexToInt(equippedByteAddress) + 2), 2
-                )
+                obtainedByteAddress = padHex(intToHex(hexToInt(equippedByteAddress) + 2), 2)
                 equippedByte = self.GetData(equippedByteAddress, 1)
                 obtainedByte = self.GetData(obtainedByteAddress, 1)
                 bitflag = 1 << itemOffset[1]
                 # Do bitwise and with all ones (except the bitflag we want to turn off)
-                newEquippedByte = padHex(
-                    intToHex(hexToInt(equippedByte) & (255 - bitflag)), 4
-                )
-                newObtainedByte = padHex(
-                    intToHex(hexToInt(obtainedByte) & (255 - bitflag)), 4
-                )
+                newEquippedByte = padHex(intToHex(hexToInt(equippedByte) & (255 - bitflag)), 4)
+                newObtainedByte = padHex(intToHex(hexToInt(obtainedByte) & (255 - bitflag)), 4)
                 self.SetData(equippedByteAddress, newEquippedByte)
                 self.SetData(obtainedByteAddress, newObtainedByte)
             else:
