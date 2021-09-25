@@ -67,8 +67,8 @@ CMP #$0000                                                                      
 BEQ DIFF IS 0                              !!!!                                         | F0 02
 BRA DO SUBLOOP                                                                          | 80 04
 LBL DIFF IS 0                                                                           | 
-DEX                                                                                     | CA
-DEX                                                                                     | CA
+NOP                                                                                     | EA
+NOP                                                                                     | EA
 BRA SUBLOOP OVER                                                                        | 80 1A
 LBL DO SUBLOOP                                                                          | 
 STA $7FFF8E                                                                             | 8F 8E FF 7F
@@ -95,7 +95,7 @@ CPX #$0000                                                                      
 BNE DATA CHECK LOOP HEAD                                                                | D0 CB
                                                                                         | 
                                                                                         | 
-CPY #$0001                                                                              | CC 01 00
+CPY #$0001                                                                              | C0 01 00
 BEQ SKIP DATA CLEAR                                                                     | F0 43
 // REPLACE DATA WITH MOST RECENT SAVE DATA                                              | 
 LDA $7E0952 // LOAD CURRENT SAVE SLOT NUMBER                                            | AF 52 09 7E 
@@ -136,7 +136,7 @@ BNE RESET DATA LOOP                                                             
 LDX #$0020                                                                              | A2 20 00
 LDA #$0000                                                                              | A9 00 00
 LBL CLEAR UNIQUE BIT                                                                    |
-STA $7FFF8E, Y                                                                          | 9F 8E FF 7F
+STA $7FFF8E, X                                                                          | 9F 8E FF 7F
 DEX                                                                                     | CA
 DEX                                                                                     | CA
 CPX #$0000                                                                              | E0 00 00
@@ -196,6 +196,8 @@ BRA FIND BIT OFFSET                                                             
 // WE HAVE OUR OFFSET. IT'S IN Y.                                                       | 
 LBL FOUND BIT OFFSET                                                                    | 
                                                                                         | 
+LDA #$0000                                                                              | A9 00 00
+STA $7FFF8E, X                                                                          | 9F 8E FF 7F
 TYA                                                                                     | 98
 ASL A // DOUBLE OUR OFFSET BECAUSE VALUES IN TABLES ARE TWO BYTES LONG.                 | 0A
 STA $7FFF8E                                                                             | 8F 8E FF 7F
