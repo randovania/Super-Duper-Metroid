@@ -487,29 +487,39 @@ def writeCrateriaWakeupRoutine(f):
     f.write(hexToData(overwriteCrateriaWakeupRoutine))
 
 
+def createItemTypes(pickupDataList):
+    itemTypes = {}
+    # TODO: Add a placeholder-type sprite to available native graphics sprites
+    # REMINDER: After doing so increment the initial GFXDataLocation address
+    nextPickupGFXDataLocation = "0095"
+    itemGfxAdded = {}
+    for pickup in pickupDataList:
+        if not pickup.itemName in itemTypes:
+            if pickup.nativeGraphics:
+                if pickup.nativeSpriteName == "Default":
+                    itemTypes[pickup.itemName] = ItemType(
+                        pickup.itemName,
+                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.itemName],
+                        SuperMetroidConstants.nativeItemPalettes[pickup.itemName],
+                    )
+                else:
+                    itemTypes[pickup.itemName] = ItemType(
+                        pickup.itemName,
+                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.nativeSpriteName],
+                        SuperMetroidConstants.nativeItemPalettes[pickup.nativeSpriteName],
+                    )
+            else:
+                # TODO: Patch pickup graphics into ROM from file
+                # TODO: Add message box generation
+                itemGfxAdded[pickup.itemName] = pickup.graphicsFileName
+                nextPickupGFXDataLocation = padHex(intToHex(hexToInt(nextPickupGFXDataLocation) + 1), 4)
+    return itemTypes
+
+
 def getEquipmentRoutines():
     # Generates a list of all effects for picking up "Equipment" (i.e. items which have no ammo count associated, permanent)
     # Not all routines here are written to ROM, only those which we determine are used in-game.
     # This is why passing items from the multiworld session that this player receives is necessary.
-    beamBitFlagsDict = {
-        "Charge Beam": 0x1000,
-        "Ice Beam": 0x0002,
-        "Wave Beam": 0x0001,
-        "Spazer Beam": 0x0004,
-        "Plasma Beam": 0x0008,
-    }
-
-    equipmentBitFlagsDict = {
-        "Varia Suit": 0x0001,
-        "Spring Ball": 0x0002,
-        "Morph Ball": 0x0004,
-        "Screw Attack": 0x0008,
-        "Hi-Jump Boots": 0x0100,
-        "Space Jump": 0x0200,
-        "Speed Booster": 0x2000,
-        "Morph Ball Bombs": 0x1000,
-        "Gravity Suit": 0x0020,
-    }
 
     # Make all the get routines and templates.
     grappleGet = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
@@ -526,10 +536,10 @@ def getEquipmentRoutines():
     equipmentGets = {}
     equipmentGets["X-Ray Scope"] = bytes.fromhex(xRayGet)
     equipmentGets["Grapple Beam"] = bytes.fromhex(grappleGet)
-    for itemName, bitFlags in equipmentBitFlagsDict.items():
+    for itemName, bitFlags in SuperMetroidConstants.equipmentBitflagsDict.items():
         equipmentHex = replaceWithHex(equipmentGetTemplate, "-eqp", bitFlags)
         equipmentGets[itemName] = bytes.fromhex(equipmentHex)
-    for itemName, bitFlags in beamBitFlagsDict.items():
+    for itemName, bitFlags in SuperMetroidConstants.beamBitflagsDict.items():
         equipmentHex = replaceWithHex(beamGetTemplate, "-eqp", bitFlags)
         equipmentGets[itemName] = bytes.fromhex(equipmentHex)
     return equipmentGets
@@ -606,7 +616,7 @@ def writeItemGetRoutines(f, itemGetRoutinesDict, inGameAddress):
     passedTables = False
     for itemName, routine in itemGetRoutinesDict.items():
         # Don't overwrite the tables
-        if (inGameAddress + len(routine) // 2) >= 0x9A00 and not passedTables:
+        if inGameAddress + len(routine) >= 0x9A00 and not passedTables:
             f.seek(0x2A400)
             inGameAddress = 0xA400
             passedTables = True
@@ -982,102 +992,7 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     messageBoxGenerator = MessageBoxGenerator(f)
 
     # Necessary for applying the Kazuto More Efficient Items Patch
-    itemTypes = {}
-    # Locations of item sprites
-    # Stored little-endian
-    nativeItemSpriteLocations = {
-        "Energy Tank": 0x0091,
-        "Missile Expansion": 0x0092,
-        "Super Missile Expansion": 0x0093,
-        "Power Bomb Expansion": 0x0094,
-        "Morph Ball Bombs": 0x0080,
-        "Charge Beam": 0x008B,
-        "Ice Beam": 0x008C,
-        "Hi-Jump Boots": 0x0084,
-        "Speed Booster": 0x008A,
-        "Wave Beam": 0x008D,
-        "Spazer Beam": 0x008F,
-        "Spring Ball": 0x0082,
-        "Varia Suit": 0x0083,
-        "Gravity Suit": 0x0081,
-        "X-Ray Scope": 0x0089,
-        "Plasma Beam": 0x008E,
-        "Grapple Beam": 0x0088,
-        "Space Jump": 0x0086,
-        "Screw Attack": 0x0085,
-        "Morph Ball": 0x0087,
-        "Reserve Tank": 0x0090,
-    }
-
-    # None indicates default palette
-    # Item Palettes for native sprites
-    # None is eqv. to all 0's.
-    nativeItemPalettes = {
-        "Energy Tank": None,
-        "Missile Expansion": None,
-        "Super Missile Expansion": None,
-        "Power Bomb Expansion": None,
-        "Morph Ball Bombs": None,
-        "Charge Beam": None,
-        "Ice Beam": bytearray([0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00]),
-        "Hi-Jump Boots": None,
-        "Speed Booster": None,
-        "Wave Beam": bytearray([0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00]),
-        "Spazer Beam": None,
-        "Spring Ball": None,
-        "Varia Suit": None,
-        "Gravity Suit": None,
-        "X-Ray Scope": bytearray([0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x00, 0x00]),
-        "Plasma Beam": bytearray([0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00]),
-        "Grapple Beam": None,
-        "Space Jump": None,
-        "Screw Attack": None,
-        "Morph Ball": None,
-        "Reserve Tank": None,
-    }
-
-    # TODO: Add a placeholder-type sprite to available native graphics sprites
-    # REMINDER: After doing so increment the initial GFXDataLocation address
-    nextPickupGFXDataLocation = "0095"
-    itemGfxAdded = {}
-    for pickup in pickupDataList:
-        if not pickup.itemName in itemTypes:
-            if pickup.nativeGraphics:
-                if pickup.nativeSpriteName == "Default":
-                    itemTypes[pickup.itemName] = ItemType(
-                        pickup.itemName, nativeItemSpriteLocations[pickup.itemName], nativeItemPalettes[pickup.itemName]
-                    )
-                else:
-                    itemTypes[pickup.itemName] = ItemType(
-                        pickup.itemName,
-                        nativeItemSpriteLocations[pickup.nativeSpriteName],
-                        nativeItemPalettes[pickup.nativeSpriteName],
-                    )
-            else:
-                # TODO: Patch pickup graphics into ROM from file
-                # TODO: Add message box generation
-                itemGfxAdded[pickup.itemName] = pickup.graphicsFileName
-                nextPickupGFXDataLocation = padHex(intToHex(hexToInt(nextPickupGFXDataLocation) + 1), 4)
-                pass
-
-    # FOR MULTIWORLD
-    # Add items which don't exist in the base game.
-    # EDIT: This commented code is very old and likely incompatible with current methods.
-
-    # Generate list of items which do not exist in the base game.
-    # WIP
-    # nextPLMId = "EF2B"
-    # for item in itemsInOrderList:
-    # if not(item in itemPLMIDs):
-    # itemPLMIDs[item] = nextPLMId
-
-    # itemMessageIDs[item] = itemMessageIDs["Wave Beam"]
-    # itemMessageWidths[item] = "Small"
-
-    # itemMessageAddresses = None #TODO - Create these dynamically.
-
-    # itemTypes.append(ItemType(item, ))
-    # nextPLMId = intToHex(hexToInt(nextPLMId) + 4)
+    itemTypes = createItemTypes(pickupDataList)
 
     itemTypeList = itemTypes.values()
     plmHeaderOffset = writeKazutoMoreEfficientItemsHack(f, itemTypeList)
@@ -1224,10 +1139,9 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Check to make sure intro option choice doesn't conflict with custom start point.
     customSaveStart = None
     if "customSaveStart" in kwargs:
-        if introOptionChoice != "Skip Intro And Ceres":
-            print("ERROR: Cannot set custom start without also skipping Intro and Ceres.")
-        else:
-            customSaveStart = kwargs["customSaveStart"]
+        customSaveStart = kwargs["customSaveStart"]
+    if customSaveStart is not None and introOptionChoice != "Skip Intro And Ceres":
+        print("ERROR: Cannot set custom start without also skipping Intro and Ceres.")
     if introOptionChoice != "Vanilla":
         writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart)
 
