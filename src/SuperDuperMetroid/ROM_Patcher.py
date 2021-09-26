@@ -311,6 +311,43 @@ class PickupPlacementData:
         self.nativeSpriteName = nativeSpriteName
 
 
+# Converts a hexadecimal string to a base 10 integer.
+def hexToInt(hexToConvert):
+    return int(hexToConvert, 16)
+
+# Converts an integer to a hexadecimal string.
+def intToHex(intToConvert):
+    return (hex(intToConvert)[2:]).upper()
+
+# Converts a hexadecimal string to binary data.
+def hexToData(hexToConvert):
+    return bytes.fromhex(hexToConvert)
+
+# Reverses the endianness of a hexadecimal string.
+def reverseEndianness(hexToReverse):
+    assert (len(hexToReverse) % 2) == 0
+    hexPairs = []
+    for i in range(len(hexToReverse) // 2):
+        hexPairs.append(hexToReverse[2 * i] + hexToReverse[2 * i + 1])
+    reversedHexPairs = hexPairs[::-1]
+    outputString = ""
+    for pair in reversedHexPairs:
+        outputString += pair
+    return outputString
+
+# Pads a hexadecimal string with 0's until it meets the provided length.
+def padHex(hexToPad, numHexCharacters):
+    returnHex = hexToPad
+    while len(returnHex) < numHexCharacters:
+        returnHex = "0" + returnHex
+    return returnHex
+
+# Substitutes every incidence of a keyword in a string with a hex version of the passed number.
+def replaceWithHex(originalString, keyword, number, numHexDigits=4):
+    numHexString = reverseEndianness(padHex(intToHex(number), numHexDigits))
+    return originalString.replace(keyword, numHexString)
+
+
 def rawRandomizedExampleItemPickupData():
     return [
         PickupPlacementData(1, 0, "Grapple Beam"),
@@ -415,48 +452,284 @@ def rawRandomizedExampleItemPickupData():
         PickupPlacementData(6, 154, "Missile Expansion"),
     ]
 
+def writeMultiworldRoutines(f):
+    # MULTIWORLD ROUTINES:
+    # Appended to bank 90. Used to work the game's events in our favor.
+    # TODO: Convert this to an ips patch?
+    multiworldExecuteArbitraryFunctionRoutine = "E220A98348C220AF72FF7F486B"
 
-# Converts a hexadecimal string to a base 10 integer.
-def hexToInt(hexToConvert):
-    return int(hexToConvert, 16)
+    f.seek(0x087FF0)
+    f.write(hexToData(multiworldExecuteArbitraryFunctionRoutine))
+
+    # Routines to append to bank $83.
+
+    multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
+    multiworldRoutineAddressStart = 0x01AD66
+
+    multiworldRoutines = [multiworldItemGetRoutine]
+
+    f.seek(multiworldRoutineAddressStart)
+    for routine in multiworldRoutines:
+        f.write(hexToData(routine))
+
+def writeCrateriaWakeupRoutine(f):
+    # TODO: Convert this to an ips patch?
+    overwriteCrateriaWakeupRoutine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
+    overwriteCrateriaWakeupRoutineAddress = 0x07E652
+    f.seek(overwriteCrateriaWakeupRoutineAddress)
+    f.write(hexToData(overwriteCrateriaWakeupRoutine))
+
+def getEquipmentRoutines():
+    # Generates a list of all effects for picking up "Equipment" (i.e. items which have no ammo count associated, permanent)
+    # Not all routines here are written to ROM, only those which we determine are used in-game.
+    # This is why passing items from the multiworld session that this player receives is necessary.
+    beamBitFlagsDict = {
+        "Charge Beam": 0x1000,
+        "Ice Beam": 0x0002,
+        "Wave Beam": 0x0001,
+        "Spazer Beam": 0x0004,
+        "Plasma Beam": 0x0008,
+    }
+
+    equipmentBitFlagsDict = {
+        "Varia Suit": 0x0001,
+        "Spring Ball": 0x0002,
+        "Morph Ball": 0x0004,
+        "Screw Attack": 0x0008,
+        "Hi-Jump Boots": 0x0100,
+        "Space Jump": 0x0200,
+        "Speed Booster": 0x2000,
+        "Morph Ball Bombs": 0x1000,
+        "Gravity Suit": 0x0020,
+    }
+
+    # Make all the get routines and templates.
+    grappleGet = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
+    xRayGet = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
+    equipmentGetTemplate = "ADA20909-eqp8DA209ADA40909-eqp8DA40960"
+    beamGetTemplate = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
+
+    # Note that if items appear more than once with different implementations, things will break horribly.
+    # If you want major items with different effects, give them a new name -
+    # Ex. Instead of "Spazer" and "Plasma" for a progressive spazer hack, call it
+    # "Progressive Spazer"
+    # Will still try its damnedest if you give it conflicting info, but can't give multiple effects to an item that it thinks is the same.
+    # This is why ammo item names have the quantity appended to them - since having differing quantities makes them effectively different items.
+    equipmentGets = {}
+    equipmentGets["X-Ray Scope"] = bytes.fromhex(xRayGet)
+    equipmentGets["Grapple Beam"] = bytes.fromhex(grappleGet)
+    for itemName, bitFlags in equipmentBitFlagsDict.items():
+        equipmentHex = replaceWithHex(equipmentGetTemplate, "-eqp", bitFlags)
+        equipmentGets[itemName] = bytes.fromhex(equipmentHex)
+    for itemName, bitFlags in beamBitFlagsDict.items():
+        equipmentHex = replaceWithHex(beamGetTemplate, "-eqp", bitFlags)
+        equipmentGets[itemName] = bytes.fromhex(equipmentHex)
+    return equipmentGets
+
+def getAllNecessaryPickupRoutines(itemList, itemGetRoutinesDict, startingItems):
+    ammoGetTemplates = {
+        "Energy Tank": "ADC4091869-qty8DC4098DC20960",
+        "Reserve Tank": "ADD4091869-qty8DD409ADC009D003EEC00960",
+        "Missile Expansion": "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
+        "Super Missile Expansion": "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
+        "Power Bomb Expansion": "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060",
+    }
+
+    # For non-vanilla ammo get routines.
+    customAmmoGetTemplates = {}
+
+    # Create individual routines from ASM templates.
+    # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
+    # This is because I'm lazy and we absolutely have room for it.
+    allItemsList = itemList.copy()
+    allItemsList += startingItems
+    for pickup in allItemsList:
+        if pickup.ownerName is None or pickup.ownerName == playerName:
+            if pickup.pickupItemEffect == "Default":
+                if pickup.itemName in SuperMetroidConstants.ammoItemList:
+                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
+                    if not effectivePickupName in itemGetRoutinesDict:
+                        print(effectivePickupName)
+                        pickupHex = replaceWithHex(ammoGetTemplates[pickup.itemName], "-qty", pickup.quantityGiven)
+                        itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
+                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
+                    if not pickup.itemName in itemGetRoutinesDict:
+                        itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.itemName]
+                else:
+                    print(
+                        'ERROR: Cannot specify itemPickupEffect as "Default" for an item which does not exist in the vanilla game.'
+                    )
+            else:
+                if pickup.itemName in SuperMetroidConstants.ammoItemList:
+                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
+                    if not effectivePickupName in itemGetRoutinesDict:
+                        pickupHex = replaceWithHex(
+                            customAmmoGetTemplates[pickup.pickupItemEffect], "-qty", pickup.quantityGiven
+                        )
+                        itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
+                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
+                    # Overwrite vanilla behavior for this item if vanilla.
+                    # Otherwise add new item effect for the item type.
+                    # Note that adding multiple toggle items with the same name and different effects has undefined behavior.
+                    if not pickup.itemName in itemGetRoutinesDict:
+                        if pickup.pickupItemEffect in equipmentGets:
+                            itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.pickupItemEffect]
+                    # Otherwise add new effect
+                else:
+                    print("ERROR: Custom item pickup behaviors are not yet implemented.")
+
+    # This is a command that will do nothing, used for items that are meant to go to other players.
+    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
+    itemGetRoutinesDict["No Item"] = (0x60).to_bytes(1, "little")
+    return itemGetRoutinesDict
+
+def writeItemGetRoutines(f, itemGetRoutinesDict, inGameAddress):
+    # Write them to memory and store their addresses in a dict.
+    # This is critical, as we will use these addresses to store to a table that dictates
+    # What an item will do when picked up.
+    # We'll be appending them to the same place as messagebox code, so we'll keep the
+    # Address and file pointer we had from before.
+    # We may want to move these somewhere else later.
+    itemGetRoutineAddressesDict = {}
+    
+    # Use this to make sure the item data tables, which contain data about pickups, isn't overwritten.
+    passedTables = False
+    for itemName, routine in itemGetRoutinesDict.items():
+        # Don't overwrite the tables
+        if (inGameAddress + len(routine) // 2) >= 0x9A00 and not passedTables:
+            f.seek(0x2A400)
+            inGameAddress = 0xA400
+            passedTables = True
+        # KEY CHANGE HERE - BIG NOT LITTLE ENDIAN STORED HERE!
+        itemGetRoutineAddressesDict[itemName] = inGameAddress
+        f.write(routine)
+        inGameAddress += len(routine)
+
+    return itemGetRoutineAddressesDict
+
+def writeMessageboxRoutines(f, baseInGameAddress):
+    # Now write our new routines to memory.
+    # First we append new routines to free space
+    # At the end of bank 85.
+
+    # Routines stored as hexadecimal.
+    #
+    # We handle writing these in the program itself instead of as static patches,
+    # Because I write them myself and don't want to manually recalculate addresses
+    # Each time I test changes.
+    #
+    # Keyphrases starting in - will be substituted with addresses.
+    # These must be of appropriate length or size calculations might fail.
+    # onPickupFoundRoutine = -alp
+    # getMessageHeaderDataRoutine  = -bta
+    # getMessageHeaderRoutine = -gma
+    # getMessageContentRoutine = -dlt
+
+    onPickupFoundRoutine = "8D1F1CC91C00F00AC914009006C91900B00160AF74FF7FC90100D01CAF7CFF7F8D1F1CA500DA48AF7EFF7F850068A20000FC0000FA8500605ADAA22000BF6ED87E9FCEFF7FCACAE00000D0F1A22000A00000BFCEFF7F38FFAEFF7FC90000F0028004EAEA801A8F8EFF7FA90100CF8EFF7FF008C90080080A288003C88002D0EDCACAE00000D0CBC00100F043AF52097EAAA9DE00E00000F00A18695C06CAE00000D0F6AAA02000BF000070DA5AFA7A9FAEFF7FDA5AFA7ACACA8888C00000D0E7A22000A900009F8EFF7FCACAE00000D0F5A22000BFCEFF7F38FFAEFF7F9F8EFF7FCACAE00000D0ECA0F000A22000BF8EFF7FC90000D00A9838E91000A8CACA80EDBFCEFF7F9FAEFF7FBF8EFF7FC90100F004C84A80F7A900009F8EFF7F980A8F8EFF7FAABD00A08D1F1CFC00A2FA7A60"
+    getMessageHeaderDataRoutine = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
+    getMessageHeaderRoutine = (
+        "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
+    )
+    getMessageContentRoutine = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
+    # KEY NOTE: WRITE ROUTINE ADDRESSES LITTLE ENDIAN!!!
+    routines = [onPickupFoundRoutine, getMessageHeaderDataRoutine, getMessageHeaderRoutine, getMessageContentRoutine]
+    routineAddresses = []
+    routineAddressRefs = ["-alp", "-bta", "-gma", "-dlt"]
+    inGameAddress = baseInGameAddress
+    f.seek(0x020000 + inGameAddress)
+    # Calculate routine addresses
+    for i in range(len(routines)):
+        routineAddresses.append(inGameAddress)
+        inGameAddress += len(routines[i]) // 2
+
+    # Replace subroutine references with their addresses and write them to the ROM file.
+    for i in range(len(routines)):
+        for j in range(len(routines)):
+            routines[i] = replaceWithHex(routines[i], routineAddressRefs[j], routineAddresses[j])
+        f.write(hexToData(routines[i]))
+
+    # Modify/overwrite existing routines.
+    overwriteRoutines = []
+    overwriteRoutineAddresses = []
+
+    # Modify Message Box Routines To Allow Customizable Behavior
+    overwriteJSRToPickupRoutine = "20-alp"
+    overwriteGetMessageHeaderRoutine = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
+    overwriteJSRToGetMessageRoutine = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
+    overwriteJSRToGetHeaderRoutine = "205A82"
 
 
-# Converts an integer to a hexadecimal string.
-def intToHex(intToConvert):
-    return (hex(intToConvert)[2:]).upper()
+    # Addresses to write routines to in Headerless ROM file.
+    overwriteJSRToPickupRoutineAddress = "028086"
+    overwriteGetMessageHeaderRoutineAddress = "02825A"
+    overwriteJSRToGetMessageRoutineAddress = "0282E5"
+    overwriteJSRToGetHeaderRoutineAddress = "028250"
+    
+    overwriteRoutines = []
+    overwriteRoutineAddresses = []
+    
+    overwriteRoutines.extend(
+        [
+            overwriteJSRToPickupRoutine,
+            overwriteGetMessageHeaderRoutine,
+            overwriteJSRToGetMessageRoutine,
+            overwriteJSRToGetHeaderRoutine,
+        ]
+    )
+    
+    overwriteRoutineAddresses.extend(
+        [
+            overwriteJSRToPickupRoutineAddress,
+            overwriteGetMessageHeaderRoutineAddress,
+            overwriteJSRToGetMessageRoutineAddress,
+            overwriteJSRToGetHeaderRoutineAddress,
+        ]
+    )
+    
+    # Replace references with actual addresses.
+    for i in range(len(overwriteRoutines)):
+        for j in range(len(routines)):
+            overwriteRoutines[i] = replaceWithHex(overwriteRoutines[i], routineAddressRefs[j], routineAddresses[j])
 
+    # Write to file
+    for i, routine in enumerate(overwriteRoutines):
+        f.seek(hexToInt(overwriteRoutineAddresses[i]))
+        f.write(hexToData(routine))
+    
+    # Seek back to where we expect to be.
+    f.seek(0x020000 + inGameAddress)
+    
+    
+    
+    return inGameAddress
 
-# Converts a hexadecimal string to binary data.
-def hexToData(hexToConvert):
-    return bytes.fromhex(hexToConvert)
+def writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart = None):
+    # FIXME: Make starting items work for all options
+    introRoutineAddress = 0x016EB4
+    if introOptionChoice == "Skip Intro":
+        # TODO: Replace this with a custom save start
+        introRoutine = "9CE20DADDA09D01B223AF690A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+    elif introOptionChoice == "Skip Intro And Ceres":
+        # TODO: Consider renaming? Since w/ CSS this could still result in a Ceres start?
+        introRoutine = "9CE20DADDA09D01E223AF690A9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+        # Custom save start should be a list/tuple with two values:
+        # Region name and save station index
+        # This is subject to change
+        # TODO: Support Ceres
+        if customSaveStart is not None:
+            customStart = kwargs["customSaveStart"]
+            regionHex = SuperMetroidConstants.regionToHexDict[customStart[0]]
+            saveHex = reverseEndianness(padHex(intToHex(customStart[1]), 4))
+            introRoutine = introRoutine.replace("-rgn", regionHex)
+            introRoutine = introRoutine.replace("-sav", saveHex)
+        else:
+            introRoutine = introRoutine.replace("-rgn", "0000")
+            introRoutine = introRoutine.replace("-sav", "0000")
+    else:
+        print("WARNING: Invalid option entered for introOptionChoice. Defaulting to vanilla intro behavior...")
 
-
-# Reverses the endianness of a hexadecimal string.
-def reverseEndianness(hexToReverse):
-    assert (len(hexToReverse) % 2) == 0
-    hexPairs = []
-    for i in range(len(hexToReverse) // 2):
-        hexPairs.append(hexToReverse[2 * i] + hexToReverse[2 * i + 1])
-    reversedHexPairs = hexPairs[::-1]
-    outputString = ""
-    for pair in reversedHexPairs:
-        outputString += pair
-    return outputString
-
-
-# Pads a hexadecimal string with 0's until it meets the provided length.
-def padHex(hexToPad, numHexCharacters):
-    returnHex = hexToPad
-    while len(returnHex) < numHexCharacters:
-        returnHex = "0" + returnHex
-    return returnHex
-
-
-# Substitutes every incidence of a keyword in a string with a hex version of the passed number.
-def replaceWithHex(originalString, keyword, number, numHexDigits=4):
-    numHexString = reverseEndianness(padHex(intToHex(number), numHexDigits))
-    return originalString.replace(keyword, numHexString)
-
+    f.seek(introRoutineAddress)
+    f.write(hexToData(introRoutine))
 
 # Generate a game with vanilla item placements
 def genVanillaGame():
@@ -817,12 +1090,8 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
     spoilerPath = filePath[: filePath.rfind(".")] + "_SPOILER.txt"
     print("Spoiler file generating at " + spoilerPath + "...")
     spoilerFile = open(spoilerPath, "w")
-    print(type(SuperMetroidConstants.itemIndexList))
     for i, item in enumerate(pickupDataList):
         patcherIndex = SuperMetroidConstants.itemIndexList.index(item.pickupIndex)
-        print(
-            f"pickupIndex: {item.pickupIndex}, patcherIndex: {patcherIndex}, location: {SuperMetroidConstants.locationNamesList[patcherIndex]}"
-        )
         # Write PLM Data.
         f.seek(SuperMetroidConstants.itemPLMLocationList[patcherIndex])
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
@@ -887,10 +1156,16 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
 def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **kwargs):
     # Open ROM File
     f = open(ROMFilePath, "r+b", buffering=0)
+    
     # Open Patcher Data Output File
     patcherOutputPath = ROMFilePath[: ROMFilePath.rfind(".")] + "_PatcherData.json"
     patcherOutput = open(patcherOutputPath, "w")
     patcherOutputJson = {"patcherData": []}
+    
+    startingItems = []
+    if "startingItems" in kwargs:
+        startingItems = kwargs["startingItems"]
+    
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
@@ -899,7 +1174,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
         print("Item list was not supplied to ROM patcher. Generating Vanilla placement with no starting items.")
     else:
         try:
-            assert len(itemList) == 100
+            assert len(itemList) >= 100
         except:
             print("ERROR: Non-Empty item list didn't meet length requirement. Aborting ROM Patch.")
             return
@@ -907,170 +1182,13 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
     # Now write our new routines to memory.
     # First we append new routines to free space
     # At the end of bank 85.
-    baseRoutineWritingAddress = 0x029643
-
-    # Routines stored as hexadecimal.
-    #
-    # We handle writing these in the program itself instead of as static patches,
-    # Because I write them myself and don't want to manually recalculate addresses
-    # Each time I test changes.
-    #
-    # Keyphrases starting in - will be substituted with addresses.
-    # These must be of appropriate length or size calculations might fail.
-    # onPickupFoundRoutine = -alp
-    # getMessageHeaderDataRoutine  = -bta
-    # getMessageHeaderRoutine = -gma
-    # getMessageContentRoutine = -dlt
-    onPickupFoundRoutine = "8D1F1CC91C00F00AC914009006C91900B00160AF74FF7FC90100D01CAF7CFF7F8D1F1CA500DA48AF7EFF7F850068A20000FC0000FA8500605ADAA22000BF6ED87E9FCEFF7FCACAE00000D0F1A22000A00000BFCEFF7F38FFAEFF7FC90000F0028004EAEA801A8F8EFF7FA90100CF8EFF7FF008C90080080A288003C88002D0EDCACAE00000D0CBC00100F043AF52097EAAA9DE00E00000F00A18695C06CAE00000D0F6AAA02000BF000070DA5AFA7A9FAEFF7FDA5AFA7ACACA8888C00000D0E7A22000A900009F8EFF7FCACAE00000D0F5A22000BFCEFF7F38FFAEFF7F9F8EFF7FCACAE00000D0ECA0F000A22000BF8EFF7FC90000D00A9838E91000A8CACA80EDBFCEFF7F9FAEFF7FBF8EFF7FC90100F004C84A80F7A900009F8EFF7F980A8F8EFF7FAABD00A08D1F1CFC00A2FA7A60"
-    getMessageHeaderDataRoutine = "20-gmaA920008516B900009F00327EC8C8E8E8C616D0F160"
-    getMessageHeaderRoutine = (
-        "AD1F1CC91C00F00AC914009009C91900B004A0408060AF74FF7FC90100D006AF76FF7FA860DAAF8EFF7FAABF009A85A8FA60"
-    )
-    getMessageContentRoutine = "AD1F1CC91C00F00AC91400902AC91900B025AD1F1C3A0A85340A186534AABD9F868500BDA58638E50085094A8516A50918698000850960AF74FF7FC90100D016AF78FF7FA88400AF7AFF7F4A85160A18698000850960DAAF8EFF7FAABF009C85A88400BF009E854A85160A186980008509FA60"
-    # KEY NOTE: WRITE ROUTINE ADDRESSES LITTLE ENDIAN!!!
-    routines = [onPickupFoundRoutine, getMessageHeaderDataRoutine, getMessageHeaderRoutine, getMessageContentRoutine]
-    routineAddresses = []
-    routineAddressRefs = ["-alp", "-bta", "-gma", "-dlt"]
-    currentAddress = baseRoutineWritingAddress
     inGameAddress = 0x9643
-    f.seek(currentAddress)
-    # Calculate routine addresses
-    for i in range(len(routines)):
-        routineAddresses.append(inGameAddress)
-        inGameAddress += len(routines[i]) // 2
-        currentAddress += len(routines[i]) // 2
+    inGameAddress = writeMessageboxRoutines(f, inGameAddress)
 
-    # Replace subroutine references with their addresses and write them to the ROM file.
-    for i in range(len(routines)):
-        for j in range(len(routines)):
-            routines[i] = replaceWithHex(routines[i], routineAddressRefs[j], routineAddresses[j])
-        f.write(hexToData(routines[i]))
-
-    # Flags have their endianness reversed before being written.
-    itemGetRoutinesDict = {}
-    # Not all routines here are written to ROM,
-    # Only those which we determine are used in game.
-    # This is why passing items from multiworld session that this player receives is necessary.
-    # availableItemGetRoutinesDict = {}
-
-    beamBitFlagsDict = {
-        "Charge Beam": 0x1000,
-        "Ice Beam": 0x0002,
-        "Wave Beam": 0x0001,
-        "Spazer Beam": 0x0004,
-        "Plasma Beam": 0x0008,
-    }
-
-    equipmentBitFlagsDict = {
-        "Varia Suit": 0x0001,
-        "Spring Ball": 0x0002,
-        "Morph Ball": 0x0004,
-        "Screw Attack": 0x0008,
-        "Hi-Jump Boots": 0x0100,
-        "Space Jump": 0x0200,
-        "Speed Booster": 0x2000,
-        "Morph Ball Bombs": 0x1000,
-        "Gravity Suit": 0x0020,
-    }
-
-    ammoGetTemplates = {
-        "Energy Tank": "ADC4091869-qty8DC4098DC20960",
-        "Reserve Tank": "ADD4091869-qty8DD409ADC009D003EEC00960",
-        "Missile Expansion": "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
-        "Super Missile Expansion": "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
-        "Power Bomb Expansion": "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060",
-    }
-
-    # For new ammo-type items.
-    customAmmoGetTemplates = {}
-
-    # Make all the get routines and templates.
-    grappleGet = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
-    xRayGet = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
-    equipmentGetTemplate = "ADA20909-eqp8DA209ADA40909-eqp8DA40960"
-    beamGetTemplate = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
-
-    # Note that if items appear more than once with different implementations, things will break horribly.
-    # If you want major items with different effects, give them a new name -
-    # Ex. Instead of "Spazer" and "Plasma" for a progressive spazer hack, call it
-    # "Progressive Spazer"
-    # Will still try its damnedest if you give it conflicting info, but can't give multiple effects to an item that it thinks is the same.
-    # This is why ammo item names have the quantity appended to them - since having differing quantities makes them effectively different items.
-    equipmentGets = {}
-    equipmentGets["X-Ray Scope"] = bytes.fromhex(xRayGet)
-    equipmentGets["Grapple Beam"] = bytes.fromhex(grappleGet)
-    for itemName, bitFlags in equipmentBitFlagsDict.items():
-        equipmentHex = replaceWithHex(equipmentGetTemplate, "-eqp", bitFlags)
-        equipmentGets[itemName] = bytes.fromhex(equipmentHex)
-    for itemName, bitFlags in beamBitFlagsDict.items():
-        equipmentHex = replaceWithHex(beamGetTemplate, "-eqp", bitFlags)
-        equipmentGets[itemName] = bytes.fromhex(equipmentHex)
-
-    # Create individual routines from ASM templates.
-    # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
-    # This is because I'm lazy and we absolutely have room for it.
-    allItemsList = itemList.copy()
-    if "startingItems" in kwargs:
-        allItemsList += kwargs["startingItems"]
-    for pickup in allItemsList:
-        if pickup.ownerName is None or pickup.ownerName == playerName:
-            if pickup.pickupItemEffect == "Default":
-                if pickup.itemName in SuperMetroidConstants.ammoItemList:
-                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
-                    if not effectivePickupName in itemGetRoutinesDict:
-                        print(effectivePickupName)
-                        pickupHex = replaceWithHex(ammoGetTemplates[pickup.itemName], "-qty", pickup.quantityGiven)
-                        itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
-                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
-                    if not pickup.itemName in itemGetRoutinesDict:
-                        itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.itemName]
-                else:
-                    print(
-                        'ERROR: Cannot specify itemPickupEffect as "Default" for an item which does not exist in the vanilla game.'
-                    )
-            else:
-                if pickup.itemName in SuperMetroidConstants.ammoItemList:
-                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
-                    if not effectivePickupName in itemGetRoutinesDict:
-                        pickupHex = replaceWithHex(
-                            customAmmoGetTemplates[pickup.pickupItemEffect], "-qty", pickup.quantityGiven
-                        )
-                        itemGetRoutinesDict[effectivePickupName] = bytes.fromhex(pickupHex)
-                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
-                    # Overwrite vanilla behavior for this item if vanilla.
-                    # Otherwise add new item effect for the item type.
-                    # Note that adding multiple toggle items with the same name and different effects has undefined behavior.
-                    if not pickup.itemName in itemGetRoutinesDict:
-                        if pickup.pickupItemEffect in equipmentGets:
-                            itemGetRoutinesDict[pickup.itemName] = equipmentGets[pickup.pickupItemEffect]
-                    # Otherwise add new effect
-                else:
-                    print("ERROR: Custom item pickup behaviors are not yet implemented.")
-
-    # This is a command that will do nothing, used for items that are meant to go to other players.
-    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
-    itemGetRoutinesDict["No Item"] = (0x60).to_bytes(1, "little")
-
-    # Write them to memory and store their addresses in a dict.
-    # This is critical, as we will use these addresses to store to a table that dictates
-    # What an item will do when picked up.
-    # We'll be appending them to the same place as messagebox code, so we'll keep the
-    # Address and file pointer we had from before.
-    # We may want to move these somewhere else later.
-    itemGetRoutineAddressesDict = {}
-    # Use this to make sure the item data tables, which contain data about pickups, isn't overwritten.
-    passedTables = False
-    for itemName, routine in itemGetRoutinesDict.items():
-        # Don't overwrite the tables
-        if (inGameAddress + len(routine) // 2) >= 0x9A00 and not passedTables:
-            f.seek(0x2A400)
-            inGameAddress = 0xA400
-            passedTables = True
-        # KEY CHANGE HERE - BIG NOT LITTLE ENDIAN STORED HERE!
-        itemGetRoutineAddressesDict[itemName] = inGameAddress
-        f.write(routine)
-        inGameAddress += len(routine)
-        currentAddress += len(routine)
+    # Create and write the routines which handle pickup effects.
+    equipmentGets = getEquipmentRoutines()
+    itemGetRoutinesDict = getAllNecessaryPickupRoutines(itemList, equipmentGets, startingItems)
+    itemGetRoutineAddressesDict = writeItemGetRoutines(f, itemGetRoutinesDict, inGameAddress)
 
     # Output item routine info to a json file for use in the interface
     itemRoutinesJsonOutput = []
@@ -1078,95 +1196,36 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
         itemRoutinesJsonOutput.append(
             {"itemName": itemName, "routineAddress": reverseEndianness(padHex(intToHex(routineAddress), 4))}
         )
-        print(itemName + " has routine address " + reverseEndianness(padHex(intToHex(routineAddress), 4)))
+        print(itemName + " has routine address " + padHex(intToHex(routineAddress), 4))
     patcherOutputJson["patcherData"].append({"itemRoutines": itemRoutinesJsonOutput})
 
     # Patch Item Placements into the ROM.
     placeItems(f, ROMFilePath, itemGetRoutineAddressesDict, itemList)
 
     # Add starting items patch
-    if "startingItems" in kwargs:
-        addStartingInventory(f, kwargs["startingItems"], itemGetRoutineAddressesDict)
-    else:
-        f.seek(0x1C0000)
-        f.write((0).to_bytes(2, "little"))
-
-    # Modify/overwrite existing routines.
-    overwriteRoutines = []
-    overwriteRoutineAddresses = []
-
-    # Modify Message Box Routines To Allow Customizable Behavior
-    overwriteJSRToPickupRoutine = "20-alp"
-    overwriteGetMessageHeaderRoutine = "20-gmaA20000B900009F00327EE8E8C8C8E04000D0F0A0000020B88220-bta60"
-    overwriteJSRToGetMessageRoutine = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
-    overwriteJSRToGetHeaderRoutine = "205A82"
-    overwriteCrateriaWakeupRoutine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
-
-    # Addresses to write routines to in Headerless ROM file.
-    overwriteJSRToPickupRoutineAddress = "028086"
-    overwriteGetMessageHeaderRoutineAddress = "02825A"
-    overwriteJSRToGetMessageRoutineAddress = "0282E5"
-    overwriteJSRToGetHeaderRoutineAddress = "028250"
-    overwriteCrateriaWakeupRoutineAddress = "07E652"
+    addStartingInventory(f, startingItems, itemGetRoutineAddressesDict)
 
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
     # Default behavior is to skip straight to landing site.
+    
     introOptionChoice = "Skip Intro And Ceres"
     if "introOptionChoice" in kwargs:
         introOptionChoice = kwargs["introOptionChoice"]
     # Check to make sure intro option choice doesn't conflict with custom start point.
+    customSaveStart = None
     if "customSaveStart" in kwargs:
         if introOptionChoice != "Skip Intro And Ceres":
             print("ERROR: Cannot set custom start without also skipping Intro and Ceres.")
-    if introOptionChoice != "Vanilla":
-        if introOptionChoice == "Skip Intro":
-            # TODO: Convert this to static patch.
-            introRoutine = "9CE20DADDA09D01B223AF690A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
-
-            introRoutineAddress = "016EB4"
-
-            overwriteRoutines.extend([introRoutine])
-            overwriteRoutineAddresses.extend([introRoutineAddress])
-        elif introOptionChoice == "Skip Intro And Ceres":
-            introRoutine = "9CE20DADDA09D01E223AF690A9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
-            introRoutineAddress = "016EB4"
-            # Custom save start should be a list/tuple with two values:
-            # Region name and save station index
-            # This is subject to change
-            # TODO: Support Ceres
-            if "customSaveStart" in kwargs:
-                customStart = kwargs["customSaveStart"]
-                regionHex = SuperMetroidConstants.regionToHexDict[customStart[0]]
-                saveHex = reverseEndianness(padHex(intToHex(customStart[1]), 4))
-                introRoutine = introRoutine.replace("-rgn", regionHex)
-                introRoutine = introRoutine.replace("-sav", saveHex)
-            else:
-                introRoutine = introRoutine.replace("-rgn", "0000")
-                introRoutine = introRoutine.replace("-sav", "0000")
         else:
-            print("WARNING: Invalid option entered for introOptionChoice. Defaulting to vanilla intro behavior...")
-
-        overwriteRoutines.extend([introRoutine])
-        overwriteRoutineAddresses.extend([introRoutineAddress])
-
-    overwriteRoutines.extend(
-        [
-            overwriteJSRToPickupRoutine,
-            overwriteGetMessageHeaderRoutine,
-            overwriteJSRToGetMessageRoutine,
-            overwriteJSRToGetHeaderRoutine,
-            overwriteCrateriaWakeupRoutine,
-        ]
-    )
-    overwriteRoutineAddresses.extend(
-        [
-            overwriteJSRToPickupRoutineAddress,
-            overwriteGetMessageHeaderRoutineAddress,
-            overwriteJSRToGetMessageRoutineAddress,
-            overwriteJSRToGetHeaderRoutineAddress,
-            overwriteCrateriaWakeupRoutineAddress,
-        ]
-    )
+            customSaveStart = kwargs["customSaveStart"]
+    if introOptionChoice != "Vanilla":
+        writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart)
+    
+    # Write the routine used to cause Crateria to wake up
+    writeCrateriaWakeupRoutine(f)
+    
+    # Write routines used for multiworld
+    writeMultiworldRoutines(f)
 
     # Apply static patches.
     # Many of these patches are provided by community members -
@@ -1183,35 +1242,6 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
             else:
                 print(f"Provided patch {patch} does not exist!")
 
-    # Replace references with actual addresses.
-    for i in range(len(overwriteRoutines)):
-        for j in range(len(routines)):
-            overwriteRoutines[i] = replaceWithHex(overwriteRoutines[i], routineAddressRefs[j], routineAddresses[j])
-
-    # Write to file
-    for i, routine in enumerate(overwriteRoutines):
-        currentAddress = hexToInt(overwriteRoutineAddresses[i])
-        f.seek(currentAddress)
-        f.write(hexToData(routine))
-
-    # MULTIWORLD ROUTINES:
-    # Appended to bank 90. Used to work the game's events in our favor.
-    # TODO: Convert this to an ips patch?
-    multiworldExecuteArbitraryFunctionRoutine = "E220A98348C220AF72FF7F486B"
-
-    f.seek(0x087FF0)
-    f.write(hexToData(multiworldExecuteArbitraryFunctionRoutine))
-
-    # Routines to append to bank $83.
-
-    multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
-    multiworldRoutineAddressStart = 0x01AD66
-
-    multiworldRoutines = [multiworldItemGetRoutine]
-
-    f.seek(multiworldRoutineAddressStart)
-    for routine in multiworldRoutines:
-        f.write(hexToData(routine))
 
     json.dump(patcherOutputJson, patcherOutput, indent=4, sort_keys=True)
     patcherOutput.close()
