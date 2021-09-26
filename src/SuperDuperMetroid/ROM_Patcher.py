@@ -468,6 +468,7 @@ def writeMultiworldRoutines(f):
     f.write(hexToData(multiworldExecuteArbitraryFunctionRoutine))
 
     # Routines to append to bank $83.
+    # More than one are planned, for things like sending messages &c.
 
     multiworldItemGetRoutine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
     multiworldRoutineAddressStart = 0x01AD66
@@ -736,9 +737,8 @@ def writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart=None):
         # This is subject to change
         # TODO: Support Ceres
         if customSaveStart is not None:
-            customStart = kwargs["customSaveStart"]
-            regionHex = SuperMetroidConstants.regionToHexDict[customStart[0]]
-            saveHex = reverseEndianness(padHex(intToHex(customStart[1]), 4))
+            regionHex = SuperMetroidConstants.regionToHexDict[customSaveStart[0]]
+            saveHex = reverseEndianness(padHex(intToHex(customSaveStart[1]), 4))
             introRoutine = introRoutine.replace("-rgn", regionHex)
             introRoutine = introRoutine.replace("-sav", saveHex)
         else:
@@ -768,7 +768,9 @@ def genVanillaGame():
 # Takes a list of PickupPlacementData
 # Irrelevent fields need not be specified.
 def addStartingInventory(f, pickups, itemGetRoutineAddressesDict):
-    if len(pickups) > 100:
+    # Safeguard so that we don't overlap routine associations,
+    # Which start 0x100 after the starting inventory.
+    if len(pickups) > 127:
         print(
             "ERROR: Unreasonable amount of starting items detected. Starting items will not be placed. Did you send correct information to the patcher?"
         )
