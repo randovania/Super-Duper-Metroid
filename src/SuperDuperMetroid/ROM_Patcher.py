@@ -315,13 +315,16 @@ class PickupPlacementData:
 def hexToInt(hexToConvert):
     return int(hexToConvert, 16)
 
+
 # Converts an integer to a hexadecimal string.
 def intToHex(intToConvert):
     return (hex(intToConvert)[2:]).upper()
 
+
 # Converts a hexadecimal string to binary data.
 def hexToData(hexToConvert):
     return bytes.fromhex(hexToConvert)
+
 
 # Reverses the endianness of a hexadecimal string.
 def reverseEndianness(hexToReverse):
@@ -335,12 +338,14 @@ def reverseEndianness(hexToReverse):
         outputString += pair
     return outputString
 
+
 # Pads a hexadecimal string with 0's until it meets the provided length.
 def padHex(hexToPad, numHexCharacters):
     returnHex = hexToPad
     while len(returnHex) < numHexCharacters:
         returnHex = "0" + returnHex
     return returnHex
+
 
 # Substitutes every incidence of a keyword in a string with a hex version of the passed number.
 def replaceWithHex(originalString, keyword, number, numHexDigits=4):
@@ -452,6 +457,7 @@ def rawRandomizedExampleItemPickupData():
         PickupPlacementData(6, 154, "Missile Expansion"),
     ]
 
+
 def writeMultiworldRoutines(f):
     # MULTIWORLD ROUTINES:
     # Appended to bank 90. Used to work the game's events in our favor.
@@ -472,12 +478,14 @@ def writeMultiworldRoutines(f):
     for routine in multiworldRoutines:
         f.write(hexToData(routine))
 
+
 def writeCrateriaWakeupRoutine(f):
     # TODO: Convert this to an ips patch?
     overwriteCrateriaWakeupRoutine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
     overwriteCrateriaWakeupRoutineAddress = 0x07E652
     f.seek(overwriteCrateriaWakeupRoutineAddress)
     f.write(hexToData(overwriteCrateriaWakeupRoutine))
+
 
 def getEquipmentRoutines():
     # Generates a list of all effects for picking up "Equipment" (i.e. items which have no ammo count associated, permanent)
@@ -525,6 +533,7 @@ def getEquipmentRoutines():
         equipmentHex = replaceWithHex(beamGetTemplate, "-eqp", bitFlags)
         equipmentGets[itemName] = bytes.fromhex(equipmentHex)
     return equipmentGets
+
 
 def getAllNecessaryPickupRoutines(itemList, itemGetRoutinesDict, startingItems):
     ammoGetTemplates = {
@@ -583,6 +592,7 @@ def getAllNecessaryPickupRoutines(itemList, itemGetRoutinesDict, startingItems):
     itemGetRoutinesDict["No Item"] = (0x60).to_bytes(1, "little")
     return itemGetRoutinesDict
 
+
 def writeItemGetRoutines(f, itemGetRoutinesDict, inGameAddress):
     # Write them to memory and store their addresses in a dict.
     # This is critical, as we will use these addresses to store to a table that dictates
@@ -591,7 +601,7 @@ def writeItemGetRoutines(f, itemGetRoutinesDict, inGameAddress):
     # Address and file pointer we had from before.
     # We may want to move these somewhere else later.
     itemGetRoutineAddressesDict = {}
-    
+
     # Use this to make sure the item data tables, which contain data about pickups, isn't overwritten.
     passedTables = False
     for itemName, routine in itemGetRoutinesDict.items():
@@ -606,6 +616,7 @@ def writeItemGetRoutines(f, itemGetRoutinesDict, inGameAddress):
         inGameAddress += len(routine)
 
     return itemGetRoutineAddressesDict
+
 
 def writeMessageboxRoutines(f, baseInGameAddress):
     # Now write our new routines to memory.
@@ -658,16 +669,15 @@ def writeMessageboxRoutines(f, baseInGameAddress):
     overwriteJSRToGetMessageRoutine = "20-dltEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEAEA"
     overwriteJSRToGetHeaderRoutine = "205A82"
 
-
     # Addresses to write routines to in Headerless ROM file.
     overwriteJSRToPickupRoutineAddress = "028086"
     overwriteGetMessageHeaderRoutineAddress = "02825A"
     overwriteJSRToGetMessageRoutineAddress = "0282E5"
     overwriteJSRToGetHeaderRoutineAddress = "028250"
-    
+
     overwriteRoutines = []
     overwriteRoutineAddresses = []
-    
+
     overwriteRoutines.extend(
         [
             overwriteJSRToPickupRoutine,
@@ -676,7 +686,7 @@ def writeMessageboxRoutines(f, baseInGameAddress):
             overwriteJSRToGetHeaderRoutine,
         ]
     )
-    
+
     overwriteRoutineAddresses.extend(
         [
             overwriteJSRToPickupRoutineAddress,
@@ -685,7 +695,7 @@ def writeMessageboxRoutines(f, baseInGameAddress):
             overwriteJSRToGetHeaderRoutineAddress,
         ]
     )
-    
+
     # Replace references with actual addresses.
     for i in range(len(overwriteRoutines)):
         for j in range(len(routines)):
@@ -695,15 +705,14 @@ def writeMessageboxRoutines(f, baseInGameAddress):
     for i, routine in enumerate(overwriteRoutines):
         f.seek(hexToInt(overwriteRoutineAddresses[i]))
         f.write(hexToData(routine))
-    
+
     # Seek back to where we expect to be.
     f.seek(0x020000 + inGameAddress)
-    
-    
-    
+
     return inGameAddress
 
-def writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart = None):
+
+def writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart=None):
     # FIXME: Make starting items work for all options
     introRoutineAddress = 0x016EB4
     if introOptionChoice == "Skip Intro":
@@ -730,6 +739,7 @@ def writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart = None
 
     f.seek(introRoutineAddress)
     f.write(hexToData(introRoutine))
+
 
 # Generate a game with vanilla item placements
 def genVanillaGame():
@@ -1156,16 +1166,16 @@ def placeItems(f, filePath, itemGetRoutineAddressesDict, pickupDataList, playerN
 def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **kwargs):
     # Open ROM File
     f = open(ROMFilePath, "r+b", buffering=0)
-    
+
     # Open Patcher Data Output File
     patcherOutputPath = ROMFilePath[: ROMFilePath.rfind(".")] + "_PatcherData.json"
     patcherOutput = open(patcherOutputPath, "w")
     patcherOutputJson = {"patcherData": []}
-    
+
     startingItems = []
     if "startingItems" in kwargs:
         startingItems = kwargs["startingItems"]
-    
+
     # Generate item placement if none has been provided.
     # This will give a warning message, as this is only appropriate for debugging patcher features.
     if itemList is None:
@@ -1207,7 +1217,7 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
 
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
     # Default behavior is to skip straight to landing site.
-    
+
     introOptionChoice = "Skip Intro And Ceres"
     if "introOptionChoice" in kwargs:
         introOptionChoice = kwargs["introOptionChoice"]
@@ -1220,10 +1230,10 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
             customSaveStart = kwargs["customSaveStart"]
     if introOptionChoice != "Vanilla":
         writeSaveInitializationRoutines(f, introOptionChoice, customSaveStart)
-    
+
     # Write the routine used to cause Crateria to wake up
     writeCrateriaWakeupRoutine(f)
-    
+
     # Write routines used for multiworld
     writeMultiworldRoutines(f)
 
@@ -1241,7 +1251,6 @@ def patchROM(ROMFilePath, itemList=None, playerName=None, recipientList=None, **
                 IPSPatcher.applyIPSPatch(patches_dir.joinpath(staticPatchDict[patch]), ROMFilePath)
             else:
                 print(f"Provided patch {patch} does not exist!")
-
 
     json.dump(patcherOutputJson, patcherOutput, indent=4, sort_keys=True)
     patcherOutput.close()
