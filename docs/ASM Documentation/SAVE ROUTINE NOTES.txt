@@ -1,0 +1,6 @@
+Where is save routine called?
+NORMAL SAVE STATION: Function $848CF1
+SHIP SAVE: Function $A2AB1F
+ENTERING CERES: Function $8BC100
+LEAVING CERES: Function $8283A7
+FIRST LANDING ON ZEBES: Function $A2A987

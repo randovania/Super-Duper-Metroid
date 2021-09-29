@@ -136,6 +136,26 @@ class SuperMetroidConstants:
         "Gravity Suit",
     ]
 
+    beamBitflagsDict = {
+        "Charge Beam": 0x1000,
+        "Ice Beam": 0x0002,
+        "Wave Beam": 0x0001,
+        "Spazer Beam": 0x0004,
+        "Plasma Beam": 0x0008,
+    }
+
+    equipmentBitflagsDict = {
+        "Varia Suit": 0x0001,
+        "Spring Ball": 0x0002,
+        "Morph Ball": 0x0004,
+        "Screw Attack": 0x0008,
+        "Hi-Jump Boots": 0x0100,
+        "Space Jump": 0x0200,
+        "Speed Booster": 0x2000,
+        "Morph Ball Bombs": 0x1000,
+        "Gravity Suit": 0x0020,
+    }
+
     # Combined list, in order of ascending Message ID
     itemList = ammoItemList[0:4] + toggleItemList[0:15] + [ammoItemList[4]] + [toggleItemList[15]]
 
@@ -231,6 +251,59 @@ class SuperMetroidConstants:
         "Morph Ball Bombs": "Large",
         "Reserve Tank": "Small",
         "Gravity Suit": "Small",
+    }
+
+    # Locations of item sprites
+    # Stored little-endian
+    nativeItemSpriteLocations = {
+        "Energy Tank": 0x0091,
+        "Missile Expansion": 0x0092,
+        "Super Missile Expansion": 0x0093,
+        "Power Bomb Expansion": 0x0094,
+        "Morph Ball Bombs": 0x0080,
+        "Charge Beam": 0x008B,
+        "Ice Beam": 0x008C,
+        "Hi-Jump Boots": 0x0084,
+        "Speed Booster": 0x008A,
+        "Wave Beam": 0x008D,
+        "Spazer Beam": 0x008F,
+        "Spring Ball": 0x0082,
+        "Varia Suit": 0x0083,
+        "Gravity Suit": 0x0081,
+        "X-Ray Scope": 0x0089,
+        "Plasma Beam": 0x008E,
+        "Grapple Beam": 0x0088,
+        "Space Jump": 0x0086,
+        "Screw Attack": 0x0085,
+        "Morph Ball": 0x0087,
+        "Reserve Tank": 0x0090,
+    }
+
+    # None indicates default palette
+    # Item Palettes for native sprites
+    # None is eqv. to all 0's.
+    nativeItemPalettes = {
+        "Energy Tank": None,
+        "Missile Expansion": None,
+        "Super Missile Expansion": None,
+        "Power Bomb Expansion": None,
+        "Morph Ball Bombs": None,
+        "Charge Beam": None,
+        "Ice Beam": bytearray([0x00, 0x03, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00]),
+        "Hi-Jump Boots": None,
+        "Speed Booster": None,
+        "Wave Beam": bytearray([0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00]),
+        "Spazer Beam": None,
+        "Spring Ball": None,
+        "Varia Suit": None,
+        "Gravity Suit": None,
+        "X-Ray Scope": bytearray([0x01, 0x01, 0x00, 0x00, 0x03, 0x03, 0x00, 0x00]),
+        "Plasma Beam": bytearray([0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00]),
+        "Grapple Beam": None,
+        "Space Jump": None,
+        "Screw Attack": None,
+        "Morph Ball": None,
+        "Reserve Tank": None,
     }
 
     # List of all possible item locations as they are ordered in memory.
@@ -662,6 +735,7 @@ class SuperMetroidConstants:
         "Wrecked Ship": "0300",
         "Maridia": "0400",
         "Tourian": "0500",
+        "Ceres Station": "0600",
     }
 
     itemNameToQuantityName = {

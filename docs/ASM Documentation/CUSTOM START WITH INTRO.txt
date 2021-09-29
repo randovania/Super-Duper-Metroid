@@ -1,0 +1,20 @@
+Existing routine overwrite
+ORG 8BC100
+
+JSL NEW 92EDF4  | 22 F4 ED 92
+RTS             | 60
+
+ORG 92EDF4
+
+New routine being jumped to
+LDA #$0006  | A9 06 00
+STA $7ED914 | 8F 14 D9 7E
+STA $0998   | 8D 98 09
+JSL $90F63A | 22 3A F6 90
+LDA #$-RGN  | A9 -rgn
+STA $079F   | 8D 9F 07
+LDA #$-SAV  | A9 -sav
+STA $078B   | 8D 8B 07
+LDA $0952   | AD 52 09
+JSL $818000 | 22 00 80 81
+RTL         | 6B
