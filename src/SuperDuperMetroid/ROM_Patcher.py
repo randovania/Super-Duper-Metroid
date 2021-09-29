@@ -9,9 +9,11 @@
 # https://jathys.zophar.net/supermetroid/
 #
 # Thanks to Kazuto for their More Efficient Item PLMs Hacks.
+# This is what allows custom items to work.
 # https://www.metroidconstruction.com/resource.php?id=349
 #
-# Thanks to PHOSPHOTiDYL for their Skip Intro Saves hack, which enables random save start.
+# Thanks to PHOSPHOTiDYL for their Skip Intro Saves hack, which enables custom save start,
+# As well as custom starting items.
 # https://metroidconstruction.com/resource.php?id=265
 #
 # Designed for HEADERLESS ROMS ONLY!
@@ -57,6 +59,7 @@ from pathlib import Path
 
 from SuperDuperMetroid.IPS_Patcher import IPSPatcher
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from enum import Enum
 
 VRAM_ITEMS_PATH = Path(__file__).with_name(name="VramItems.bin")
 
@@ -310,6 +313,8 @@ class PickupPlacementData:
         self.graphicsFileName = graphics_filename
         self.nativeSpriteName = native_sprite_name
 
+
+# class PickupEffect(Enum):
 
 # Converts a hexadecimal string to a base 10 integer.
 def hex_to_int(hex_to_convert):
@@ -730,29 +735,41 @@ def write_messagebox_routines(f, base_in_game_address):
     return in_game_address
 
 
-def write_save_initialization_routines(f, intro_option_choice, custom_save_start=None):
+def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
     # FIXME: Make starting items work for all options
-    intro_routine_address = 0x016EB4
-    if intro_option_choice == "Skip Intro":
-        # TODO: Replace this with a custom save start
-        intro_routine = "9CE20DADDA09D01B223AF690A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
-    elif intro_option_choice == "Skip Intro And Ceres":
-        # TODO: Consider renaming? Since w/ CSS this could still result in a Ceres start?
+
+    if skip_intro:
+        # Skips the intro cutscene
         intro_routine = "9CE20DADDA09D01E223AF690A9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
+        intro_routine_address = 0x016EB4
+    else:
+        # Play the intro cutscene before figuring out where to spawn the player/what to give them.
+        # -sta - State to load with (06 - load like a save station, 1F - load like ceres, 22 - load like zebes landing)
+        # -rgn - Region to start in
+        # -sav - Save station index
+        intro_routine = "A9-sta8F14D97E8D9809223AF690A9-rgn8D9F07A9-sav8D8B07AD5209220080816B"
+        redirection_routine = "22F4ED9260"
+        intro_routine_address = 0x096DF4
+        redirection_routine_address = 0x05C100
+        # Write the redirection routine to ROM
+        f.seek(redirection_routine_address)
+        f.write(hex_to_data(redirection_routine))
+    if custom_save_start is not None:
         # Custom save start should be a list/tuple with two values:
         # Region name and save station index
-        # This is subject to change
-        # TODO: Support Ceres
-        if custom_save_start is not None:
-            region_hex = SuperMetroidConstants.regionToHexDict[custom_save_start[0]]
-            save_hex = reverse_endianness(pad_hex(int_to_hex(custom_save_start[1]), 4))
-            intro_routine = intro_routine.replace("-rgn", region_hex)
-            intro_routine = intro_routine.replace("-sav", save_hex)
+        region_hex = SuperMetroidConstants.regionToHexDict[custom_save_start[0]]
+        save_hex = reverse_endianness(pad_hex(int_to_hex(custom_save_start[1]), 4))
+        intro_routine = intro_routine.replace("-rgn", region_hex)
+        intro_routine = intro_routine.replace("-sav", save_hex)
+        if region_hex == "0600":
+            intro_routine = intro_routine.replace("-sta", "1F00")
         else:
-            intro_routine = intro_routine.replace("-rgn", "0000")
-            intro_routine = intro_routine.replace("-sav", "0000")
+            intro_routine = intro_routine.replace("-sta", "0600")
     else:
-        print("WARNING: Invalid option entered for introOptionChoice. Defaulting to vanilla intro behavior...")
+        # Default start is ship save
+        intro_routine = intro_routine.replace("-rgn", "0000")
+        intro_routine = intro_routine.replace("-sav", "0000")
+        intro_routine = intro_routine.replace("-sta", "0600")
 
     f.seek(intro_routine_address)
     f.write(hex_to_data(intro_routine))
@@ -1144,17 +1161,16 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
     # Default behavior is to skip straight to landing site.
 
-    intro_option_choice = "Skip Intro And Ceres"
-    if "intro_option_choice" in kwargs:
-        intro_option_choice = kwargs["intro_option_choice"]
+    skip_intro = True
+    if "skip_intro" in kwargs:
+        skip_intro = kwargs["skip_intro"]
     # Check to make sure intro option choice doesn't conflict with custom start point.
     custom_save_start = None
     if "custom_save_start" in kwargs:
         custom_save_start = kwargs["custom_save_start"]
-    if custom_save_start is not None and intro_option_choice != "Skip Intro And Ceres":
+    if custom_save_start is not None and not skip_intro:
         print("ERROR: Cannot set custom start without also skipping Intro and Ceres.")
-    if intro_option_choice != "Vanilla":
-        write_save_initialization_routines(f, intro_option_choice, custom_save_start)
+    write_save_initialization_routines(f, skip_intro, custom_save_start)
 
     # Write the routine used to cause Crateria to wake up
     write_crateria_wakeup_routine(f)
@@ -1200,7 +1216,6 @@ if __name__ == "__main__":
         file_path,
         raw_randomized_example_item_pickup_data(),
         starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
-        intro_option_choice="Skip Intro And Ceres",
+        skip_intro=False,
         static_patches=patches_to_apply,
     )
-    # patchROM(filePath, None, startingItems = ["Morph Ball", "Reserve Tank", "Energy Tank"], introOptionChoice = "Skip Intro And Ceres", customSaveStart = ["Brinstar", 0])

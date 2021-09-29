@@ -735,6 +735,7 @@ class SuperMetroidConstants:
         "Wrecked Ship": "0300",
         "Maridia": "0400",
         "Tourian": "0500",
+        "Ceres Station": "0600",
     }
 
     itemNameToQuantityName = {

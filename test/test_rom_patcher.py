@@ -88,13 +88,13 @@ def test_add_starting_inventory():
         raise
 
 
-def test_write_save_initialization_routines_skip_intro_and_ceres():
+def test_write_save_initialization_routines_skip_intro():
     f = None
     try:
-        file_name = "startSaveTest_IntroCeres.bin"
+        file_name = "startSaveTest_SkipIntro.bin"
         f = create_blank_file(file_name, b"\0")
 
-        ROM_Patcher.write_save_initialization_routines(f, "Skip Intro And Ceres")
+        ROM_Patcher.write_save_initialization_routines(f, True)
 
         # Assert the presence of routines
         assert is_file_byte_range_empty(f, b"\0", 0, 0x016EB4)
@@ -118,7 +118,7 @@ def test_write_save_initialization_routines_custom_save_start():
         file_name = "startSaveTest_CustomSaveStart.bin"
         f = create_blank_file(file_name, b"\0")
 
-        ROM_Patcher.write_save_initialization_routines(f, "Skip Intro And Ceres", ["Brinstar", 0])
+        ROM_Patcher.write_save_initialization_routines(f, True, ["Brinstar", 0])
 
         # Assert the presence of routines
         assert is_file_byte_range_empty(f, b"\0", 0, 0x016EB4)
@@ -136,25 +136,29 @@ def test_write_save_initialization_routines_custom_save_start():
         raise
 
 
-def test_write_save_initialization_routines_skip_intro_only():
+def test_write_save_initialization_routines_with_intro_start_at_ceres():
     f = None
     try:
-        file_name = "startSaveTest_Intro.bin"
+        file_name = "startSaveTest_IntroCeres.bin"
         f = create_blank_file(file_name, b"\0")
 
-        ROM_Patcher.write_save_initialization_routines(f, "Skip Intro")
+        ROM_Patcher.write_save_initialization_routines(f, False, ["Ceres Station", 0])
 
         # Assert the presence of routines
-        assert is_file_byte_range_empty(f, b"\0", 0, 0x016EB4)
-        assert not is_file_byte_range_empty(f, b"\0", 0x016EB4, (0x016EB4 + 64))
-        assert is_file_byte_range_empty(f, b"\0", (0x016EB4 + 64), romSize)
+        assert is_file_byte_range_empty(f, b"\0", 0, 0x05C100)
+        assert not is_file_byte_range_empty(f, b"\0", 0x05C100, (0x05C100 + 5))
+        assert is_file_byte_range_empty(f, b"\0", (0x05C100 + 5), 0x096DF4)
+        assert not is_file_byte_range_empty(f, b"\0", 0x096DF4, (0x096DF4 + 34))
+        assert is_file_byte_range_empty(f, b"\0", (0x096DF4 + 34), romSize)
         # Assert the correctness of routine data
-        f.seek(0x016EB4)
-        intro_skip_start = hex_to_data(
-            "9CE20DADDA09D01B223AF690A906008D9F079C8B07ADEA098F08D87E22008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
-        )
-        startSave = f.read(64)
-        assert intro_skip_start == startSave
+        f.seek(0x05C100)
+        redirect_after_intro = hex_to_data("22F4ED9260")
+        redirect_in_file = f.read(5)
+        assert redirect_after_intro == redirect_in_file
+        f.seek(0x096DF4)
+        make_ceres_save = hex_to_data("A91F008F14D97E8D9809223AF690A906008D9F07A900008D8B07AD5209220080816B")
+        start_save = f.read(34)
+        assert make_ceres_save == start_save
     except Exception:
         f.close()
         raise
