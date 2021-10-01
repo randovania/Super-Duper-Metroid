@@ -59,6 +59,7 @@ from pathlib import Path
 
 from SuperDuperMetroid.IPS_Patcher import IPSPatcher
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
+from SuperDuperMetroid.SM_Room_Header_Data import DoorData, SMRooms
 from enum import Enum
 
 VRAM_ITEMS_PATH = Path(__file__).with_name(name="VramItems.bin")
@@ -463,36 +464,6 @@ def raw_randomized_example_item_pickup_data():
     ]
 
 
-def write_multiworld_routines(f):
-    # MULTIWORLD ROUTINES:
-    # Appended to bank 90. Used to work the game's events in our favor.
-    # TODO: Convert this to an ips patch?
-    multiworld_execute_arbitrary_function_routine = "E220A98348C220AF72FF7F486B"
-
-    f.seek(0x087FF0)
-    f.write(hex_to_data(multiworld_execute_arbitrary_function_routine))
-
-    # Routines to append to bank $83.
-    # More than one are planned, for things like sending messages &c.
-
-    multiworld_item_get_routine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
-    multiworld_routine_address_start = 0x01AD66
-
-    multiworld_routines = [multiworld_item_get_routine]
-
-    f.seek(multiworld_routine_address_start)
-    for routine in multiworld_routines:
-        f.write(hex_to_data(routine))
-
-
-def write_crateria_wakeup_routine(f):
-    # TODO: Convert this to an ips patch?
-    overwrite_crateria_wakeup_routine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
-    overwrite_crateria_wakeup_routine_address = 0x07E652
-    f.seek(overwrite_crateria_wakeup_routine_address)
-    f.write(hex_to_data(overwrite_crateria_wakeup_routine))
-
-
 def create_item_types(pickup_data_list):
     item_types = {}
     # TODO: Add a placeholder-type sprite to available native graphics sprites
@@ -520,6 +491,40 @@ def create_item_types(pickup_data_list):
                 item_gfx_added[pickup.itemName] = pickup.graphicsFileName
                 next_pickup_gfx_data_location = pad_hex(int_to_hex(hex_to_int(next_pickup_gfx_data_location) + 1), 4)
     return item_types
+
+
+def get_patch_dict():
+    static_patch_dict = {
+        "InstantG4": "QoL\\g4_skip.ips",
+        "MaxAmmoDisplay": "QoL\\max_ammo_display.ips",
+        "AimWithAnyButton": "QoL\\aim_any_button.ips",
+        "BetterDecompression": "QoL\\better_decompress.ips",
+        "FastDoorsAndElevators": "QoL\\fast_elevators_doors.ips",
+        "RandomMusic": "Music\\random_music.ips",
+        "DoorTransitions": "Mandatory Patches\\door_transition.ips",
+        "VariaRNG": "Mandatory Patches\\varia_rng.ips",
+        "VariaTimerFix": "Mandatory Patches\\varia_timer_fix.ips",
+        "Respin": "Tweaks\\respin.ips",
+        "NoDemo": "Tweaks\\no_demo.ips",
+        "RefillBeforeSave": "Tweaks\\refill_before_save.ips",
+        "CantUseSupersOnRedDoors": "Tweaks\\no_supers_on_red_doors.ips",
+        "CheapCharge": "Tweaks\\cheap_charge.ips",
+        "NerfedRainbowBeam": "Tweaks\\nerfed_rainbow_beam.ips",
+        "MotherBrainCutsceneEdits": "Tweaks\\mother_brain_cutscene_edits.ips",
+        "NoGT": "Fixes\\disable_gt_code.ips",
+        "FixHeatEchoes": "Fixes\\fix_heat_echoes.ips",
+        "FixScrewAttackMenu": "Fixes\\fix_screw_attack_menu.ips",
+        "FixSpacetime": "Fixes\\fix_spacetime_beam.ips",
+        "DachoraPit": "Map Changes\\dachora_pit.ips",
+        "EarlySupersBridge": "Map Changes\\early_super_bridge.ips",
+        "PreHighJump": "Map Changes\\pre_high_jump.ips",
+        "Moat": "Map Changes\\moat.ips",
+        "PreSpazer": "Map Changes\\pre_spazer.ips",
+        "RedTower": "Map Changes\\red_tower.ips",
+        "NovaBoostPlatform": "Map Changes\\nova_boost_platform.ips",
+        "ColorblindMode": "Accessibility\\colorblind.ips",
+    }
+    return static_patch_dict
 
 
 def get_equipment_routines():
@@ -607,6 +612,62 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
     # 60 is hex for the RTS instruction. In other words when called it will immediately return.
     item_get_routines_dict["No Item"] = (0x60).to_bytes(1, "little")
     return item_get_routines_dict
+
+
+def get_door_data():
+    door_data_dict = {}
+    for room_address, door_hex_list in SMRooms.addr_to_door_data_dict.items():
+        door_data_dict[room_address] = [DoorData(door_hex) for door_hex in door_hex_list]
+    return door_data_dict
+
+
+def write_door_asm_routines(f, door_data_list):
+    base_address = 0xF800
+    current_address = base_address
+    file_offset = 0x070000
+    f.seek(base_address + file_offset)
+    # As an efficiency measure,
+    # We hardcode in the door ASM which I believe is likely to be most common.
+    most_basic_door_asm = hex_to_data("2040F660")
+    most_basic_door_asm_address = base_address
+    f.write(most_basic_door_asm)
+    current_address += len(most_basic_door_asm)
+    for door_data in door_data_list:
+        door_routine = bytearray()
+        # Call original asm if this door is associated with any
+        if door_data.door_asm_pointer != 0x0000 and door_data.door_asm_pointer != most_basic_door_asm_address:
+            door_routine.append(0x20)
+            door_routine += door_data.door_asm_pointer.to_bytes(2, "little")
+        # Extra ASM for special, room-specific patches
+        if door_data.extra_asm_pointer != 0x0000:
+            door_routine.append(0x20)
+            door_routine += door_data.extra_asm_pointer.to_bytes(2, "little")
+        # Rectify door directional mismatches
+        # Relies on door_transition.ips
+        if door_data.door_mismatch:
+            door_routine += bytearray([0x20, 0x00, 0xF6, 0xA9])
+            door_routine += door_data.override_x.to_bytes(2, "little")
+            door_routine += bytearray([0x8D, 0xF6, 0x0A, 0xA9])
+            door_routine += door_data.override_y.to_bytes(2, "little")
+            door_routine += bytearray([0x8D, 0xFA, 0x0A])
+        # Apply iframes after going through a door
+        else:
+            door_routine += bytearray([0x20, 0x40, 0xF6])
+        door_routine.append(0x60)
+
+        if door_routine == most_basic_door_asm:
+
+            door_data.door_asm_pointer = most_basic_door_asm_address
+        else:
+            door_data.door_asm_pointer = current_address
+            f.seek(current_address + file_offset)
+            f.write(door_routine)
+            current_address += len(door_routine)
+
+
+def write_doors(f, door_data_list):
+    for door_data in door_data_list:
+        door_data.write_ddb_entry_to_file(f)
 
 
 def write_item_get_routines(f, item_get_routines_dict, in_game_address):
@@ -773,6 +834,36 @@ def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
 
     f.seek(intro_routine_address)
     f.write(hex_to_data(intro_routine))
+
+
+def write_multiworld_routines(f):
+    # MULTIWORLD ROUTINES:
+    # Appended to bank 90. Used to work the game's events in our favor.
+    # TODO: Convert this to an ips patch?
+    multiworld_execute_arbitrary_function_routine = "E220A98348C220AF72FF7F486B"
+
+    f.seek(0x087FF0)
+    f.write(hex_to_data(multiworld_execute_arbitrary_function_routine))
+
+    # Routines to append to bank $83.
+    # More than one are planned, for things like sending messages &c.
+
+    multiworld_item_get_routine = "AD1F1C22808085A900008F74FF7FAF80FF7F8D420A6B"
+    multiworld_routine_address_start = 0x01AD66
+
+    multiworld_routines = [multiworld_item_get_routine]
+
+    f.seek(multiworld_routine_address_start)
+    for routine in multiworld_routines:
+        f.write(hex_to_data(routine))
+
+
+def write_crateria_wakeup_routine(f):
+    # TODO: Convert this to an ips patch?
+    overwrite_crateria_wakeup_routine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
+    overwrite_crateria_wakeup_routine_address = 0x07E652
+    f.seek(overwrite_crateria_wakeup_routine_address)
+    f.write(hex_to_data(overwrite_crateria_wakeup_routine))
 
 
 # Generate a game with vanilla item placements
@@ -1014,6 +1105,23 @@ def write_kazuto_more_efficient_items_hack(f, item_types_list):
     return in_memory_plm_header_offset
 
 
+# Perform actions based on altering door database
+def do_doors(f):
+    door_data_dict = get_door_data()
+
+    # Test Modification
+    # door_to_modify = ((door_data_dict[0x91F8])[0])
+    # door_to_modify.to_string()
+    # door_to_modify.change_destination(0x96BA, 0)
+    # door_to_modify.to_string()
+
+    door_data_list = []
+    for data_list in door_data_dict.values():
+        door_data_list += data_list
+    write_door_asm_routines(f, door_data_list)
+    write_doors(f, door_data_list)
+
+
 # Places the items into the game.
 def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list, player_name=None):
     # Initialize MessageBoxGenerator
@@ -1182,16 +1290,19 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
     # Many of these patches are provided by community members -
     # See top of document for details.
     # Dictionary of files associated with static patch names:
-    static_patch_dict = {"InstantG4": "g4_skip.ips", "MaxAmmoDisplay": "max_ammo_display.ips"}
+    static_patch_dict = get_patch_dict()
     patches_dir = Path(__file__).parent.joinpath("Patches")
 
+    static_patches = ["DoorTransitions", "VariaRNG", "VariaTimerFix"]
     if "static_patches" in kwargs:
-        static_patches = kwargs["static_patches"]
+        static_patches += kwargs["static_patches"]
         for patch in static_patches:
             if patch in static_patch_dict:
                 IPSPatcher.apply_ips_patch(patches_dir.joinpath(static_patch_dict[patch]), rom_file_path)
             else:
                 print(f"Provided patch {patch} does not exist!")
+
+    do_doors(f)
 
     json.dump(patcher_output_json, patcher_output, indent=4, sort_keys=True)
     patcher_output.close()
@@ -1211,11 +1322,31 @@ if __name__ == "__main__":
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-    patches_to_apply = ["InstantG4", "MaxAmmoDisplay"]
+    patches_to_apply = [
+        "InstantG4",
+        "MaxAmmoDisplay",
+        "RandomMusic",
+        "NoDemo",
+        "AimWithAnyButton",
+        "FastDoorsAndElevators",
+        "RefillBeforeSave",
+        "CantUseSupersOnRedDoors",
+        "Respin",
+        "CheapCharge",
+        "NerfedRainbowBeam",
+        "DachoraPit",
+        "EarlySupersBridge",
+        "PreHighJump",
+        "Moat",
+        "PreSpazer",
+        "RedTower",
+        "NovaBoostPlatform",
+        "ColorblindMode",
+    ]
     patch_rom(
         file_path,
         raw_randomized_example_item_pickup_data(),
         starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
-        skip_intro=False,
+        skip_intro=True,
         static_patches=patches_to_apply,
     )
