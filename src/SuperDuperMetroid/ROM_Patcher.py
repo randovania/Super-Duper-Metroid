@@ -497,10 +497,27 @@ def get_patch_dict():
     static_patch_dict = {
         "InstantG4": "QoL\\g4_skip.ips",
         "MaxAmmoDisplay": "QoL\\max_ammo_display.ips",
+        "AimWithAnyButton": "QoL\\aim_any_button.ips",
+        "BetterDecompression": "QoL\\better_decompress.ips",
+        "FastDoorsAndElevators": "QoL\\fast_elevators_doors.ips",
         "RandomMusic": "Music\\random_music.ips",
         "DoorTransitions": "Mandatory Patches\\door_transition.ips",
         "VariaRNG": "Mandatory Patches\\varia_rng.ips",
         "VariaTimerFix": "Mandatory Patches\\varia_timer_fix.ips",
+        "Respin": "Tweaks\\respin.ips",
+        "NoDemo": "Tweaks\\no_demo.ips",
+        "RefillBeforeSave": "Tweaks\\refill_before_save.ips",
+        "CantUseSupersOnRedDoors": "Tweaks\\no_supers_on_red_doors.ips",
+        "CheapCharge": "Tweaks\\cheap_charge.ips",
+        "NerfedRainbowBeam": "Tweaks\\nerfed_rainbow_beam.ips",
+        "DachoraPit": "Map Changes\\dachora_pit.ips",
+        "EarlySupersBridge": "Map Changes\\early_super_bridge.ips",
+        "PreHighJump": "Map Changes\\pre_high_jump.ips",
+        "Moat": "Map Changes\\moat.ips",
+        "PreSpazer": "Map Changes\\pre_spazer.ips",
+        "RedTower": "Map Changes\\red_tower.ips",
+        "NovaBoostPlatform": "Map Changes\\nova_boost_platform.ips",
+        "ColorblindMode": "Accessibility\\colorblind.ips",
     }
     return static_patch_dict
 
@@ -1300,7 +1317,27 @@ if __name__ == "__main__":
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-    patches_to_apply = ["InstantG4", "MaxAmmoDisplay", "RandomMusic"]
+    patches_to_apply = [
+        "InstantG4",
+        "MaxAmmoDisplay",
+        "RandomMusic",
+        "NoDemo",
+        "AimWithAnyButton",
+        "FastDoorsAndElevators",
+        "RefillBeforeSave",
+        "CantUseSupersOnRedDoors",
+        "Respin",
+        "CheapCharge",
+        "NerfedRainbowBeam",
+        "DachoraPit",
+        "EarlySupersBridge",
+        "PreHighJump",
+        "Moat",
+        "PreSpazer",
+        "RedTower",
+        "NovaBoostPlatform",
+        "ColorblindMode",
+    ]
     patch_rom(
         file_path,
         raw_randomized_example_item_pickup_data(),
