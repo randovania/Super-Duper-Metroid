@@ -10,6 +10,7 @@ Steps:
 4.) Open virtual environment with `venv\scripts\activate`  
 5.) Install requirements by running `python -m pip install -r requirements.txt`  
 6.) Build Cython code by running `python setup.py`  
+7.) Install as editable by running `py -3.7 -m pip install -e .`
   
 You can now run scripts from the project from terminal, using the virtual environment.  
 
