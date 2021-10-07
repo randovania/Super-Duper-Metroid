@@ -500,7 +500,9 @@ def get_patch_dict():
         "AimWithAnyButton": "QoL\\aim_any_button.ips",
         "BetterDecompression": "QoL\\better_decompress.ips",
         "FastDoorsAndElevators": "QoL\\fast_elevators_doors.ips",
+        "BackupSaves": "QoL\\enable_backup_saves.ips",
         "RandomMusic": "Music\\random_music.ips",
+        "NoMusic": "Music\\no_music.ips",
         "DoorTransitions": "Mandatory Patches\\door_transition.ips",
         "VariaRNG": "Mandatory Patches\\varia_rng.ips",
         "VariaTimerFix": "Mandatory Patches\\varia_timer_fix.ips",
@@ -511,6 +513,8 @@ def get_patch_dict():
         "CheapCharge": "Tweaks\\cheap_charge.ips",
         "NerfedRainbowBeam": "Tweaks\\nerfed_rainbow_beam.ips",
         "MotherBrainCutsceneEdits": "Tweaks\\mother_brain_cutscene_edits.ips",
+        "InfiniteSpaceJump": "Tweaks\\infinite_space_jump.ips",
+        "SpeedKeep": "Tweaks\\speed_keep.ips",
         "NoGT": "Fixes\\disable_gt_code.ips",
         "FixHeatEchoes": "Fixes\\fix_heat_echoes.ips",
         "FixScrewAttackMenu": "Fixes\\fix_screw_attack_menu.ips",
@@ -1325,7 +1329,7 @@ if __name__ == "__main__":
     patches_to_apply = [
         "InstantG4",
         "MaxAmmoDisplay",
-        "RandomMusic",
+        "NoMusic",
         "NoDemo",
         "AimWithAnyButton",
         "FastDoorsAndElevators",
@@ -1342,6 +1346,9 @@ if __name__ == "__main__":
         "RedTower",
         "NovaBoostPlatform",
         "ColorblindMode",
+        "SpeedKeep",
+        "BackupSaves",
+        "InfiniteSpaceJump",
     ]
     patch_rom(
         file_path,
