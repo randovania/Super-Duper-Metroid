@@ -296,23 +296,23 @@ class ItemType:
 class PickupPlacementData:
     def __init__(
         self,
-        quantity_given,
-        pickup_index,
-        item_name,
-        pickup_item_effect="Default",
+        quantity_given = 0,
+        pickup_index = -1,
+        item_name = "No Item",
+        pickup_effect="No Effect",
         native_graphics=True,
         owner_name=None,
         graphics_filename=None,
-        native_sprite_name="Default",
+        native_sprite_name=None,
     ):
-        self.quantityGiven = quantity_given
-        self.pickupIndex = pickup_index
-        self.itemName = item_name
-        self.pickupItemEffect = pickup_item_effect
-        self.nativeGraphics = native_graphics
-        self.ownerName = owner_name
-        self.graphicsFileName = graphics_filename
-        self.nativeSpriteName = native_sprite_name
+        self.quantity_given = quantity_given
+        self.pickup_index = pickup_index
+        self.item_name = item_name
+        self.pickup_effect = pickup_effect
+        self.native_graphics = native_graphics
+        self.owner_name = owner_name
+        self.graphics_file_name = graphics_filename
+        self.native_sprite_name = native_sprite_name
 
 
 # class PickupEffect(Enum):
@@ -471,62 +471,62 @@ def create_item_types(pickup_data_list):
     next_pickup_gfx_data_location = "0095"
     item_gfx_added = {}
     for pickup in pickup_data_list:
-        if not pickup.itemName in item_types:
-            if pickup.nativeGraphics:
-                if pickup.nativeSpriteName == "Default":
-                    item_types[pickup.itemName] = ItemType(
-                        pickup.itemName,
-                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.itemName],
-                        SuperMetroidConstants.nativeItemPalettes[pickup.itemName],
+        if not pickup.item_name in item_types:
+            if pickup.native_graphics:
+                if pickup.native_sprite_name == "Default":
+                    item_types[pickup.item_name] = ItemType(
+                        pickup.item_name,
+                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.item_name],
+                        SuperMetroidConstants.nativeItemPalettes[pickup.item_name],
                     )
                 else:
-                    item_types[pickup.itemName] = ItemType(
-                        pickup.itemName,
-                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.nativeSpriteName],
-                        SuperMetroidConstants.nativeItemPalettes[pickup.nativeSpriteName],
+                    item_types[pickup.item_name] = ItemType(
+                        pickup.item_name,
+                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.native_sprite_name],
+                        SuperMetroidConstants.nativeItemPalettes[pickup.native_sprite_name],
                     )
             else:
                 # TODO: Patch pickup graphics into ROM from file
                 # TODO: Add message box generation
-                item_gfx_added[pickup.itemName] = pickup.graphicsFileName
+                item_gfx_added[pickup.item_name] = pickup.graphics_file_name
                 next_pickup_gfx_data_location = pad_hex(int_to_hex(hex_to_int(next_pickup_gfx_data_location) + 1), 4)
     return item_types
 
 
 def get_patch_dict():
     static_patch_dict = {
-        "InstantG4": "QoL\\g4_skip.ips",
-        "MaxAmmoDisplay": "QoL\\max_ammo_display.ips",
-        "AimWithAnyButton": "QoL\\aim_any_button.ips",
-        "BetterDecompression": "QoL\\better_decompress.ips",
-        "FastDoorsAndElevators": "QoL\\fast_elevators_doors.ips",
-        "BackupSaves": "QoL\\enable_backup_saves.ips",
-        "RandomMusic": "Music\\random_music.ips",
-        "NoMusic": "Music\\no_music.ips",
-        "DoorTransitions": "Mandatory Patches\\door_transition.ips",
-        "VariaRNG": "Mandatory Patches\\varia_rng.ips",
-        "VariaTimerFix": "Mandatory Patches\\varia_timer_fix.ips",
-        "Respin": "Tweaks\\respin.ips",
-        "NoDemo": "Tweaks\\no_demo.ips",
-        "RefillBeforeSave": "Tweaks\\refill_before_save.ips",
-        "CantUseSupersOnRedDoors": "Tweaks\\no_supers_on_red_doors.ips",
-        "CheapCharge": "Tweaks\\cheap_charge.ips",
-        "NerfedRainbowBeam": "Tweaks\\nerfed_rainbow_beam.ips",
-        "MotherBrainCutsceneEdits": "Tweaks\\mother_brain_cutscene_edits.ips",
-        "InfiniteSpaceJump": "Tweaks\\infinite_space_jump.ips",
-        "SpeedKeep": "Tweaks\\speed_keep.ips",
-        "NoGT": "Fixes\\disable_gt_code.ips",
-        "FixHeatEchoes": "Fixes\\fix_heat_echoes.ips",
-        "FixScrewAttackMenu": "Fixes\\fix_screw_attack_menu.ips",
-        "FixSpacetime": "Fixes\\fix_spacetime_beam.ips",
-        "DachoraPit": "Map Changes\\dachora_pit.ips",
-        "EarlySupersBridge": "Map Changes\\early_super_bridge.ips",
-        "PreHighJump": "Map Changes\\pre_high_jump.ips",
-        "Moat": "Map Changes\\moat.ips",
-        "PreSpazer": "Map Changes\\pre_spazer.ips",
-        "RedTower": "Map Changes\\red_tower.ips",
-        "NovaBoostPlatform": "Map Changes\\nova_boost_platform.ips",
-        "ColorblindMode": "Accessibility\\colorblind.ips",
+        "instant_g4": "QoL\\g4_skip.ips",
+        "max_ammo_display": "QoL\\max_ammo_display.ips",
+        "aim_with_any_button": "QoL\\aim_any_button.ips",
+        "better_decompression": "QoL\\better_decompress.ips",
+        "fast_doors_and_elevators": "QoL\\fast_elevators_doors.ips",
+        "backup_saves": "QoL\\enable_backup_saves.ips",
+        "random_music": "Music\\random_music.ips",
+        "no_music": "Music\\no_music.ips",
+        "door_transitions": "Mandatory Patches\\door_transition.ips",
+        "varia_rng": "Mandatory Patches\\varia_rng.ips",
+        "varia_timer_fix": "Mandatory Patches\\varia_timer_fix.ips",
+        "respin": "Tweaks\\respin.ips",
+        "no_demo": "Tweaks\\no_demo.ips",
+        "refill_before_save": "Tweaks\\refill_before_save.ips",
+        "cant_use_supers_on_red_doors": "Tweaks\\no_supers_on_red_doors.ips",
+        "cheap_charge": "Tweaks\\cheap_charge.ips",
+        "nerfed_rainbow_beam": "Tweaks\\nerfed_rainbow_beam.ips",
+        "mother_brain_cutscene_edits": "Tweaks\\mother_brain_cutscene_edits.ips",
+        "infinite_space_jump": "Tweaks\\infinite_space_jump.ips",
+        "speedkeep": "Tweaks\\speed_keep.ips",
+        "no_gt_code": "Fixes\\disable_gt_code.ips",
+        "fix_heat_echoes": "Fixes\\fix_heat_echoes.ips",
+        "fix_screw_attack_menu": "Fixes\\fix_screw_attack_menu.ips",
+        "fix_spacetime": "Fixes\\fix_spacetime_beam.ips",
+        "dachora_pit": "Map Changes\\dachora_pit.ips",
+        "early_supers_bridge": "Map Changes\\early_super_bridge.ips",
+        "pre_high_jump": "Map Changes\\pre_high_jump.ips",
+        "moat": "Map Changes\\moat.ips",
+        "pre_spazer": "Map Changes\\pre_spazer.ips",
+        "red_tower": "Map Changes\\red_tower.ips",
+        "nova_boost_platform": "Map Changes\\nova_boost_platform.ips",
+        "colorblind_mode": "Accessibility\\colorblind.ips",
     }
     return static_patch_dict
 
@@ -549,25 +549,27 @@ def get_equipment_routines():
     # Will still try its damnedest if you give it conflicting info, but can't give multiple effects to an item that it thinks is the same.
     # This is why ammo item names have the quantity appended to them - since having differing quantities makes them effectively different items.
     equipment_gets = {}
-    equipment_gets["X-Ray Scope"] = bytes.fromhex(x_ray_get)
-    equipment_gets["Grapple Beam"] = bytes.fromhex(grapple_get)
+    equipment_gets["Get X-Ray Scope"] = bytes.fromhex(x_ray_get)
+    equipment_gets["Get Grapple Beam"] = bytes.fromhex(grapple_get)
     for item_name, bit_flags in SuperMetroidConstants.equipmentBitflagsDict.items():
         equipmentHex = replace_with_hex(equipment_get_template, "-eqp", bit_flags)
-        equipment_gets[item_name] = bytes.fromhex(equipmentHex)
+        equipment_gets["Get " + item_name] = bytes.fromhex(equipmentHex)
     for item_name, bit_flags in SuperMetroidConstants.beamBitflagsDict.items():
         equipmentHex = replace_with_hex(beam_get_template, "-eqp", bit_flags)
-        equipment_gets[item_name] = bytes.fromhex(equipmentHex)
+        equipment_gets["Get " + item_name] = bytes.fromhex(equipmentHex)
     return equipment_gets
 
 
-def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, starting_items):
+def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, starting_items, player_name):
     ammo_get_templates = {
-        "Energy Tank": "ADC4091869-qty8DC4098DC20960",
-        "Reserve Tank": "ADD4091869-qty8DD409ADC009D003EEC00960",
-        "Missile Expansion": "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
-        "Super Missile Expansion": "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
-        "Power Bomb Expansion": "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060",
+        "Get Energy Tank": "ADC4091869-qty8DC4098DC20960",
+        "Get Reserve Tank": "ADD4091869-qty8DD409ADC009D003EEC00960",
+        "Get Missile Expansion": "ADC8091869-qty8DC809ADC6091869-qty8DC60922CF998060",
+        "Get Super Missile Expansion": "ADCC091869-qty8DCC09ADCA091869-qty8DCA09220E9A8060",
+        "Get Power Bomb Expansion": "ADD0091869-qty8DD009ADCE091869-qty8DCE09221E9A8060",
     }
+
+    equipment_gets = get_equipment_routines()
 
     # For non-vanilla ammo get routines.
     custom_ammo_get_templates = {}
@@ -578,43 +580,27 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
     all_items_list = item_list.copy()
     all_items_list += starting_items
     for pickup in all_items_list:
-        if pickup.ownerName is None or pickup.ownerName == playerName:
-            if pickup.pickupItemEffect == "Default":
-                if pickup.itemName in SuperMetroidConstants.ammoItemList:
-                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
-                    if not effectivePickupName in item_get_routines_dict:
-                        print(effectivePickupName)
-                        pickupHex = replace_with_hex(ammo_get_templates[pickup.itemName], "-qty", pickup.quantityGiven)
-                        item_get_routines_dict[effectivePickupName] = bytes.fromhex(pickupHex)
-                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
-                    if not pickup.itemName in item_get_routines_dict:
-                        item_get_routines_dict[pickup.itemName] = equipmentGets[pickup.itemName]
-                else:
-                    print(
-                        'ERROR: Cannot specify itemPickupEffect as "Default" for an item which does not exist in the vanilla game.'
+        if pickup.owner_name is None or pickup.owner_name == player_name:
+            if pickup.item_name in SuperMetroidConstants.ammoItemList:
+                item_effect_name = f"Get {pickup.item_name} {pickup.quantity_given}"
+                if not item_effect_name in item_get_routines_dict:
+                    pickup_hex = replace_with_hex(
+                        ammo_get_templates[pickup.pickup_effect], "-qty", pickup.quantity_given
                     )
+                    item_get_routines_dict[item_effect_name] = bytes.fromhex(pickup_hex)
+            elif pickup.item_name in SuperMetroidConstants.toggleItemList:
+                # Overwrite vanilla behavior for this item if vanilla.
+                # Otherwise add new item effect for the item type.
+                if not "Get " + pickup.item_name in item_get_routines_dict:
+                    if pickup.pickup_effect in equipment_gets:
+                        item_get_routines_dict[pickup.item_name] = equipment_gets[pickup.pickup_effect]
+                # Otherwise add new effect
             else:
-                if pickup.itemName in SuperMetroidConstants.ammoItemList:
-                    effectivePickupName = f"{pickup.itemName} {pickup.quantityGiven}"
-                    if not effectivePickupName in item_get_routines_dict:
-                        pickupHex = replace_with_hex(
-                            custom_ammo_get_templates[pickup.pickupItemEffect], "-qty", pickup.quantityGiven
-                        )
-                        item_get_routines_dict[effectivePickupName] = bytes.fromhex(pickupHex)
-                elif pickup.itemName in SuperMetroidConstants.toggleItemList:
-                    # Overwrite vanilla behavior for this item if vanilla.
-                    # Otherwise add new item effect for the item type.
-                    # Note that adding multiple toggle items with the same name and different effects has undefined behavior.
-                    if not pickup.itemName in item_get_routines_dict:
-                        if pickup.pickupItemEffect in equipmentGets:
-                            item_get_routines_dict[pickup.itemName] = equipmentGets[pickup.pickupItemEffect]
-                    # Otherwise add new effect
-                else:
-                    print("ERROR: Custom item pickup behaviors are not yet implemented.")
+                print("ERROR: Custom item pickup behaviors are not yet implemented.")
 
     # This is a command that will do nothing, used for items that are meant to go to other players.
     # 60 is hex for the RTS instruction. In other words when called it will immediately return.
-    item_get_routines_dict["No Item"] = (0x60).to_bytes(1, "little")
+    item_get_routines_dict["No Effect"] = (0x60).to_bytes(1, "little")
     return item_get_routines_dict
 
 
@@ -897,9 +883,9 @@ def add_starting_inventory(f, pickups, item_get_routine_addresses_dict):
     f.seek(0x1C0000)
     f.write(len(pickups).to_bytes(2, "little"))
     for starting_item in pickups:
-        item_name = starting_item.itemName
+        item_name = starting_item.item_name
         if item_name in SuperMetroidConstants.ammoItemList:
-            item_name += " " + str(starting_item.quantityGiven)
+            item_name += " " + str(starting_item.quantity_given)
         routine_address = item_get_routine_addresses_dict[item_name] - 1
         f.write(routine_address.to_bytes(2, "little"))
 
@@ -1081,7 +1067,7 @@ def write_kazuto_more_efficient_items_hack(f, item_types_list):
             assert len(current_item_gfx_data) == item_gfx_length
         except:
             print(
-                f"ERROR: Invalid-size graphics data supplied for item type {item_type.itemName}:\n {current_item_gfx_data} should be only 14(0x0E) bytes, is instead {str(len(current_item_gfx_data))}."
+                f"ERROR: Invalid-size graphics data supplied for item type {item_type.item_name}:\n {current_item_gfx_data} should be only 14(0x0E) bytes, is instead {str(len(current_item_gfx_data))}."
             )
             return
         # Write to file
@@ -1156,17 +1142,17 @@ def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list,
     print("Spoiler file generating at " + spoiler_path + "...")
     spoiler_file = open(spoiler_path, "w")
     for i, item in enumerate(pickup_data_list):
-        patcher_index = SuperMetroidConstants.itemIndexList.index(item.pickupIndex)
+        patcher_index = SuperMetroidConstants.itemIndexList.index(item.pickup_index)
         # Write PLM Data.
         f.seek(SuperMetroidConstants.itemPLMLocationList[patcher_index])
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
-        if item.itemName == "No Item":
-            f.write(item_plmi_ds[item.itemName].to_bytes(2, "little"))
+        if item.item_name == "No Item":
+            f.write(item_plmi_ds[item.item_name].to_bytes(2, "little"))
             continue
         f.write(
             (
-                item_plmi_ds[item.itemName]
+                item_plmi_ds[item.item_name]
                 + item_plm_block_type_multiplier * SuperMetroidConstants.itemPLMBlockTypeList[patcher_index]
             ).to_bytes(2, "little")
         )
@@ -1186,36 +1172,63 @@ def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list,
 
         f.seek(memory_base_location)
         # TODO: Handle width and height separately.
-        if item.itemName in SuperMetroidConstants.itemMessageNonstandardSizes:
+        if item.item_name in SuperMetroidConstants.itemMessageNonstandardSizes:
             f.write((0x0080).to_bytes(2, "big"))
             f.seek(memory_base_location + 0x400)
-            f.write(SuperMetroidConstants.itemMessageNonstandardSizes[item.itemName].to_bytes(2, "little"))
+            f.write(SuperMetroidConstants.itemMessageNonstandardSizes[item.item_name].to_bytes(2, "little"))
         else:
             f.write((0x4080).to_bytes(2, "big"))
             f.seek(memory_base_location + 0x400)
             f.write((0x4000).to_bytes(2, "big"))
 
         f.seek(memory_base_location + 0x200)
-        f.write(SuperMetroidConstants.itemMessageAddresses[item.itemName].to_bytes(2, "little"))
+        f.write(SuperMetroidConstants.itemMessageAddresses[item.item_name].to_bytes(2, "little"))
 
         f.seek(memory_base_location + 0x600)
-        f.write(SuperMetroidConstants.itemMessageIDs[item.itemName].to_bytes(2, "little"))
+        f.write(SuperMetroidConstants.itemMessageIDs[item.item_name].to_bytes(2, "little"))
 
         f.seek(memory_base_location + 0x800)
         # If item is meant for a different player, it will do nothing at all.
         # This is not the same as there not being an item in this position -
         # The item will be there, it will just have no effect for the SM player.
-        if player_name is not None and not item.ownerName == player_name:
+        if player_name is not None and not item.owner_name == player_name:
             f.write(item_get_routine_addresses_dict["No Item"].to_bytes(2, "little"))
         else:
-            effective_item_name = item.itemName
-            if item.itemName in SuperMetroidConstants.ammoItemList:
-                effective_item_name = f"{item.itemName} {item.quantityGiven}"
-            f.write(item_get_routine_addresses_dict[effective_item_name].to_bytes(2, "little"))
+            item_effect_name = "Get " + item.item_name
+            if item.item_name in SuperMetroidConstants.ammoItemList:
+                item_effect_name = f"Get {item.item_name} {item.quantity_given}"
+            f.write(item_get_routine_addresses_dict[item_effect_name].to_bytes(2, "little"))
 
         # Write spoiler log
-        spoiler_file.write(f"{SuperMetroidConstants.locationNamesList[patcher_index]}: {item.itemName}\n")
+        spoiler_file.write(f"{SuperMetroidConstants.locationNamesList[patcher_index]}: {item.item_name}\n")
     spoiler_file.close()
+
+
+def patch_rom_json(rom_file_path, json_string):
+    patch_data = json.loads(json_string)
+    item_list = []
+    for pickup in patch_data["pickups"]:
+        pickup_data = PickupPlacementData()
+        for field_name, value in pickup.items():
+            setattr(pickup_data, field_name, value)
+        pickup_data.native_graphics = pickup_data.native_sprite_name != None
+        item_list.append(pickup_data)
+
+    keyword_arguments = {}
+
+    patch_list = []
+    for field_name, value in patch_data["specific_patches"].items():
+        if value == True:
+            patch_list.append(field_name)
+
+    keyword_arguments["skip_intro"] = False
+    if "skip_intro" in patch_list:
+        patch_list.remove("skip_intro")
+        keyword_arguments["skip_intro"] = True
+    
+    keyword_arguments["static_patches"] = patch_list
+    
+    patch_rom(rom_file_path, item_list, None, None, **keyword_arguments)
 
 
 def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=None, **kwargs):
@@ -1252,7 +1265,7 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
 
     # Create and write the routines which handle pickup effects.
     equipment_gets = get_equipment_routines()
-    item_get_routines_dict = get_all_necessary_pickup_routines(item_list, equipment_gets, starting_items)
+    item_get_routines_dict = get_all_necessary_pickup_routines(item_list, equipment_gets, starting_items, player_name)
     item_get_routine_addresses_dict = write_item_get_routines(f, item_get_routines_dict, in_game_address)
 
     # Output item routine info to a json file for use in the interface
@@ -1326,34 +1339,52 @@ if __name__ == "__main__":
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-    patches_to_apply = [
-        "InstantG4",
-        "MaxAmmoDisplay",
-        "NoMusic",
-        "NoDemo",
-        "AimWithAnyButton",
-        "FastDoorsAndElevators",
-        "RefillBeforeSave",
-        "CantUseSupersOnRedDoors",
-        "Respin",
-        "CheapCharge",
-        "NerfedRainbowBeam",
-        "DachoraPit",
-        "EarlySupersBridge",
-        "PreHighJump",
-        "Moat",
-        "PreSpazer",
-        "RedTower",
-        "NovaBoostPlatform",
-        "ColorblindMode",
-        "SpeedKeep",
-        "BackupSaves",
-        "InfiniteSpaceJump",
-    ]
-    patch_rom(
-        file_path,
-        raw_randomized_example_item_pickup_data(),
-        starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
-        skip_intro=True,
-        static_patches=patches_to_apply,
-    )
+    #patches_to_apply = [
+    #    "InstantG4",
+    #    "MaxAmmoDisplay",
+    #    "NoMusic",
+    #    "NoDemo",
+    #    "AimWithAnyButton",
+    #    "FastDoorsAndElevators",
+    #    "RefillBeforeSave",
+    #    "CantUseSupersOnRedDoors",
+    #    "Respin",
+    #    "CheapCharge",
+    #    "NerfedRainbowBeam",
+    #    "DachoraPit",
+    #    "EarlySupersBridge",
+    #    "PreHighJump",
+    #    "Moat",
+    #    "PreSpazer",
+    #    "RedTower",
+    #    "NovaBoostPlatform",
+    #    "ColorblindMode",
+    #    "SpeedKeep",
+    #    "BackupSaves",
+    #    "InfiniteSpaceJump",
+    #]
+    # Shoehorn in JSONs because they're rad
+    # (Not sarcasm - making data like this standardized is good)
+    # (I've just done it in a super lazy way)
+    # Open file and get JSON
+    
+    # Get placements
+    
+    # Get starting items
+    
+    # Get patches to apply
+    
+    # Get intro choice
+    
+    # Patch ROM
+    # patch_rom(
+    #     file_path,
+    #     raw_randomized_example_item_pickup_data(),
+    #     starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
+    #     skip_intro=True,
+    #     static_patches=patches_to_apply,
+    # )
+    json_file = open("C:\\Users\\Dood\\Dropbox\\SM Modding\\SMWork Most Recent 9-24\\test_data.json", "r")
+    json_string = json_file.read()
+    json_file.close()
+    patch_rom_json(file_path, json_string)
