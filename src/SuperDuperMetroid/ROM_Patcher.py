@@ -296,9 +296,9 @@ class ItemType:
 class PickupPlacementData:
     def __init__(
         self,
-        quantity_given = 0,
-        pickup_index = -1,
-        item_name = "No Item",
+        quantity_given=0,
+        pickup_index=-1,
+        item_name="No Item",
         pickup_effect="No Effect",
         native_graphics=True,
         owner_name=None,
@@ -1225,9 +1225,9 @@ def patch_rom_json(rom_file_path, json_string):
     if "skip_intro" in patch_list:
         patch_list.remove("skip_intro")
         keyword_arguments["skip_intro"] = True
-    
+
     keyword_arguments["static_patches"] = patch_list
-    
+
     patch_rom(rom_file_path, item_list, None, None, **keyword_arguments)
 
 
