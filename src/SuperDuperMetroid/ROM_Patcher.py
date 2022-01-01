@@ -1339,52 +1339,36 @@ if __name__ == "__main__":
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-    #patches_to_apply = [
-    #    "InstantG4",
-    #    "MaxAmmoDisplay",
-    #    "NoMusic",
-    #    "NoDemo",
-    #    "AimWithAnyButton",
-    #    "FastDoorsAndElevators",
-    #    "RefillBeforeSave",
-    #    "CantUseSupersOnRedDoors",
-    #    "Respin",
-    #    "CheapCharge",
-    #    "NerfedRainbowBeam",
-    #    "DachoraPit",
-    #    "EarlySupersBridge",
-    #    "PreHighJump",
-    #    "Moat",
-    #    "PreSpazer",
-    #    "RedTower",
-    #    "NovaBoostPlatform",
-    #    "ColorblindMode",
-    #    "SpeedKeep",
-    #    "BackupSaves",
-    #    "InfiniteSpaceJump",
-    #]
-    # Shoehorn in JSONs because they're rad
-    # (Not sarcasm - making data like this standardized is good)
-    # (I've just done it in a super lazy way)
-    # Open file and get JSON
-    
-    # Get placements
-    
-    # Get starting items
-    
-    # Get patches to apply
-    
-    # Get intro choice
-    
-    # Patch ROM
-    # patch_rom(
-    #     file_path,
-    #     raw_randomized_example_item_pickup_data(),
-    #     starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
-    #     skip_intro=True,
-    #     static_patches=patches_to_apply,
-    # )
-    json_file = open("C:\\Users\\Dood\\Dropbox\\SM Modding\\SMWork Most Recent 9-24\\test_data.json", "r")
-    json_string = json_file.read()
-    json_file.close()
-    patch_rom_json(file_path, json_string)
+    patches_to_apply = [
+        "InstantG4",
+        "MaxAmmoDisplay",
+        "NoMusic",
+        "NoDemo",
+        "AimWithAnyButton",
+        "FastDoorsAndElevators",
+        "RefillBeforeSave",
+        "CantUseSupersOnRedDoors",
+        "Respin",
+        "CheapCharge",
+        "NerfedRainbowBeam",
+        "DachoraPit",
+        "EarlySupersBridge",
+        "PreHighJump",
+        "Moat",
+        "PreSpazer",
+        "RedTower",
+        "NovaBoostPlatform",
+        "ColorblindMode",
+        "SpeedKeep",
+        "BackupSaves",
+        "InfiniteSpaceJump",
+    ]
+
+    Patch ROM
+    patch_rom(
+        file_path,
+        raw_randomized_example_item_pickup_data(),
+        starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
+        skip_intro=True,
+        static_patches=patches_to_apply,
+    )
