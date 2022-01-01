@@ -1310,7 +1310,7 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
     static_patch_dict = get_patch_dict()
     patches_dir = Path(__file__).parent.joinpath("Patches")
 
-    static_patches = ["DoorTransitions", "VariaRNG", "VariaTimerFix"]
+    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix"]
     if "static_patches" in kwargs:
         static_patches += kwargs["static_patches"]
         for patch in static_patches:
