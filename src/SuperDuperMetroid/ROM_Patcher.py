@@ -1364,7 +1364,7 @@ if __name__ == "__main__":
         "InfiniteSpaceJump",
     ]
 
-    Patch ROM
+    # Patch ROM
     patch_rom(
         file_path,
         raw_randomized_example_item_pickup_data(),
