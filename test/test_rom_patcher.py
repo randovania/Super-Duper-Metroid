@@ -48,6 +48,7 @@ def test_add_starting_inventory():
         item_get_routine_addresses_dict = {
             "Morph Ball": 0x1234,
             "Gravity Suit": 0x5678,
+            "No Effect": 0x9101,
         }
 
         ROM_Patcher.add_starting_inventory(f, starting_items, item_get_routine_addresses_dict)
