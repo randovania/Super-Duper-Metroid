@@ -471,20 +471,15 @@ def create_item_types(pickup_data_list):
     next_pickup_gfx_data_location = "0095"
     item_gfx_added = {}
     for pickup in pickup_data_list:
+        if pickup.item_name == "No Item":
+            continue
         if not pickup.item_name in item_types:
             if pickup.native_graphics:
-                if pickup.native_sprite_name == "Default":
-                    item_types[pickup.item_name] = ItemType(
-                        pickup.item_name,
-                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.item_name],
-                        SuperMetroidConstants.nativeItemPalettes[pickup.item_name],
-                    )
-                else:
-                    item_types[pickup.item_name] = ItemType(
-                        pickup.item_name,
-                        SuperMetroidConstants.nativeItemSpriteLocations[pickup.native_sprite_name],
-                        SuperMetroidConstants.nativeItemPalettes[pickup.native_sprite_name],
-                    )
+                item_types[pickup.item_name] = ItemType(
+                    pickup.item_name,
+                    SuperMetroidConstants.nativeItemSpriteLocations[pickup.native_sprite_name],
+                    SuperMetroidConstants.nativeItemPalettes[pickup.native_sprite_name],
+                )
             else:
                 # TODO: Patch pickup graphics into ROM from file
                 # TODO: Add message box generation
@@ -521,7 +516,7 @@ def get_patch_dict():
         "fix_spacetime": "Fixes\\fix_spacetime_beam.ips",
         "dachora_pit": "Map Changes\\dachora_pit.ips",
         "early_supers_bridge": "Map Changes\\early_super_bridge.ips",
-        "pre_high_jump": "Map Changes\\pre_high_jump.ips",
+        "pre_hi_jump": "Map Changes\\pre_high_jump.ips",
         "moat": "Map Changes\\moat.ips",
         "pre_spazer": "Map Changes\\pre_spazer.ips",
         "red_tower": "Map Changes\\red_tower.ips",
@@ -581,6 +576,8 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
     all_items_list += starting_items
     for pickup in all_items_list:
         if pickup.owner_name is None or pickup.owner_name == player_name:
+            if pickup.item_name == "No Item":
+                continue
             if pickup.item_name in SuperMetroidConstants.ammoItemList:
                 item_effect_name = f"Get {pickup.item_name} {pickup.quantity_given}"
                 if not item_effect_name in item_get_routines_dict:
@@ -787,8 +784,6 @@ def write_messagebox_routines(f, base_in_game_address):
 
 
 def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
-    # FIXME: Make starting items work for all options
-
     if skip_intro:
         # Skips the intro cutscene
         intro_routine = "9CE20DADDA09D01E223AF690A9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
@@ -812,6 +807,7 @@ def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
         save_hex = reverse_endianness(pad_hex(int_to_hex(custom_save_start[1]), 4))
         intro_routine = intro_routine.replace("-rgn", region_hex)
         intro_routine = intro_routine.replace("-sav", save_hex)
+
         if region_hex == "0600":
             intro_routine = intro_routine.replace("-sta", "1F00")
         else:
@@ -880,13 +876,14 @@ def add_starting_inventory(f, pickups, item_get_routine_addresses_dict):
             "ERROR: Unreasonable amount of starting items detected. Starting items will not be placed. Did you send correct information to the patcher?"
         )
         return
+    print(f"Placing {len(pickups)} starting items")
     f.seek(0x1C0000)
     f.write(len(pickups).to_bytes(2, "little"))
     for starting_item in pickups:
-        item_name = starting_item.item_name
-        if item_name in SuperMetroidConstants.ammoItemList:
-            item_name += " " + str(starting_item.quantity_given)
-        routine_address = item_get_routine_addresses_dict[item_name] - 1
+        effect_name = starting_item.pickup_effect
+        if starting_item.item_name in SuperMetroidConstants.ammoItemList:
+            effect_name += " " + str(starting_item.quantity_given)
+        routine_address = item_get_routine_addresses_dict[effect_name] - 1
         f.write(routine_address.to_bytes(2, "little"))
 
     award_starting_inventory_routine = (
@@ -1124,12 +1121,12 @@ def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list,
     plm_header_offset = write_kazuto_more_efficient_items_hack(f, item_type_list)
     # Generate dict of item PLMIDs. Since there's no more guarantee of ordering here, we create this
     # at patch time.
-    item_plmi_ds = {}
+    item_plm_ids = {}
 
     for itemType in item_type_list:
-        item_plmi_ds[itemType.itemName] = plm_header_offset
+        item_plm_ids[itemType.itemName] = plm_header_offset
         plm_header_offset += 4
-    item_plmi_ds["No Item"] = 0xB62F
+    item_plm_ids["No Item"] = 0xB62F
 
     # How much an increment for each slot above increases the value of the PLM ID.
     # We will calculate this on the fly depending on how many new items are added to this ROM.
@@ -1148,11 +1145,11 @@ def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list,
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
         if item.item_name == "No Item":
-            f.write(item_plmi_ds[item.item_name].to_bytes(2, "little"))
+            f.write(item_plm_ids[item.item_name].to_bytes(2, "little"))
             continue
         f.write(
             (
-                item_plmi_ds[item.item_name]
+                item_plm_ids[item.item_name]
                 + item_plm_block_type_multiplier * SuperMetroidConstants.itemPLMBlockTypeList[patcher_index]
             ).to_bytes(2, "little")
         )
@@ -1228,6 +1225,22 @@ def patch_rom_json(rom_file_path, json_string):
 
     keyword_arguments["static_patches"] = patch_list
 
+    starting_items = []
+    for starting_item in patch_data["starting_items"]:
+        pickup_data = PickupPlacementData()
+        for field_name, value in starting_item.items():
+            setattr(pickup_data, field_name, value)
+        pickup_data.native_graphics = pickup_data.native_sprite_name != None
+        starting_items.append(pickup_data)
+
+    keyword_arguments["starting_items"] = starting_items
+
+    custom_save_start = patch_data["starting_conditions"]
+    keyword_arguments["custom_save_start"] = [
+        custom_save_start["starting_region"],
+        custom_save_start["starting_save_station_index"],
+    ]
+
     patch_rom(rom_file_path, item_list, None, None, **keyword_arguments)
 
 
@@ -1293,8 +1306,6 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
     custom_save_start = None
     if "custom_save_start" in kwargs:
         custom_save_start = kwargs["custom_save_start"]
-    if custom_save_start is not None and not skip_intro:
-        print("ERROR: Cannot set custom start without also skipping Intro and Ceres.")
     write_save_initialization_routines(f, skip_intro, custom_save_start)
 
     # Write the routine used to cause Crateria to wake up
@@ -1339,30 +1350,6 @@ if __name__ == "__main__":
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-    patches_to_apply = [
-        "InstantG4",
-        "MaxAmmoDisplay",
-        "NoMusic",
-        "NoDemo",
-        "AimWithAnyButton",
-        "FastDoorsAndElevators",
-        "RefillBeforeSave",
-        "CantUseSupersOnRedDoors",
-        "Respin",
-        "CheapCharge",
-        "NerfedRainbowBeam",
-        "DachoraPit",
-        "EarlySupersBridge",
-        "PreHighJump",
-        "Moat",
-        "PreSpazer",
-        "RedTower",
-        "NovaBoostPlatform",
-        "ColorblindMode",
-        "SpeedKeep",
-        "BackupSaves",
-        "InfiniteSpaceJump",
-    ]
 
     # Patch ROM
     patch_rom(
@@ -1370,5 +1357,4 @@ if __name__ == "__main__":
         raw_randomized_example_item_pickup_data(),
         starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
         skip_intro=True,
-        static_patches=patches_to_apply,
     )
