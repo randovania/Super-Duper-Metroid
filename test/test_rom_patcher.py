@@ -42,12 +42,12 @@ def test_add_starting_inventory():
         f = create_blank_file(file_name, b"\0")
 
         starting_items = [
-            ROM_Patcher.PickupPlacementData(1, -1, "Morph Ball"),
-            ROM_Patcher.PickupPlacementData(1, -1, "Gravity Suit"),
+            ROM_Patcher.PickupPlacementData(1, -1, "Morph Ball", "Get Morph Ball"),
+            ROM_Patcher.PickupPlacementData(1, -1, "Gravity Suit", "Get Gravity Suit"),
         ]
         item_get_routine_addresses_dict = {
-            "Morph Ball": 0x1234,
-            "Gravity Suit": 0x5678,
+            "Get Morph Ball": 0x1234,
+            "Get Gravity Suit": 0x5678,
             "No Effect": 0x9101,
         }
 
@@ -81,6 +81,7 @@ def test_add_starting_inventory():
         # Assert the correctness of routine data
         f.seek(0x1C0000)
         starting_inventory_bytes = f.read(6)
+        print(starting_inventory_bytes)
         assert (bytearray(starting_inventory_bytes) == bytes([0x02, 0x00, 0x33, 0x12, 0x77, 0x56])) or (
             bytes(starting_inventory_bytes) == bytes([0x02, 0x00, 0x77, 0x56, 0x33, 0x12])
         )
