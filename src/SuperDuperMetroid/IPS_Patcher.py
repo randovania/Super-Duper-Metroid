@@ -69,10 +69,9 @@ class IPSPatcher:
 
     # Apply an IPS patch to a ROM, given the paths of an IPS file and a ROM file.
     @staticmethod
-    def apply_ips_patch(ips_path, rom_path):
+    def apply_ips_patch(ips_path, rom_file):
         print(f"Applying patch from file {ips_path}...")
         ips_file = open(ips_path, "rb")
-        rom_file = open(rom_path, "r+b", buffering=0)
         if IPSPatcher.verify_format(ips_file):
             while IPSPatcher.read_and_apply_hunk(ips_file, rom_file):
                 pass
@@ -80,7 +79,6 @@ class IPSPatcher:
         else:
             print(f"CRITICAL ERROR: Provided IPS file {ips_path} does not match the format specification!")
         ips_file.close()
-        rom_file.close()
 
 
 if __name__ == "__main__":

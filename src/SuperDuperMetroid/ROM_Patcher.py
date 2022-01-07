@@ -61,6 +61,7 @@ from SuperDuperMetroid.IPS_Patcher import IPSPatcher
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
 from SuperDuperMetroid.SM_Room_Header_Data import DoorData, SMRooms
 from enum import Enum
+from io import BytesIO
 
 VRAM_ITEMS_PATH = Path(__file__).with_name(name="VramItems.bin")
 
@@ -608,16 +609,16 @@ def get_door_data():
     return door_data_dict
 
 
-def write_door_asm_routines(f, door_data_list):
+def write_door_asm_routines(rom_file, door_data_list):
     base_address = 0xF800
     current_address = base_address
     file_offset = 0x070000
-    f.seek(base_address + file_offset)
+    rom_file.seek(base_address + file_offset)
     # As an efficiency measure,
     # We hardcode in the door ASM which I believe is likely to be most common.
     most_basic_door_asm = hex_to_data("2040F660")
     most_basic_door_asm_address = base_address
-    f.write(most_basic_door_asm)
+    rom_file.write(most_basic_door_asm)
     current_address += len(most_basic_door_asm)
     for door_data in door_data_list:
         door_routine = bytearray()
@@ -647,17 +648,17 @@ def write_door_asm_routines(f, door_data_list):
             door_data.door_asm_pointer = most_basic_door_asm_address
         else:
             door_data.door_asm_pointer = current_address
-            f.seek(current_address + file_offset)
-            f.write(door_routine)
+            rom_file.seek(current_address + file_offset)
+            rom_file.write(door_routine)
             current_address += len(door_routine)
 
 
-def write_doors(f, door_data_list):
+def write_doors(rom_file, door_data_list):
     for door_data in door_data_list:
-        door_data.write_ddb_entry_to_file(f)
+        door_data.write_ddb_entry_to_file(rom_file)
 
 
-def write_item_get_routines(f, item_get_routines_dict, in_game_address):
+def write_item_get_routines(rom_file, item_get_routines_dict, in_game_address):
     # Write them to memory and store their addresses in a dict.
     # This is critical, as we will use these addresses to store to a table that dictates
     # What an item will do when picked up.
@@ -671,18 +672,18 @@ def write_item_get_routines(f, item_get_routines_dict, in_game_address):
     for item_name, routine in item_get_routines_dict.items():
         # Don't overwrite the tables
         if in_game_address + len(routine) >= 0x9A00 and not passed_tables:
-            f.seek(0x2A400)
+            rom_file.seek(0x2A400)
             in_game_address = 0xA400
             passed_tables = True
         # KEY CHANGE HERE - BIG NOT LITTLE ENDIAN STORED HERE!
         item_get_routine_addresses_dict[item_name] = in_game_address
-        f.write(routine)
+        rom_file.write(routine)
         in_game_address += len(routine)
 
     return item_get_routine_addresses_dict
 
 
-def write_messagebox_routines(f, base_in_game_address):
+def write_messagebox_routines(rom_file, base_in_game_address):
     # Now write our new routines to memory.
     # First we append new routines to free space
     # At the end of bank 85.
@@ -716,7 +717,7 @@ def write_messagebox_routines(f, base_in_game_address):
     routine_addresses = []
     routine_address_refs = ["-alp", "-bta", "-gma", "-dlt"]
     in_game_address = base_in_game_address
-    f.seek(0x020000 + in_game_address)
+    rom_file.seek(0x020000 + in_game_address)
     # Calculate routine addresses
     for i in range(len(routines)):
         routine_addresses.append(in_game_address)
@@ -726,7 +727,7 @@ def write_messagebox_routines(f, base_in_game_address):
     for i in range(len(routines)):
         for j in range(len(routines)):
             routines[i] = replace_with_hex(routines[i], routine_address_refs[j], routine_addresses[j])
-        f.write(hex_to_data(routines[i]))
+        rom_file.write(hex_to_data(routines[i]))
 
     # Modify/overwrite existing routines.
     overwrite_routines = []
@@ -774,16 +775,16 @@ def write_messagebox_routines(f, base_in_game_address):
 
     # Write to file
     for i, routine in enumerate(overwrite_routines):
-        f.seek(hex_to_int(overwrite_routine_addresses[i]))
-        f.write(hex_to_data(routine))
+        rom_file.seek(hex_to_int(overwrite_routine_addresses[i]))
+        rom_file.write(hex_to_data(routine))
 
     # Seek back to where we expect to be.
-    f.seek(0x020000 + in_game_address)
+    rom_file.seek(0x020000 + in_game_address)
 
     return in_game_address
 
 
-def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
+def write_save_initialization_routines(rom_file, skip_intro, custom_save_start=None):
     if skip_intro:
         # Skips the intro cutscene
         intro_routine = "9CE20DADDA09D01E223AF690A9-rgn8D9F07A9-sav8D8B07ADEA098F08D87EAD520922008081AD520922858081AF08D87E8DEA09228C8580A905008D9809AF18D97E8D500960"
@@ -798,8 +799,8 @@ def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
         intro_routine_address = 0x096DF4
         redirection_routine_address = 0x05C100
         # Write the redirection routine to ROM
-        f.seek(redirection_routine_address)
-        f.write(hex_to_data(redirection_routine))
+        rom_file.seek(redirection_routine_address)
+        rom_file.write(hex_to_data(redirection_routine))
     if custom_save_start is not None:
         # Custom save start should be a list/tuple with two values:
         # Region name and save station index
@@ -818,18 +819,18 @@ def write_save_initialization_routines(f, skip_intro, custom_save_start=None):
         intro_routine = intro_routine.replace("-sav", "0000")
         intro_routine = intro_routine.replace("-sta", "0600")
 
-    f.seek(intro_routine_address)
-    f.write(hex_to_data(intro_routine))
+    rom_file.seek(intro_routine_address)
+    rom_file.write(hex_to_data(intro_routine))
 
 
-def write_multiworld_routines(f):
+def write_multiworld_routines(rom_file):
     # MULTIWORLD ROUTINES:
     # Appended to bank 90. Used to work the game's events in our favor.
     # TODO: Convert this to an ips patch?
     multiworld_execute_arbitrary_function_routine = "E220A98348C220AF72FF7F486B"
 
-    f.seek(0x087FF0)
-    f.write(hex_to_data(multiworld_execute_arbitrary_function_routine))
+    rom_file.seek(0x087FF0)
+    rom_file.write(hex_to_data(multiworld_execute_arbitrary_function_routine))
 
     # Routines to append to bank $83.
     # More than one are planned, for things like sending messages &c.
@@ -839,17 +840,17 @@ def write_multiworld_routines(f):
 
     multiworld_routines = [multiworld_item_get_routine]
 
-    f.seek(multiworld_routine_address_start)
+    rom_file.seek(multiworld_routine_address_start)
     for routine in multiworld_routines:
-        f.write(hex_to_data(routine))
+        rom_file.write(hex_to_data(routine))
 
 
-def write_crateria_wakeup_routine(f):
+def write_crateria_wakeup_routine(rom_file):
     # TODO: Convert this to an ips patch?
     overwrite_crateria_wakeup_routine = "AF73D87E290400F007BD0000AA4CE6E5E8E860"
     overwrite_crateria_wakeup_routine_address = 0x07E652
-    f.seek(overwrite_crateria_wakeup_routine_address)
-    f.write(hex_to_data(overwrite_crateria_wakeup_routine))
+    rom_file.seek(overwrite_crateria_wakeup_routine_address)
+    rom_file.write(hex_to_data(overwrite_crateria_wakeup_routine))
 
 
 # Generate a game with vanilla item placements
@@ -868,7 +869,7 @@ def gen_vanilla_game():
 # Adds the ability to start the game with items
 # Takes a list of PickupPlacementData
 # Irrelevent fields need not be specified.
-def add_starting_inventory(f, pickups, item_get_routine_addresses_dict):
+def add_starting_inventory(rom_file, pickups, item_get_routine_addresses_dict):
     # Safeguard so that we don't overlap routine associations,
     # Which start 0x100 after the starting inventory.
     if len(pickups) > 127:
@@ -877,14 +878,14 @@ def add_starting_inventory(f, pickups, item_get_routine_addresses_dict):
         )
         return
     print(f"Placing {len(pickups)} starting items")
-    f.seek(0x1C0000)
-    f.write(len(pickups).to_bytes(2, "little"))
+    rom_file.seek(0x1C0000)
+    rom_file.write(len(pickups).to_bytes(2, "little"))
     for starting_item in pickups:
         effect_name = starting_item.pickup_effect
         if starting_item.item_name in SuperMetroidConstants.ammoItemList:
             effect_name += " " + str(starting_item.quantity_given)
         routine_address = item_get_routine_addresses_dict[effect_name] - 1
-        f.write(routine_address.to_bytes(2, "little"))
+        rom_file.write(routine_address.to_bytes(2, "little"))
 
     award_starting_inventory_routine = (
         "AF0080B8AAE00000F020DAE220A99048C220A9FAFF48E220A98548C2208A0AAABF0080B8486BFACA80DB6B"
@@ -893,17 +894,17 @@ def add_starting_inventory(f, pickups, item_get_routine_addresses_dict):
     award_starting_inventory_routine_address = 0x08763A
     function_to_return_properly_address = 0x02FFFB
 
-    f.seek(award_starting_inventory_routine_address)
-    f.write(hex_to_data(award_starting_inventory_routine))
-    f.seek(function_to_return_properly_address)
-    f.write(hex_to_data(function_to_return_properly))
+    rom_file.seek(award_starting_inventory_routine_address)
+    rom_file.write(hex_to_data(award_starting_inventory_routine))
+    rom_file.seek(function_to_return_properly_address)
+    rom_file.write(hex_to_data(function_to_return_properly))
 
 
 # This is just a python function that applies a modified version of
 # Kazuto's More_Efficient_PLM_Items.asm patch without an assembler.
 # Please, send lots of thanks to Kazuto for this, I could not have done
 # Any of this without their hard work.
-def write_kazuto_more_efficient_items_hack(f, item_types_list):
+def write_kazuto_more_efficient_items_hack(rom_file, item_types_list):
     # Where we start writing our data in the actual file.
     # Inclusive - first byte written here.
     in_file_initial_offset = 0x026099
@@ -951,42 +952,42 @@ def write_kazuto_more_efficient_items_hack(f, item_types_list):
     # Setup
     # Don't bother reading this, it's a 1 for 1 recreation of the Setup portion of Kazuto's asm file.
     # Or at least it should be.
-    f.seek(in_file_initial_offset)
-    f.write(table_load_func_addr.to_bytes(2, "little") + item_gfx_table_addr.to_bytes(2, "little"))
+    rom_file.seek(in_file_initial_offset)
+    rom_file.write(table_load_func_addr.to_bytes(2, "little") + item_gfx_table_addr.to_bytes(2, "little"))
     # VRAMItem_Normal
-    f.write(
+    rom_file.write(
         bytearray([0x7C, 0x88, 0xA9, 0xDF, 0x2E, 0x8A])
         + in_memory_initial_offset.to_bytes(2, "little")
         + bytearray([0x24, 0x87])
         + start_addr.to_bytes(2, "little")
     )
     # VRAMItem_Ball
-    f.write(
+    rom_file.write(
         bytearray([0x7C, 0x88, 0xA9, 0xDF, 0x2E, 0x8A])
         + in_memory_initial_offset.to_bytes(2, "little")
         + bytearray([0x2E, 0x8A, 0xAF, 0xDF, 0x2E, 0x8A, 0xC7, 0xDF])
     )
     # Start
-    f.write(
+    rom_file.write(
         bytearray([0x24, 0x8A])
         + goto_addr.to_bytes(2, "little")
         + bytearray([0xC1, 0x86, 0x89, 0xDF, 0x4E, 0x87, 0x16])
     )
     # .Gfx (1)
-    f.write(bytearray([0x4F, 0xE0, 0x67, 0xE0, 0x24, 0x87]) + gfx_addr.to_bytes(2, "little"))
+    rom_file.write(bytearray([0x4F, 0xE0, 0x67, 0xE0, 0x24, 0x87]) + gfx_addr.to_bytes(2, "little"))
     # Goto
-    f.write(bytearray([0x24, 0x8A, 0xA9, 0xDF, 0x24, 0x87]) + get_item_addr.to_bytes(2, "little"))
+    rom_file.write(bytearray([0x24, 0x8A, 0xA9, 0xDF, 0x24, 0x87]) + get_item_addr.to_bytes(2, "little"))
     # VRAMItem_Block
-    f.write(
+    rom_file.write(
         bytearray([0x2E, 0x8A])
         + in_memory_initial_offset.to_bytes(2, "little")
         + bytearray([0x24, 0x87])
         + block_loop_addr.to_bytes(2, "little")
     )
     # Respawn
-    f.write(bytearray([0x2E, 0x8A, 0x32, 0xE0]))
+    rom_file.write(bytearray([0x2E, 0x8A, 0x32, 0xE0]))
     # BlockLoop
-    f.write(
+    rom_file.write(
         bytearray([0x2E, 0x8A, 0x07, 0xE0, 0x7C, 0x88])
         + respawn_addr.to_bytes(2, "little")
         + bytearray([0x24, 0x8A])
@@ -994,23 +995,23 @@ def write_kazuto_more_efficient_items_hack(f, item_types_list):
         + bytearray([0xC1, 0x86, 0x89, 0xDF, 0x4E, 0x87, 0x16])
     )
     # .Gfx (2)
-    f.write(
+    rom_file.write(
         bytearray([0x4F, 0xE0, 0x67, 0xE0, 0x3F, 0x87])
         + gfx_addr_b.to_bytes(2, "little")
         + bytearray([0x2E, 0x8A, 0x20, 0xE0, 0x24, 0x87])
         + block_loop_addr.to_bytes(2, "little")
     )
     # BlockGoto
-    f.write(bytearray([0x24, 0x8A]) + respawn_addr.to_bytes(2, "little"))
+    rom_file.write(bytearray([0x24, 0x8A]) + respawn_addr.to_bytes(2, "little"))
     # GetItem
-    f.write(bytearray([0x99, 0x88, 0xDD, 0x8B, 0x02]))
-    f.write(table_load_func_addr.to_bytes(2, "little") + item_get_table_addr.to_bytes(2, "little"))
+    rom_file.write(bytearray([0x99, 0x88, 0xDD, 0x8B, 0x02]))
+    rom_file.write(table_load_func_addr.to_bytes(2, "little") + item_get_table_addr.to_bytes(2, "little"))
 
     # ASM Functions
     # LoadItemTable
-    f.write(hex_to_data("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
+    rom_file.write(hex_to_data("B900008512BF371C7EC92BEF9005E9540080F638E9D7EE4AA8B112A860"))
     # LavaRise
-    f.write(bytearray([0xA9, 0xE0, 0xFF, 0x8D, 0x7C, 0x19, 0x60]))
+    rom_file.write(bytearray([0xA9, 0xE0, 0xFF, 0x8D, 0x7C, 0x19, 0x60]))
 
     # Item Tables
     # Initial item table hexstrings.
@@ -1037,9 +1038,9 @@ def write_kazuto_more_efficient_items_hack(f, item_types_list):
 
     # Write tables to file
     for item_table_byte_pair in item_table_bytes:
-        f.write(item_table_byte_pair)
+        rom_file.write(item_table_byte_pair)
     for gfx_table_byte_pair in gfx_table_bytes:
-        f.write(gfx_table_byte_pair)
+        rom_file.write(gfx_table_byte_pair)
 
     # Item PLM Data
     # This acquire data should do nothing but display a message box.
@@ -1068,32 +1069,32 @@ def write_kazuto_more_efficient_items_hack(f, item_types_list):
             )
             return
         # Write to file
-        f.write(generic_acquire_data)
-        f.write(bytearray(current_item_gfx_data))
+        rom_file.write(generic_acquire_data)
+        rom_file.write(bytearray(current_item_gfx_data))
 
     # Now we write out the PLM Header Data
-    f.seek(in_file_plm_header_offset)
+    rom_file.seek(in_file_plm_header_offset)
     normal_item_hex = bytearray([0x64, 0xEE]) + vram_item_normal_addr.to_bytes(2, "little")
     ball_item_hex = bytearray([0x64, 0xEE]) + vram_item_ball_addr.to_bytes(2, "little")
     block_item_hex = bytearray([0x8E, 0xEE]) + vram_item_block_addr.to_bytes(2, "little")
     for item_type in item_types_list:
-        f.write(normal_item_hex)
+        rom_file.write(normal_item_hex)
     for item_type in item_types_list:
-        f.write(ball_item_hex)
+        rom_file.write(ball_item_hex)
     for item_type in item_types_list:
-        f.write(block_item_hex)
+        rom_file.write(block_item_hex)
     # Write native item graphics that aren't already in the ROM
     # This is primarily for what were originally CRE items like Missile Expansions.
-    f.seek(0x049100)
+    rom_file.seek(0x049100)
     # FIXME - REMOVE DEPENDENCE ON CURRENT WORKING DIRECTORY!
 
     with VRAM_ITEMS_PATH.open("rb") as f2:
-        f.write(f2.read())
+        rom_file.write(f2.read())
     return in_memory_plm_header_offset
 
 
 # Perform actions based on altering door database
-def do_doors(f):
+def do_doors(rom_file):
     door_data_dict = get_door_data()
 
     # Test Modification
@@ -1105,20 +1106,20 @@ def do_doors(f):
     door_data_list = []
     for data_list in door_data_dict.values():
         door_data_list += data_list
-    write_door_asm_routines(f, door_data_list)
-    write_doors(f, door_data_list)
+    write_door_asm_routines(rom_file, door_data_list)
+    write_doors(rom_file, door_data_list)
 
 
 # Places the items into the game.
-def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list, player_name=None):
+def place_items(rom_file, item_get_routine_addresses_dict, pickup_data_list, player_name=None):
     # Initialize MessageBoxGenerator
-    message_box_generator = MessageBoxGenerator(f)
+    message_box_generator = MessageBoxGenerator(rom_file)
 
     # Necessary for applying the Kazuto More Efficient Items Patch
     item_types = create_item_types(pickup_data_list)
 
     item_type_list = item_types.values()
-    plm_header_offset = write_kazuto_more_efficient_items_hack(f, item_type_list)
+    plm_header_offset = write_kazuto_more_efficient_items_hack(rom_file, item_type_list)
     # Generate dict of item PLMIDs. Since there's no more guarantee of ordering here, we create this
     # at patch time.
     item_plm_ids = {}
@@ -1135,19 +1136,16 @@ def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list,
 
     # Patch ROM.
     # This part of the code is ugly as sin, I apologize.
-    spoiler_path = file_path[: file_path.rfind(".")] + "_SPOILER.txt"
-    print("Spoiler file generating at " + spoiler_path + "...")
-    spoiler_file = open(spoiler_path, "w")
     for i, item in enumerate(pickup_data_list):
         patcher_index = SuperMetroidConstants.itemIndexList.index(item.pickup_index)
         # Write PLM Data.
-        f.seek(SuperMetroidConstants.itemPLMLocationList[patcher_index])
+        rom_file.seek(SuperMetroidConstants.itemPLMLocationList[patcher_index])
         # If there is no item in this location, we should NOT try to calculate a PLM-type offset,
         # As this could give us an incorrect PLM ID.
         if item.item_name == "No Item":
-            f.write(item_plm_ids[item.item_name].to_bytes(2, "little"))
+            rom_file.write(item_plm_ids[item.item_name].to_bytes(2, "little"))
             continue
-        f.write(
+        rom_file.write(
             (
                 item_plm_ids[item.item_name]
                 + item_plm_block_type_multiplier * SuperMetroidConstants.itemPLMBlockTypeList[patcher_index]
@@ -1167,42 +1165,37 @@ def place_items(f, file_path, item_get_routine_addresses_dict, pickup_data_list,
         # Each table entry is two bytes wide, hence the doubling.
         memory_base_location = 0x029A00 + SuperMetroidConstants.itemLocationList[patcher_index] * 2
 
-        f.seek(memory_base_location)
+        rom_file.seek(memory_base_location)
         # TODO: Handle width and height separately.
         if item.item_name in SuperMetroidConstants.itemMessageNonstandardSizes:
-            f.write((0x0080).to_bytes(2, "big"))
-            f.seek(memory_base_location + 0x400)
-            f.write(SuperMetroidConstants.itemMessageNonstandardSizes[item.item_name].to_bytes(2, "little"))
+            rom_file.write((0x0080).to_bytes(2, "big"))
+            rom_file.seek(memory_base_location + 0x400)
+            rom_file.write(SuperMetroidConstants.itemMessageNonstandardSizes[item.item_name].to_bytes(2, "little"))
         else:
-            f.write((0x4080).to_bytes(2, "big"))
-            f.seek(memory_base_location + 0x400)
-            f.write((0x4000).to_bytes(2, "big"))
+            rom_file.write((0x4080).to_bytes(2, "big"))
+            rom_file.seek(memory_base_location + 0x400)
+            rom_file.write((0x4000).to_bytes(2, "big"))
 
-        f.seek(memory_base_location + 0x200)
-        f.write(SuperMetroidConstants.itemMessageAddresses[item.item_name].to_bytes(2, "little"))
+        rom_file.seek(memory_base_location + 0x200)
+        rom_file.write(SuperMetroidConstants.itemMessageAddresses[item.item_name].to_bytes(2, "little"))
 
-        f.seek(memory_base_location + 0x600)
-        f.write(SuperMetroidConstants.itemMessageIDs[item.item_name].to_bytes(2, "little"))
+        rom_file.seek(memory_base_location + 0x600)
+        rom_file.write(SuperMetroidConstants.itemMessageIDs[item.item_name].to_bytes(2, "little"))
 
-        f.seek(memory_base_location + 0x800)
+        rom_file.seek(memory_base_location + 0x800)
         # If item is meant for a different player, it will do nothing at all.
         # This is not the same as there not being an item in this position -
         # The item will be there, it will just have no effect for the SM player.
         if player_name is not None and not item.owner_name == player_name:
-            f.write(item_get_routine_addresses_dict["No Item"].to_bytes(2, "little"))
+            rom_file.write(item_get_routine_addresses_dict["No Item"].to_bytes(2, "little"))
         else:
             item_effect_name = "Get " + item.item_name
             if item.item_name in SuperMetroidConstants.ammoItemList:
                 item_effect_name = f"Get {item.item_name} {item.quantity_given}"
-            f.write(item_get_routine_addresses_dict[item_effect_name].to_bytes(2, "little"))
-
-        # Write spoiler log
-        spoiler_file.write(f"{SuperMetroidConstants.locationNamesList[patcher_index]}: {item.item_name}\n")
-    spoiler_file.close()
+            rom_file.write(item_get_routine_addresses_dict[item_effect_name].to_bytes(2, "little"))
 
 
-def patch_rom_json(rom_file_path, json_string):
-    patch_data = json.loads(json_string)
+def patch_rom_json(rom_file, output_path, patch_data):
     item_list = []
     for pickup in patch_data["pickups"]:
         pickup_data = PickupPlacementData()
@@ -1241,18 +1234,10 @@ def patch_rom_json(rom_file_path, json_string):
         custom_save_start["starting_save_station_index"],
     ]
 
-    patch_rom(rom_file_path, item_list, None, None, **keyword_arguments)
+    patch_rom(rom_file, output_path, item_list, None, None, **keyword_arguments)
 
 
-def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=None, **kwargs):
-    # Open ROM File
-    f = open(rom_file_path, "r+b", buffering=0)
-
-    # Open Patcher Data Output File
-    patcher_output_path = rom_file_path[: rom_file_path.rfind(".")] + "_PatcherData.json"
-    patcher_output = open(patcher_output_path, "w")
-    patcher_output_json = {"patcherData": []}
-
+def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient_list=None, **kwargs):
     starting_items = []
     if "starting_items" in kwargs:
         starting_items = kwargs["starting_items"]
@@ -1274,27 +1259,18 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
     # First we append new routines to free space
     # At the end of bank 85.
     in_game_address = 0x9643
-    in_game_address = write_messagebox_routines(f, in_game_address)
+    in_game_address = write_messagebox_routines(rom_file, in_game_address)
 
     # Create and write the routines which handle pickup effects.
     equipment_gets = get_equipment_routines()
     item_get_routines_dict = get_all_necessary_pickup_routines(item_list, equipment_gets, starting_items, player_name)
-    item_get_routine_addresses_dict = write_item_get_routines(f, item_get_routines_dict, in_game_address)
-
-    # Output item routine info to a json file for use in the interface
-    item_routines_json_output = []
-    for (item_name, routine_address) in item_get_routine_addresses_dict.items():
-        item_routines_json_output.append(
-            {"item_name": item_name, "routine_address": reverse_endianness(pad_hex(int_to_hex(routine_address), 4))}
-        )
-        print(item_name + " has routine address " + pad_hex(int_to_hex(routine_address), 4))
-    patcher_output_json["patcherData"].append({"itemRoutines": item_routines_json_output})
+    item_get_routine_addresses_dict = write_item_get_routines(rom_file, item_get_routines_dict, in_game_address)
 
     # Patch Item Placements into the ROM.
-    place_items(f, rom_file_path, item_get_routine_addresses_dict, item_list)
+    place_items(rom_file, item_get_routine_addresses_dict, item_list)
 
     # Add starting items patch
-    add_starting_inventory(f, starting_items, item_get_routine_addresses_dict)
+    add_starting_inventory(rom_file, starting_items, item_get_routine_addresses_dict)
 
     # Skip intro cutscene and/or Space Station Ceres depending on parameters passed to function.
     # Default behavior is to skip straight to landing site.
@@ -1306,13 +1282,13 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
     custom_save_start = None
     if "custom_save_start" in kwargs:
         custom_save_start = kwargs["custom_save_start"]
-    write_save_initialization_routines(f, skip_intro, custom_save_start)
+    write_save_initialization_routines(rom_file, skip_intro, custom_save_start)
 
     # Write the routine used to cause Crateria to wake up
-    write_crateria_wakeup_routine(f)
+    write_crateria_wakeup_routine(rom_file)
 
     # Write routines used for multiworld
-    write_multiworld_routines(f)
+    write_multiworld_routines(rom_file)
 
     # Apply static patches.
     # Many of these patches are provided by community members -
@@ -1326,15 +1302,16 @@ def patch_rom(rom_file_path, item_list=None, player_name=None, recipient_list=No
         static_patches += kwargs["static_patches"]
         for patch in static_patches:
             if patch in static_patch_dict:
-                IPSPatcher.apply_ips_patch(patches_dir.joinpath(static_patch_dict[patch]), rom_file_path)
+                IPSPatcher.apply_ips_patch(patches_dir.joinpath(static_patch_dict[patch]), rom_file)
             else:
                 print(f"Provided patch {patch} does not exist!")
 
-    do_doors(f)
+    do_doors(rom_file)
 
-    json.dump(patcher_output_json, patcher_output, indent=4, sort_keys=True)
-    patcher_output.close()
-    f.close()
+    with open(output_path, "wb") as output_file:
+        output_file.write(rom_file.getbuffer())
+
+    rom_file.close()
     print("ROM modified successfully.")
 
 
@@ -1342,19 +1319,25 @@ if __name__ == "__main__":
     # Build in this to make it faster to test.
     # Saves me some time.
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
-        f = open(os.getcwd() + "\\romfilepath.txt", "r")
-        file_path = f.readline().rstrip()
-        f.close()
+        rom_path_file = open(os.getcwd() + "\\romfilepath.txt", "r")
+        file_path = rom_path_file.readline().rstrip()
+        rom_path_file.close()
     else:
         print(
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
 
+    json_file = open("test_data.json", "r")
+    json = json.load(json_file)
+    json_file.close()
+
+    with open(file_path, 'rb+') as fh:
+        bytes_io = BytesIO(fh.read())
+
     # Patch ROM
-    patch_rom(
+    patch_rom_json(
+        bytes_io,
         file_path,
-        raw_randomized_example_item_pickup_data(),
-        starting_items=[PickupPlacementData(1, -1, "Morph Ball")],
-        skip_intro=True,
+        json
     )
