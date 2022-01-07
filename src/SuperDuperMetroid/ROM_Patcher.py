@@ -1332,12 +1332,8 @@ if __name__ == "__main__":
     json = json.load(json_file)
     json_file.close()
 
-    with open(file_path, 'rb+') as fh:
+    with open(file_path, "rb+") as fh:
         bytes_io = BytesIO(fh.read())
 
     # Patch ROM
-    patch_rom_json(
-        bytes_io,
-        file_path,
-        json
-    )
+    patch_rom_json(bytes_io, file_path, json)
