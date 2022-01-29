@@ -26,6 +26,7 @@ jobs:
           - '3.7'
           - '3.8'
           - '3.9'
+          - '3.10'
 
     runs-on: ${{ matrix.os }}
     name: Wheel for ${{ matrix.os }} (${{ matrix.python }})
@@ -66,6 +67,7 @@ jobs:
           - 'cp37-cp37m'
           - 'cp38-cp38'
           - 'cp39-cp39'
+          - 'cp310-cp310'
 
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux2014_x86_64
@@ -115,6 +117,7 @@ jobs:
           - {version: '3.7', wheel: 'cp37-cp37m'}
           - {version: '3.8', wheel: 'cp38-cp38'}
           - {version: '3.9', wheel: 'cp39-cp39'}
+          - {version: '3.10', wheel: 'cp310-cp310'}
 
     steps:
       - name: Checkout
