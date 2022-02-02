@@ -196,7 +196,7 @@ class MessageBoxGenerator:
         # Tell the user if their message contains unsupported characters
         if len(message_text) > len(stripped_message):
             print(
-                "Warning Message box text "
+                "WARNING: Message box text "
                 + message_text
                 + " contains unsupported characters. These will be stripped from the message.\nMessage boxes support the latin alphabet (will be converted to uppercase only), the arabic numerals 0-9, spaces, and a limited set of miscellaneous characters: ?!,.'&-%"
             )
@@ -206,7 +206,7 @@ class MessageBoxGenerator:
         # We'll also include a warning if this happens.
         if len(message_text) > maxMessageLengths(message_box_size):
             print(
-                f"Warning: Message box text {message_text} exceeds maximum length of message box. Message will be cut to first 19 characters."
+                f"WARNING: Message box text {message_text} exceeds maximum length of message box. Message will be cut to first 19 characters."
             )
             message_text = message_text[: maxMessageLengths(message_box_size)]
         return message_text
@@ -247,7 +247,7 @@ class MessageBoxGenerator:
             messag_hex = (padding_hex * 3) + message_hex + (padding_hex * 3)
         else:
             print(
-                f"Warning: You are attempting to create a message with size paramater {message_box_size}, which is not a supported size.\nSupported sizes are Small and Large"
+                f"WARNING: You are attempting to create a message with size paramater {message_box_size}, which is not a supported size.\nSupported sizes are Small and Large"
             )
             return
 
@@ -255,14 +255,14 @@ class MessageBoxGenerator:
         if message_box_size == "Small":
             if message_text in smallMessagePointerTable.keys():
                 print(
-                    f"Warning: The message {message_text} has already been added to this ROM.\nPlease consult the current maintainer of this patcher."
+                    f"WARNING: The message {message_text} has already been added to this ROM.\nPlease consult the current maintainer of this patcher."
                 )
             else:
                 self.smallMessagePointerTable[message_text] = message_text
         elif message_box_size == "Large":
             if message_text in largeMessagePointerTable.keys():
                 print(
-                    f"Warning: The message {message_text} has already been added to this ROM.\nPlease consult the current maintainer of this patcher."
+                    f"WARNING: The message {message_text} has already been added to this ROM.\nPlease consult the current maintainer of this patcher."
                 )
             else:
                 self.largeMessagePointerTable[message_text] = message_text
@@ -594,7 +594,7 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
                         item_get_routines_dict[pickup.item_name] = equipment_gets[pickup.pickup_effect]
                 # Otherwise add new effect
             else:
-                print("ERROR: Custom item pickup behaviors are not yet implemented.")
+                raise NotImplementedError("ERROR: Custom item pickup behaviors are not yet implemented.")
 
     # This is a command that will do nothing, used for items that are meant to go to other players.
     # 60 is hex for the RTS instruction. In other words when called it will immediately return.
@@ -616,7 +616,7 @@ def write_door_asm_routines(rom_file, door_data_list):
     rom_file.seek(base_address + file_offset)
     # As an efficiency measure,
     # We hardcode in the door ASM which I believe is likely to be most common.
-    most_basic_door_asm = hex_to_data("2040F660")
+    most_basic_door_asm = hex_to_data("60")
     most_basic_door_asm_address = base_address
     rom_file.write(most_basic_door_asm)
     current_address += len(most_basic_door_asm)
@@ -630,17 +630,18 @@ def write_door_asm_routines(rom_file, door_data_list):
         if door_data.extra_asm_pointer != 0x0000:
             door_routine.append(0x20)
             door_routine += door_data.extra_asm_pointer.to_bytes(2, "little")
-        # Rectify door directional mismatches
-        # Relies on door_transition.ips
-        if door_data.door_mismatch:
-            door_routine += bytearray([0x20, 0x00, 0xF6, 0xA9])
-            door_routine += door_data.override_x.to_bytes(2, "little")
-            door_routine += bytearray([0x8D, 0xF6, 0x0A, 0xA9])
-            door_routine += door_data.override_y.to_bytes(2, "little")
-            door_routine += bytearray([0x8D, 0xFA, 0x0A])
-        # Apply iframes after going through a door
-        else:
-            door_routine += bytearray([0x20, 0x40, 0xF6])
+        if door_data.door_redirect:
+            # Rectify door directional mismatches
+            # Relies on door_transition.ips
+            if door_data.door_mismatch:
+                door_routine += bytearray([0x20, 0x00, 0xF6, 0xA9])
+                door_routine += door_data.override_x.to_bytes(2, "little")
+                door_routine += bytearray([0x8D, 0xF6, 0x0A, 0xA9])
+                door_routine += door_data.override_y.to_bytes(2, "little")
+                door_routine += bytearray([0x8D, 0xFA, 0x0A])
+            # Apply iframes after going through a door
+            else:
+                door_routine += bytearray([0x20, 0x40, 0xF6])
         door_routine.append(0x60)
 
         if door_routine == most_basic_door_asm:
@@ -1064,7 +1065,7 @@ def write_kazuto_more_efficient_items_hack(rom_file, item_types_list):
         try:
             assert len(current_item_gfx_data) == item_gfx_length
         except:
-            print(
+            raise ValueError(
                 f"ERROR: Invalid-size graphics data supplied for item type {item_type.item_name}:\n {current_item_gfx_data} should be only 14(0x0E) bytes, is instead {str(len(current_item_gfx_data))}."
             )
             return
@@ -1247,13 +1248,14 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
     if item_list is None:
         item_list = gen_vanilla_game()
         starting_items = None
-        print("Item list was not supplied to ROM patcher. Generating Vanilla placement with no starting items.")
+        print(
+            "WARNING: Item list was not supplied to ROM patcher. Generating Vanilla placement with no starting items."
+        )
     else:
         try:
             assert len(item_list) >= 100
         except:
-            print("ERROR: Non-Empty item list didn't meet length requirement. Aborting ROM Patch.")
-            return
+            raise ValueError("ERROR: Non-Empty item list didn't meet length requirement. Aborting ROM Patch.")
 
     # Now write our new routines to memory.
     # First we append new routines to free space

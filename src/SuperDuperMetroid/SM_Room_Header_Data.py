@@ -69,6 +69,8 @@ class DoorData:
 
         # Boolean - marks whether this door has a direction mismatch with the destination door
         self.door_mismatch = False
+        # Boolean - marks whether this door has had its destination altered
+        self.door_redirect = False
         # Defines an override position for Samus in the case of incompatible door transition
         self.override_x = 0x0000
         self.override_y = 0x0000
@@ -120,6 +122,8 @@ class DoorData:
         self.screen_y = vanilla_source_room_door_data.screen_y
         self.distance_to_spawn = vanilla_source_room_door_data.distance_to_spawn
         self.door_asm_pointer = vanilla_source_room_door_data.door_asm_pointer
+
+        self.door_redirect = True
 
         # Validate the door directions
         # If the door that leads to our destination in Vanilla has a different direction from this door,
@@ -207,7 +211,6 @@ class DoorData:
         print(pad_hex(int_to_hex(self.distance_to_spawn), 4))
         print(pad_hex(int_to_hex(self.door_asm_pointer), 4))
         print("")
-        pass
 
 
 class SMRooms:

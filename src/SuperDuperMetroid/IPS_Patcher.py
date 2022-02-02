@@ -77,7 +77,7 @@ class IPSPatcher:
                 pass
             print(f"Finished applying patch {ips_path} successfully.")
         else:
-            print(f"CRITICAL ERROR: Provided IPS file {ips_path} does not match the format specification!")
+            raise ValueError(f"CRITICAL ERROR: Provided IPS file {ips_path} does not match the format specification!")
         ips_file.close()
 
 
