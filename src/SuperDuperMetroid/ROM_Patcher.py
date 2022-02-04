@@ -55,6 +55,7 @@
 
 import json
 import os
+import random
 from pathlib import Path
 
 from SuperDuperMetroid.IPS_Patcher import IPSPatcher
@@ -502,6 +503,7 @@ def get_patch_dict():
         "door_transitions": "Mandatory Patches\\door_transition.ips",
         "varia_rng": "Mandatory Patches\\varia_rng.ips",
         "varia_timer_fix": "Mandatory Patches\\varia_timer_fix.ips",
+        "seed_display": "Mandatory Patches\\seed_display.ips",
         "respin": "Tweaks\\respin.ips",
         "no_demo": "Tweaks\\no_demo.ips",
         "refill_before_save": "Tweaks\\refill_before_save.ips",
@@ -1111,6 +1113,13 @@ def do_doors(rom_file):
     write_door_asm_routines(rom_file, door_data_list)
     write_doors(rom_file, door_data_list)
 
+def write_seed_to_display(rom_file, seed):
+    random.seed(seed)
+    seedDisplayWordA = random.randint(0, 0xFFFF)
+    seedDisplayWordB = random.randint(0, 0xFFFF)
+    rom_file.seek(0x2FFF00)
+    rom_file.write(seedDisplayWordA.to_bytes(2, byteorder='little'))
+    rom_file.write(seedDisplayWordB.to_bytes(2, byteorder='little'))
 
 # Places the items into the game.
 def place_items(rom_file, item_get_routine_addresses_dict, pickup_data_list, player_name=None):
@@ -1198,6 +1207,8 @@ def place_items(rom_file, item_get_routine_addresses_dict, pickup_data_list, pla
 
 
 def patch_rom_json(rom_file, output_path, patch_data):
+    seed = patch_data["seed"]
+
     item_list = []
     for pickup in patch_data["pickups"]:
         pickup_data = PickupPlacementData()
@@ -1236,10 +1247,10 @@ def patch_rom_json(rom_file, output_path, patch_data):
         custom_save_start["starting_save_station_index"],
     ]
 
-    patch_rom(rom_file, output_path, item_list, None, None, **keyword_arguments)
+    patch_rom(rom_file, output_path, item_list, None, None, seed, **keyword_arguments)
 
 
-def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient_list=None, **kwargs):
+def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient_list=None, seed=0, **kwargs):
     starting_items = []
     if "starting_items" in kwargs:
         starting_items = kwargs["starting_items"]
@@ -1300,7 +1311,7 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
     static_patch_dict = get_patch_dict()
     patches_dir = Path(__file__).parent.joinpath("Patches")
 
-    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix"]
+    static_patches = ["seed_display", "door_transitions", "varia_rng", "varia_timer_fix"]
     if "static_patches" in kwargs:
         static_patches += kwargs["static_patches"]
         for patch in static_patches:
@@ -1310,6 +1321,8 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
                 print(f"Provided patch {patch} does not exist!")
 
     do_doors(rom_file)
+
+    write_seed_to_display(rom_file, seed)
 
     with open(output_path, "wb") as output_file:
         output_file.write(rom_file.getbuffer())
