@@ -1113,13 +1113,15 @@ def do_doors(rom_file):
     write_door_asm_routines(rom_file, door_data_list)
     write_doors(rom_file, door_data_list)
 
+
 def write_seed_to_display(rom_file, seed):
     random.seed(seed)
     seedDisplayWordA = random.randint(0, 0xFFFF)
     seedDisplayWordB = random.randint(0, 0xFFFF)
     rom_file.seek(0x2FFF00)
-    rom_file.write(seedDisplayWordA.to_bytes(2, byteorder='little'))
-    rom_file.write(seedDisplayWordB.to_bytes(2, byteorder='little'))
+    rom_file.write(seedDisplayWordA.to_bytes(2, byteorder="little"))
+    rom_file.write(seedDisplayWordB.to_bytes(2, byteorder="little"))
+
 
 # Places the items into the game.
 def place_items(rom_file, item_get_routine_addresses_dict, pickup_data_list, player_name=None):
