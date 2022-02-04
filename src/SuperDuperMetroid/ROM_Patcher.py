@@ -511,6 +511,7 @@ def get_patch_dict():
         "mother_brain_cutscene_edits": "Tweaks\\mother_brain_cutscene_edits.ips",
         "infinite_space_jump": "Tweaks\\infinite_space_jump.ips",
         "speedkeep": "Tweaks\\speed_keep.ips",
+        "no_ln_chozo_inventory_check": "Tweaks\\no_ln_chozo_inventory_check.ips",
         "no_gt_code": "Fixes\\disable_gt_code.ips",
         "fix_heat_echoes": "Fixes\\fix_heat_echoes.ips",
         "fix_screw_attack_menu": "Fixes\\fix_screw_attack_menu.ips",
