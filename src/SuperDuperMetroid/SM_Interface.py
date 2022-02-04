@@ -170,8 +170,7 @@ class SuperMetroidInterface:
             result = self.webSocket.recv()
             result = (json.loads(result))["Results"]
             if len(result) == 0:
-                print("ERROR: No devices were found by SNI. Could not link to any device.")
-                return
+                raise ConnectionError("ERROR: No devices were found by SNI. Could not link to any device.")
             if len(result) > 1:
                 print("WARNING: More than one devices have been listed by SNI. Device list is as follows:")
                 for i, device in enumerate(result):
@@ -187,7 +186,9 @@ class SuperMetroidInterface:
             if self.connectedToDevice:
                 print("Successfully connected to device.")
         else:
-            print("ERROR: An attempt was made to connect to a device, but no connection has been made with SNI.")
+            raise ConnectionError(
+                "ERROR: An attempt was made to connect to a device, but no connection has been made with SNI."
+            )
 
     def print_device_info(self):
         print("Device Info:")
@@ -203,10 +204,9 @@ class SuperMetroidInterface:
         if self.connectedToDevice:
             if hex_to_int(address) < hex_to_int("F50000") and check_rom_read:
                 if "NO_ROM_READ" in self.deviceInfo:
-                    print(
+                    raise PermissionError(
                         f"ERROR: An attempt was made to read from ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'."
                     )
-                    return None
             json_read_data_from_address_command = {
                 "Opcode": "GetAddress",
                 "Space": "SNES",
@@ -218,8 +218,7 @@ class SuperMetroidInterface:
             # print(f"Read from address {address} was successful.")
             return result
         else:
-            print("ERROR: Connection was not initialized properly before attempting to get data. Ignoring request...")
-            return None
+            raise ConnectionError("ERROR: Connection was not initialized properly before attempting to get data.")
 
     # Write data to the specified address.
     # If checkRomWrite = True, check whether the write being requested would write to ROM.
@@ -230,7 +229,7 @@ class SuperMetroidInterface:
         if self.connectedToDevice:
             if hex_to_int(address) < hex_to_int("F50000") and check_rom_write:
                 if "NO_ROM_WRITE" in self.deviceInfo:
-                    print(
+                    raise PermissionError(
                         f"ERROR: An attempt was made to write to ROM, but this operation is not supported for device of type '{self.deviceInfo[0]}'."
                     )
                     return None
@@ -246,7 +245,9 @@ class SuperMetroidInterface:
             self.webSocket.send(hex_to_data(hex_data))
             # print(f"Write to address {address} was successful.")
         else:
-            print("ERROR: Connection was not initialized properly before attempting to set data. Ignoring request...")
+            raise ConnectionError(
+                "ERROR: Connection was not initialized properly before attempting to set data. Ignoring request..."
+            )
 
     # Checks for an overflow, and corrects it if one has occurred.
     # Used to check values before we alter them.
@@ -305,7 +306,7 @@ class SuperMetroidInterface:
             finally:
                 self.lock.release()
         else:
-            print(
+            raise ValueError(
                 f"ERROR: Super Metroid player was sent item '{item_name}', which is not known to be a valid Super Metroid item."
             )
 
@@ -469,15 +470,15 @@ class SuperMetroidInterface:
                 self.set_data(max_ammo_address, new_max_ammo)
             else:
                 if item_name in SuperMetroidConstants.toggleItemList:
-                    print(
+                    raise TypeError(
                         f"ERROR: IncrementItem cannot be called with item '{item_name}', as this item is not represented by an integer."
                     )
                 else:
-                    print(
+                    raise ValueError(
                         f"ERROR: Super Metroid player had item '{item_name}' incremented, but this item is not a valid Super Metroid item."
                     )
         else:
-            print(
+            raise ValueError(
                 "ERROR: An attempt was made to increment player's {itemName} by {incrementAmount}, but their game is not loaded."
             )
 
@@ -502,15 +503,17 @@ class SuperMetroidInterface:
                 self.set_data(obtained_byte_address, new_obtained_byte)
             else:
                 if item_name in SuperMetroidConstants.ammoItemList:
-                    print(
+                    raise TypeError(
                         f"ERROR: TakeAwayItem cannot be called with item '{item_name}', as this item is represented by an integer and not a bitflag."
                     )
                 else:
-                    print(
+                    raise ValueError(
                         f"ERROR: Super Metroid player had item '{item_name}' taken away, but this item is not a valid Super Metroid item."
                     )
         else:
-            print(f"ERROR: An attempt was made to send player {item_name}, but their game is not loaded.")
+            raise ConnectionError(
+                f"ERROR: An attempt was made to send player {item_name}, but their game is not loaded."
+            )
 
     # Take away a player's bitflag-type item if they have it.
     # This will also unequip it.
@@ -534,15 +537,17 @@ class SuperMetroidInterface:
                 self.set_data(obtained_byte_address, new_obtained_byte)
             else:
                 if item_name in SuperMetroidConstants.ammoItemList:
-                    print(
+                    raise TypeError(
                         f"ERROR: TakeAwayItem cannot be called with item '{item_name}', as this item is represented by an integer and not a bitflag."
                     )
                 else:
-                    print(
+                    raise ValueError(
                         f"ERROR: Super Metroid player had item '{item_name}' taken away, but this item is not a valid Super Metroid item."
                     )
         else:
-            print(f"ERROR: An attempt was made to take away player's {item_name}, but their game is not loaded.")
+            raise ConnectionError(
+                f"ERROR: An attempt was made to take away player's {item_name}, but their game is not loaded."
+            )
 
     # Sends an info request.
     # Returns true if it receives a result.
@@ -555,20 +560,22 @@ class SuperMetroidInterface:
                 result = self.webSocket.recv()
                 result = (json.loads(result))["Results"]
                 if len(result) < 1:
-                    print("ERROR: No device info could be found. Device has not successfully attached.")
+                    raise ConnectionError("ERROR: No device info could be found. Device has not successfully attached.")
                     return False
                 else:
                     self.deviceInfo = result
                     self.connectedToDevice = True
                     return True
             except Exception:
-                print("ERROR: Failed to send verification message to SNI. Marking connection as closed...")
+                raise ConnectionError(
+                    "ERROR: Failed to send verification message to SNI. Marking connection as closed..."
+                )
                 self.connectionInitialized = False
                 self.connectedToDevice = False
                 self.deviceInfo = None
                 return False
         else:
-            print(
+            raise ConnectionError(
                 "ERROR: Cannot verify that device has been connected, as the connection to SNI has not been initialized. Attempting to reestablish connection..."
             )
             self.connect_to_device()
@@ -582,14 +589,16 @@ class SuperMetroidInterface:
         if self.connectedToDevice:
             game_type = self.deviceInfo[2].strip()
             if game_type == "No Info":
-                # print("CAUTION: Could not determine current game. This could be because the device connected is an SNES Classic, or because the interface hasn't exposed this information.")
+                print(
+                    "CAUTION: Could not determine current game. This could be because the device connected is an SNES Classic, or because the interface hasn't exposed this information."
+                )
                 self.inSuperMetroid = True
                 return True
             if game_type == "Super Metroid":
                 self.inSuperMetroid = True
                 return True
             else:
-                print(
+                raise ConnectionError(
                     f"ERROR: Could not verify game being played as Super Metroid. According to SNI, this device is currently running {game_type}."
                 )
                 self.inSuperMetroid = False
@@ -694,7 +703,7 @@ class SuperMetroidInterface:
             else:
                 return "Status Not Known"
         else:
-            print(
+            raise ConnectionError(
                 "ERROR: An attempt was made to query game state, but something other than the game Super Metroid seems to be loaded."
             )
 
@@ -710,7 +719,9 @@ class SuperMetroidInterface:
             self.get_player_ammo_counts()
             self.get_player_toggle_items()
         else:
-            print("ERROR: An attempt was made to query the player's inventory, but they aren't in the game yet.")
+            raise ConnectionError(
+                "ERROR: An attempt was made to query the player's inventory, but they aren't in the game yet."
+            )
 
     def get_player_ammo_counts(self):
         self.verify_game_loaded()
@@ -741,7 +752,9 @@ class SuperMetroidInterface:
             self.ammoItemCurrentCount = ammo_item_current_count
             self.ammoItemMaximumCount = ammo_item_maximum_count
         else:
-            print("ERROR: An attempt was made to query the player's ammo counts, but they aren't in the game yet.")
+            raise ConnectionError(
+                "ERROR: An attempt was made to query the player's ammo counts, but they aren't in the game yet."
+            )
 
     def get_player_toggle_items(self):
         self.verify_game_loaded()
@@ -773,7 +786,9 @@ class SuperMetroidInterface:
                     display_string += ", but does not have it equipped."
                 print(display_string)
         else:
-            print("ERROR: An attempt was made to query the player's toggle items, but they aren't in the game yet.")
+            raise ConnectionError(
+                "ERROR: An attempt was made to query the player's toggle items, but they aren't in the game yet."
+            )
 
     # Check if player has debug mode on.
     def get_player_debug_state(self):
@@ -933,4 +948,4 @@ if __name__ == "__main__":
             print("\nQuitting...")
             interface.close()
         else:
-            print(f"\nERROR: Input '{str(last_input)}' not recognized")
+            raise ValueError(f"\nERROR: Input '{str(last_input)}' not recognized")
