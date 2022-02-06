@@ -498,6 +498,7 @@ def get_patch_dict():
         "better_decompression": "QoL\\better_decompress.ips",
         "fast_doors_and_elevators": "QoL\\fast_elevators_doors.ips",
         "backup_saves": "QoL\\enable_backup_saves.ips",
+        "enable_moonwalk_by_default": "QoL\\enable_moonwalk_by_default.ips",
         "random_music": "Music\\random_music.ips",
         "no_music": "Music\\no_music.ips",
         "door_transitions": "Mandatory Patches\\door_transition.ips",
@@ -648,7 +649,6 @@ def write_door_asm_routines(rom_file, door_data_list):
         door_routine.append(0x60)
 
         if door_routine == most_basic_door_asm:
-
             door_data.door_asm_pointer = most_basic_door_asm_address
         else:
             door_data.door_asm_pointer = current_address
