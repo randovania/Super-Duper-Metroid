@@ -1123,6 +1123,38 @@ def write_seed_to_display(rom_file, seed):
     rom_file.write(seedDisplayWordB.to_bytes(2, byteorder="little"))
 
 
+# Sets default control scheme when starting a new game
+def write_controls(self, controls_dict):
+    buttons = {
+        "Select": [0x00, 0x20],
+        "A": [0x80, 0x00],
+        "B": [0x00, 0x80],
+        "X": [0x40, 0x00],
+        "Y": [0x00, 0x40],
+        "L": [0x20, 0x00],
+        "R": [0x10, 0x00],
+        "None": [0x00, 0x00]
+    }
+
+    controls = {
+        "Shot": [0xb331, 0x1722d],
+        "Jump": [0xb325, 0x17233],
+        "Dash": [0xb32b, 0x17239],
+        "ItemSelect": [0xb33d, 0x17245],
+        "ItemCancel": [0xb337, 0x1723f],
+        "AngleUp": [0xb343, 0x1724b],
+        "AngleDown": [0xb349, 0x17251]
+    }
+
+    for ctrl, button in controls_dict.items():
+        assert ctrl in controls
+        assert button in buttons
+        for addr in RomPatcher.controls[ctrl]:
+            rom_file.seek(addr)
+            rom_file.write(buttons[button][0])
+            rom_file.write(buttons[button][1])
+
+
 # Places the items into the game.
 def place_items(rom_file, item_get_routine_addresses_dict, pickup_data_list, player_name=None):
     # Initialize MessageBoxGenerator
