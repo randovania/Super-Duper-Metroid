@@ -1133,17 +1133,17 @@ def write_controls(self, controls_dict):
         "Y": [0x00, 0x40],
         "L": [0x20, 0x00],
         "R": [0x10, 0x00],
-        "None": [0x00, 0x00]
+        "None": [0x00, 0x00],
     }
 
     controls = {
-        "Shot": [0xb331, 0x1722d],
-        "Jump": [0xb325, 0x17233],
-        "Dash": [0xb32b, 0x17239],
-        "ItemSelect": [0xb33d, 0x17245],
-        "ItemCancel": [0xb337, 0x1723f],
-        "AngleUp": [0xb343, 0x1724b],
-        "AngleDown": [0xb349, 0x17251]
+        "Shot": [0xB331, 0x1722D],
+        "Jump": [0xB325, 0x17233],
+        "Dash": [0xB32B, 0x17239],
+        "ItemSelect": [0xB33D, 0x17245],
+        "ItemCancel": [0xB337, 0x1723F],
+        "AngleUp": [0xB343, 0x1724B],
+        "AngleDown": [0xB349, 0x17251],
     }
 
     for ctrl, button in controls_dict.items():
