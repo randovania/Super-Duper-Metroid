@@ -1281,6 +1281,8 @@ def patch_rom_json(rom_file, output_path, patch_data):
         custom_save_start["starting_save_station_index"],
     ]
 
+    keyword_arguments["controls"] = patch_data["controls"]
+
     patch_rom(rom_file, output_path, item_list, None, None, seed, **keyword_arguments)
 
 
@@ -1353,6 +1355,10 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
                 IPSPatcher.apply_ips_patch(patches_dir.joinpath(static_patch_dict[patch]), rom_file)
             else:
                 print(f"Provided patch {patch} does not exist!")
+
+    # Write default controls to ROM
+    if "controls" in kwargs:
+        write_controls(kwargs["controls"])
 
     do_doors(rom_file)
 
