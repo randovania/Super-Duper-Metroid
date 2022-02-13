@@ -1124,7 +1124,7 @@ def write_seed_to_display(rom_file, seed):
 
 
 # Sets default control scheme when starting a new game
-def write_controls(self, controls_dict):
+def write_controls(controls_dict):
     buttons = {
         "Select": [0x00, 0x20],
         "A": [0x80, 0x00],
