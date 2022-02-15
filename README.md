@@ -8,11 +8,11 @@ Requires an adequate version of python
 Steps:  
 1.) Clone this repository  
 2.) Open a terminal in the repository's root  
-3.) Create a virtual environment by running `py -3.7 -m venv venv`  
+3.) Create a virtual environment by running `py -3.9 -m venv venv`  
 4.) Open virtual environment with `venv\scripts\activate`  
 5.) Install requirements by running `python -m pip install -r requirements.txt`  
 6.) Build Cython code by running `python setup.py`  
-7.) Install as editable by running `py -3.7 -m pip install -e .`
+7.) Install as editable by running `py -3.9 -m pip install -e .`
   
 You can now run scripts from the project from terminal, using the virtual environment.  
 
