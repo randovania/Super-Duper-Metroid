@@ -22,4 +22,5 @@ Kazuto wrote the More Efficient Item PLMs Hack, which is recreated in parts of t
 Metroid Construction and Kejardon provided a lot of documentation which I made use of.  
 PHOSPHOTiDYL wrote the Skip Intro Saves hack, which is included in this program.  
 Smiley and Flo wrote the Cheap Charge IPS patch.  
+[n00btube](https://github.com/n00btube) wrote the Save Refill patch.  
 Total, Fusda, and Leodox were responsible for most of the other IPS patches.  
