@@ -93,7 +93,7 @@ def test_add_starting_inventory():
 def test_starting_items_limit():
     f = None
     try:
-        file_name = "multiRoutineTest.bin"
+        file_name = "startingItemsLimitTest.bin"
         f = create_blank_file(file_name, b"\0")
 
         pickup = ROM_Patcher.PickupPlacementData(1, -1, "Morph Ball", "Get Morph Ball", True, None, None, "Morph Ball")
