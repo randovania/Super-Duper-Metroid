@@ -90,6 +90,29 @@ def test_add_starting_inventory():
         raise
 
 
+def test_starting_items_limit():
+    f = None
+    try:
+        file_name = "multiRoutineTest.bin"
+        f = create_blank_file(file_name, b"\0")
+
+        pickup = ROM_Patcher.PickupPlacementData(1, -1, "Morph Ball", "Get Morph Ball", True, None, None, "Morph Ball")
+
+        starting_items = [pickup for i in range(128)]
+
+        item_get_routine_addresses_dict = {
+            "Get Morph Ball": 0x1234,
+        }
+
+        ROM_Patcher.add_starting_inventory(f, starting_items, item_get_routine_addresses_dict)
+        raise RuntimeError("ERROR: This starting items list should be too big, but an error hasn't been raised.")
+    except ValueError:
+        pass
+    finally:
+        f.close()
+        return
+
+
 def test_write_save_initialization_routines_skip_intro():
     f = None
     try:

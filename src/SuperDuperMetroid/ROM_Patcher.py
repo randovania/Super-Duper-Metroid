@@ -877,10 +877,9 @@ def add_starting_inventory(rom_file, pickups, item_get_routine_addresses_dict):
     # Safeguard so that we don't overlap routine associations,
     # Which start 0x100 after the starting inventory.
     if len(pickups) > 127:
-        print(
+        raise ValueError(
             "ERROR: Unreasonable amount of starting items detected. Starting items will not be placed. Did you send correct information to the patcher?"
         )
-        return
     print(f"Placing {len(pickups)} starting items")
     rom_file.seek(0x1C0000)
     rom_file.write(len(pickups).to_bytes(2, "little"))
