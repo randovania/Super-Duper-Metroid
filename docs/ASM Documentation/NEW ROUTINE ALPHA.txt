@@ -61,7 +61,7 @@ LDY #$0000                                                                      
 LBL DATA CHECK LOOP HEAD                                                                | 
 LDA $7FFFCE, X                                                                          | BF CE FF 7F
 SEC                                                                                     | 38
-SBC $7FFFAE, X                                                                          | FF AE FF 7F
+EOR $7FFFAE, X                                                                          | 5F AE FF 7F
 // IF DATA IS NON-BUGGERED, DIFFERENCE BETWEEN THESE TWO VALUES SHOULD BE A POWER OF 2. | 
 CMP #$0000                                                                              | C9 00 00
 BEQ DIFF IS 0                              !!!!                                         | F0 02
@@ -69,7 +69,7 @@ BRA DO SUBLOOP                                                                  
 LBL DIFF IS 0                                                                           | 
 NOP                                                                                     | EA
 NOP                                                                                     | EA
-BRA SUBLOOP OVER                                                                        | 80 1A
+BRA SUBLOOP OVER                                                                        | 80 1C
 LBL DO SUBLOOP                                                                          | 
 STA $7FFF8E                                                                             | 8F 8E FF 7F
 LDA #$0001                                                                              | A9 01 00
@@ -84,15 +84,17 @@ PLP                                                                             
 BRA DATA CHECK FAILED                                                                   | 80 03
 LBL DATA CHECK PASSED                                                                   | 
 INY                                                                                     | C8
-BRA SUBLOOP OVER                                                                        | 80 02
+BRA SUBLOOP OVER                                                                        | 80 04
 LBL DATA CHECK FAILED                                                                   | 
 BNE DATA CHECK SUBLOOP HEAD                                                             | D0 ED
+INY                                                                                     | C8
+INY                                                                                     | C8
                                                                                         | 
 LBL SUBLOOP OVER                                                                        | 
 DEX                                                                                     | CA
 DEX                                                                                     | CA
 CPX #$0000                                                                              | E0 00 00
-BNE DATA CHECK LOOP HEAD                                                                | D0 CB
+BNE DATA CHECK LOOP HEAD                                                                | D0 C9
                                                                                         | 
                                                                                         | 
 CPY #$0001                                                                              | C0 01 00
