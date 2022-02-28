@@ -1368,8 +1368,6 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
 
     do_doors(rom_file)
 
-
-
     with open(output_path, "wb") as output_file:
         output_file.write(rom_file.getbuffer())
 
