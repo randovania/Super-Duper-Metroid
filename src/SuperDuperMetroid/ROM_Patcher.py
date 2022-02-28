@@ -1240,7 +1240,10 @@ def place_items(rom_file, item_get_routine_addresses_dict, pickup_data_list, pla
 
 
 def patch_rom_json(rom_file, output_path, patch_data):
-    seed = patch_data["seed"]
+    if "seed" in patch_data:
+        seed = patch_data["seed"]
+    else:
+        seed = 0
 
     item_list = []
     for pickup in patch_data["pickups"]:
@@ -1280,7 +1283,8 @@ def patch_rom_json(rom_file, output_path, patch_data):
         custom_save_start["starting_save_station_index"],
     ]
 
-    keyword_arguments["controls"] = patch_data["controls"]
+    if "controls" in patch_data:
+        keyword_arguments["controls"] = patch_data["controls"]
 
     patch_rom(rom_file, output_path, item_list, None, None, seed, **keyword_arguments)
 
@@ -1346,7 +1350,10 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
     static_patch_dict = get_patch_dict()
     patches_dir = Path(__file__).parent.joinpath("Patches")
 
-    static_patches = ["seed_display", "door_transitions", "varia_rng", "varia_timer_fix"]
+    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix"]
+    if seed != 0:
+        write_seed_to_display(rom_file, seed)
+        static_patches.append("seed_display")
     if "static_patches" in kwargs:
         static_patches += kwargs["static_patches"]
         for patch in static_patches:
@@ -1361,7 +1368,7 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
 
     do_doors(rom_file)
 
-    write_seed_to_display(rom_file, seed)
+
 
     with open(output_path, "wb") as output_file:
         output_file.write(rom_file.getbuffer())
