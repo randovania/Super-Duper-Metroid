@@ -892,7 +892,7 @@ def add_starting_inventory(rom_file, pickups, item_get_routine_addresses_dict):
         rom_file.write(routine_address.to_bytes(2, "little"))
 
     award_starting_inventory_routine = (
-        "AF0080B8AAE00000F019DA4BF4FAFFE220A98548C2208A0AAABF0080B8486BFACA80E26B"
+        "AF0080B8AAE00000F019DA4BF4FAFFE220A98548C2208A0AAABF0080B8486BFACA80E2A90000A20800A00300E202186B"
     )
     function_to_return_properly = "F458F66B"
     award_starting_inventory_routine_address = 0x08763A
