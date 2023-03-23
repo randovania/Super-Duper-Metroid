@@ -894,7 +894,7 @@ def add_starting_inventory(rom_file, pickups, item_get_routine_addresses_dict):
     award_starting_inventory_routine = (
         "AF0080B8AAE00000F020DAE220A99048C220A9FAFF48E220A98548C2208A0AAABF0080B8486BFACA80DB6B"
     )
-    function_to_return_properly = "A95FF6486B"
+    function_to_return_properly = "F45FF66B"
     award_starting_inventory_routine_address = 0x08763A
     function_to_return_properly_address = 0x02FFFB
 
@@ -1392,13 +1392,10 @@ if __name__ == "__main__":
     if os.path.isfile(os.getcwd() + "\\test_data.json"):
         json_file = open("test_data.json", "r")
     else:
-        print(
-            "Enter full file path for your JSON patch data file."
-        )
+        print("Enter full file path for your JSON patch data file.")
         json_path = input()
         try:
             assert os.path.isfile(json_path)
-            
         except:
             raise ValueError("ERROR: JSON file does not exist.")
         json_file = open(json_path)

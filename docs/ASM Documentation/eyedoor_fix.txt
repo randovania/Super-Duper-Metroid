@@ -1,0 +1,14 @@
+ORIGINAL (@ #$A890E5)       |
+...                         |
+LDA $09A4 (COLLECTED ITEMS) | AD A4 09
+BIT #$0004                  | 89 04 00
+							|
+NEW                         |
+JSL $CEB32D                 | 22 2D B3 CE
+NOP                         | EA
+NOP                         | EA
+				            |
+----------------------------|
+LDA $7ED872                 | AF 72 D8 7E
+BIT #$0004                  | 89 04 00    // Coincidentally, the item flag list uses the same bit.
+RTL                         | 6B
