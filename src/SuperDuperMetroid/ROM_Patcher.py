@@ -505,6 +505,7 @@ def get_patch_dict():
         "varia_rng": "Mandatory Patches\\varia_rng.ips",
         "varia_timer_fix": "Mandatory Patches\\varia_timer_fix.ips",
         "seed_display": "Mandatory Patches\\seed_display.ips",
+        "eye_fix": "Mandatory Patches\\eye_fix.ips",
         "respin": "Tweaks\\respin.ips",
         "no_demo": "Tweaks\\no_demo.ips",
         "refill_before_save": "Tweaks\\refill_before_save.ips",
@@ -1350,7 +1351,7 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
     static_patch_dict = get_patch_dict()
     patches_dir = Path(__file__).parent.joinpath("Patches")
 
-    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix"]
+    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix", "eye_fix"]
     if seed != 0:
         write_seed_to_display(rom_file, seed)
         static_patches.append("seed_display")
@@ -1381,14 +1382,26 @@ if __name__ == "__main__":
     if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
         rom_path_file = open(os.getcwd() + "\\romfilepath.txt", "r")
         file_path = rom_path_file.readline().rstrip()
+        print("Patching will be applied to ROM at:", file_path)
         rom_path_file.close()
     else:
         print(
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-
-    json_file = open("test_data.json", "r")
+    if os.path.isfile(os.getcwd() + "\\test_data.json"):
+        json_file = open("test_data.json", "r")
+    else:
+        print(
+            "Enter full file path for your JSON patch data file."
+        )
+        json_path = input()
+        try:
+            assert os.path.isfile(json_path)
+            
+        except:
+            raise ValueError("ERROR: JSON file does not exist.")
+        json_file = open(json_path)
     json = json.load(json_file)
     json_file.close()
 

@@ -131,9 +131,12 @@ dmypy.json
 # PyCharm
 .idea/
 
-# Project Specific
-romfilepath.txt
-
 # Cython
 *.c
 *.html
+
+
+# Project Specific
+romfilepath.txt
+src/test_rom_patcher.py
+src/test_data.json
