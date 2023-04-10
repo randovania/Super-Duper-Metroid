@@ -318,6 +318,7 @@ class PickupPlacementData:
 
 # class PickupEffect(Enum):
 
+
 # Converts a hexadecimal string to a base 10 integer.
 def hex_to_int(hex_to_convert):
     return int(hex_to_convert, 16)
@@ -644,7 +645,6 @@ def write_door_asm_routines(rom_file, door_data_list):
         door_routine.append(0x60)
 
         if door_routine == most_basic_door_asm:
-
             door_data.door_asm_pointer = most_basic_door_asm_address
         else:
             door_data.door_asm_pointer = current_address
