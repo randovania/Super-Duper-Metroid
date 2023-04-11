@@ -39,6 +39,7 @@ import time
 from SuperDuperMetroid.SM_Constants import SuperMetroidConstants
 from websocket import create_connection
 
+
 # Converts a hexadecimal string to a base 10 integer.
 def hex_to_int(hex_to_convert):
     return int(hex_to_convert, 16)
@@ -81,7 +82,6 @@ def pad_hex(hex_to_pad, num_hex_characters):
 
 
 class SuperMetroidInterface:
-
     # These get imported dynamically from a JSON file created by the patcher.
     # This is necessary because these may not always be in the same place every game.
     itemRoutineDict = {

@@ -319,6 +319,7 @@ class PickupPlacementData:
 
 # class PickupEffect(Enum):
 
+
 # Converts a hexadecimal string to a base 10 integer.
 def hex_to_int(hex_to_convert):
     return int(hex_to_convert, 16)
