@@ -1127,7 +1127,7 @@ def write_seed_to_display(rom_file, seed):
 
 
 # Sets default control scheme when starting a new game
-def write_controls(controls_dict):
+def write_controls(controls_dict, rom_file):
     buttons = {
         "Select": [0x00, 0x20],
         "A": [0x80, 0x00],
@@ -1152,10 +1152,10 @@ def write_controls(controls_dict):
     for ctrl, button in controls_dict.items():
         assert ctrl in controls
         assert button in buttons
-        for addr in RomPatcher.controls[ctrl]:
+        for addr in controls[ctrl]:
             rom_file.seek(addr)
-            rom_file.write(buttons[button][0])
-            rom_file.write(buttons[button][1])
+            rom_file.write(buttons[button][0].to_bytes(1, byteorder="little"))
+            rom_file.write(buttons[button][1].to_bytes(1, byteorder="little"))
 
 
 # Places the items into the game.
@@ -1368,7 +1368,7 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
 
     # Write default controls to ROM
     if "controls" in kwargs:
-        write_controls(kwargs["controls"])
+        write_controls(kwargs["controls"], rom_file)
 
     do_doors(rom_file)
 
