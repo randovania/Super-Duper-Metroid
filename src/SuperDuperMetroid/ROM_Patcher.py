@@ -541,7 +541,9 @@ def get_equipment_routines():
     grapple_get = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
     x_ray_get = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
     equipment_get_template = "ADA20909-eqp8DA209ADA40909-eqp8DA40960"
-    beam_get_template = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
+    beam_get_template = (
+        "A9-eqp0DA6098DA609A9-eqp0DA8098DA809A9-eqp0A2908001CA609A9-eqp4A2904001CA609ADDA09F004228DAC9060"
+    )
 
     # Note that if items appear more than once with different implementations, things will break horribly.
     # If you want major items with different effects, give them a new name -
@@ -575,6 +577,10 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
     # For non-vanilla ammo get routines.
     custom_ammo_get_templates = {}
 
+    # This is a command that will do nothing, used for items that are meant to go to other players.
+    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
+    item_get_routines_dict["No Effect"] = (0x60).to_bytes(1, "little")
+
     # Create individual routines from ASM templates.
     # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
     # This is because I'm lazy and we absolutely have room for it.
@@ -601,9 +607,6 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
             else:
                 raise NotImplementedError("ERROR: Custom item pickup behaviors are not yet implemented.")
 
-    # This is a command that will do nothing, used for items that are meant to go to other players.
-    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
-    item_get_routines_dict["No Effect"] = (0x60).to_bytes(1, "little")
     return item_get_routines_dict
 
 

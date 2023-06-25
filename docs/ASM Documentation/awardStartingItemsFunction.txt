@@ -1,42 +1,50 @@
-LDA $B88000                                            | AF 00 80 B8
-TAX                                                    | AA
-LBL LOOP HEAD                                          |
-CPX #$0000                                             | E0 00 00
-BEQ LOOP OVER                                          | F0 20
-													   |
-// A CHEAT WE USE TO GET AROUND THE LACK OF            |
-// AN ABSOLUTE INDIRECT INDEXED JSL                    |
-// FIRST PUSH THE ADDRESS WE WANT TO RETURN TO         |
-													   |
-													   |
-PHX                                                    | DA
-SEP #$00100000                                         | E2 20
-LDA #$90                                               | A9 90
-PHA                                                    | 48
-REP #$00100000                                         | C2 20
-LDA #$FFFA                                             | A9 FA FF
-PHA                                                    | 48
-													   |
-// NEXT PUSH THE ADDRESS WE WANT TO CALL TO THE STACK, |
-// THEN PERFORM AN RTL.                                |
-// BECAUSE THE RTL FINDS OUR ADDRESS ON THE STACK,     |
-// IT TREATS IT JUST LIKE AN ADDRESS THAT              |
-// WOULD BE THERE FROM A JSL.                          |
-													   |
-SEP #$00100000                                         | E2 20
-LDA #$85                                               | A9 85
-PHA                                                    | 48
-REP #$00100000                                         | C2 20
-TXA                                                    | 8A
-ASL                                                    | 0A
-TAX                                                    | AA
-LDA $B88000, X                                         | BF 00 80 B8
-PHA                                                    | 48
-RTL                                                    | 6B
-													   |
-													   |
-PLX                                                    | FA
-DEX                                                    | CA
-BRA LOOP HEAD                                          | 80 DB
-LBL LOOP OVER                                          |
-RTL                                                    | 6B
+LDA $B88000                                               | AF 00 80 B8
+TAX                                                       | AA
+LBL LOOP HEAD                                             |
+CPX #$0000                                                | E0 00 00
+BEQ LOOP OVER                                             | F0 19
+													      |
+// A CHEAT WE USE TO GET AROUND THE LACK OF               |
+// AN ABSOLUTE INDIRECT INDEXED JSL                       |
+// FIRST PUSH THE ADDRESS WE WANT TO RETURN TO            |
+													      |
+													      |
+PHX                                                       | DA
+PHK                                                       | 4B
+PEA #$FFFA                                                | F4 FA FF
+													      |
+// NEXT PUSH THE ADDRESS WE WANT TO CALL TO THE STACK,    |
+// THEN PERFORM AN RTL.                                   |
+// BECAUSE THE RTL FINDS OUR ADDRESS ON THE STACK,        |
+// IT TREATS IT JUST LIKE AN ADDRESS THAT                 |
+// WOULD BE THERE FROM A JSL.                             |
+													      |
+													      |
+													      |
+SEP #$00100000                                            | E2 20
+LDA #$85                                                  | A9 85
+PHA                                                       | 48
+REP #$00100000                                            | C2 20
+TXA                                                       | 8A
+ASL                                                       | 0A
+TAX                                                       | AA
+LDA $B88000, X                                            | BF 00 80 B8
+PHA                                                       | 48
+													      |
+RTL                                                       | 6B
+													      |
+													      |
+PLX                                                       | FA
+DEX                                                       | CA
+BRA LOOP HEAD                                             | 80 D4
+LBL LOOP OVER                                             |
+														  |
+// Through experimentation, these should reset registers. |
+// I couldn't toss them on the stack because...           |
+// Well, you know.                                        |
+LDA #$0000                                                | A9 00 00
+LDX #$0008                                                | A2 08 00
+LDY #$0003                                                | A0 03 00
+CLC                                                       | 18
+														  |
+RTL                                                       | 6B

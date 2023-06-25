@@ -145,7 +145,12 @@ LDA #$<NEW BEAM BITFLAG>        | A9 -bem
 LSR                             | 4A
 AND #$0004                      | 29 04 00
 TRB $09A6                       | 1C A6 09
+LDA $09DA                       | AD DA 09    // Load playtime
+BEQ SkipGraphics                | F0 04
 JSL $90AC8D                     | 22 8D AC 90 // Uhh... I think this adds beam graphics to memory?
+								|
+LBL SkipGraphics                |
+								|
 RTS                             | 60
 
 # Progressive Jump
