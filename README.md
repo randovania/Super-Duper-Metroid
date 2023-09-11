@@ -6,15 +6,15 @@ Super Duper Metroid is a Super Metroid patcher and interface program, intended f
 # Building
 Requires an adequate version of python  
 Steps:  
-1.) Clone this repository  
-2.) Open a terminal in the repository's root  
-3.) Create a virtual environment by running `py -3.9 -m venv venv`  
-4.) Open virtual environment with `venv\scripts\activate`  
-5.) Install requirements by running `python -m pip install -r requirements.txt`  
-6.) Build Cython code by running `python setup.py`  
-7.) Install as editable by running `py -3.9 -m pip install -e .`
+1. Clone this repository
+2. Open a terminal in the repository's root
+3. Create a virtual environment by running `python -m venv venv`
+4. Activate the virtual environment with `call venv/bin/activate` on Windows or `source venv/bin/activate` on Unix-based systems
+5. Install requirements by running `python -m pip install -r requirements.txt`
+6. Build Cython code by running `python setup.py`.
+7. Install as editable by running `python -m pip install -e .`
   
-You can now run scripts from the project from terminal, using the virtual environment.  
+You can now run scripts from the project from terminal, using the virtual environment. Or run `python -m Super-Duper-Metroid` to patch the game via a CLI interface.
 
 # Credit
 Credit goes to Samuel Roy for writing most of this code.  
