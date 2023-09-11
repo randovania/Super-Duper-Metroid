@@ -11,8 +11,7 @@ Steps:
 3. Create a virtual environment by running `python -m venv venv`
 4. Activate the virtual environment with `call venv/bin/activate` on Windows or `source venv/bin/activate` on Unix-based systems
 5. Install requirements by running `python -m pip install -r requirements.txt`
-6. Build Cython code by running `python setup.py`.
-7. Install as editable by running `python -m pip install -e .`
+6. Install as editable by running `python -m pip install -e .`
   
 You can now run scripts from the project from terminal, using the virtual environment. Or run `python -m Super-Duper-Metroid` to patch the game via a CLI interface.
 
