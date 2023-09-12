@@ -1,4 +1,1 @@
-global-include *.pyx
-global-include *.pxd
-global-exclude *.c
 prune venv
