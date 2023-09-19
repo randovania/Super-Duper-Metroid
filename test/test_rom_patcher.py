@@ -67,14 +67,14 @@ def test_add_starting_inventory():
         assert is_file_byte_range_empty(f, b"\0", 0x1C0007, romSize)
 
         # Assert correctness of routines
-        function_to_return_properly = hex_to_data("A95FF6486B")
+        function_to_return_properly = hex_to_data("F458F66B")
         award_starting_inventory_routine = hex_to_data(
-            "AF0080B8AAE00000F020DAE220A99048C220A9FAFF48E220A98548C2208A0AAABF0080B8486BFACA80DB6B"
+            "AF0080B8AAE00000F019DA4BF4FAFFE220A98548C2208A0AAABF0080B8486BFACA80E2A90000A20800A00300E202186B"
         )
         f.seek(0x02FFFB)
-        return_function_bytes = f.read(5)
+        return_function_bytes = f.read(4)
         f.seek(0x08763A)
-        award_items_routine_bytes = f.read(43)
+        award_items_routine_bytes = f.read(48)
 
         assert function_to_return_properly == return_function_bytes
         assert award_starting_inventory_routine == award_items_routine_bytes
