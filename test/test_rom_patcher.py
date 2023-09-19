@@ -2,6 +2,7 @@ from SuperDuperMetroid import ROM_Patcher
 
 romSize = 3145728
 
+
 # endAddress is excluded
 def is_file_byte_range_empty(f, empty_byte, start_address, end_address):
     found_non_empty_byte = False

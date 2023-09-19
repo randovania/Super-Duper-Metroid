@@ -319,6 +319,7 @@ class PickupPlacementData:
 
 # class PickupEffect(Enum):
 
+
 # Converts a hexadecimal string to a base 10 integer.
 def hex_to_int(hex_to_convert):
     return int(hex_to_convert, 16)
@@ -492,42 +493,42 @@ def create_item_types(pickup_data_list):
 
 def get_patch_dict():
     static_patch_dict = {
-        "instant_g4": "QoL\\g4_skip.ips",
-        "max_ammo_display": "QoL\\max_ammo_display.ips",
-        "aim_with_any_button": "QoL\\aim_any_button.ips",
-        "better_decompression": "QoL\\better_decompress.ips",
-        "fast_doors_and_elevators": "QoL\\fast_elevators_doors.ips",
-        "backup_saves": "QoL\\enable_backup_saves.ips",
-        "enable_moonwalk_by_default": "QoL\\enable_moonwalk_by_default.ips",
-        "random_music": "Music\\random_music.ips",
-        "no_music": "Music\\no_music.ips",
-        "door_transitions": "Mandatory Patches\\door_transition.ips",
-        "varia_rng": "Mandatory Patches\\varia_rng.ips",
-        "varia_timer_fix": "Mandatory Patches\\varia_timer_fix.ips",
-        "seed_display": "Mandatory Patches\\seed_display.ips",
-        "eye_fix": "Mandatory Patches\\eye_fix.ips",
-        "respin": "Tweaks\\respin.ips",
-        "no_demo": "Tweaks\\no_demo.ips",
-        "refill_before_save": "Tweaks\\refill_before_save.ips",
-        "cant_use_supers_on_red_doors": "Tweaks\\no_supers_on_red_doors.ips",
-        "cheap_charge": "Tweaks\\cheap_charge.ips",
-        "nerfed_rainbow_beam": "Tweaks\\nerfed_rainbow_beam.ips",
-        "mother_brain_cutscene_edits": "Tweaks\\mother_brain_cutscene_edits.ips",
-        "infinite_space_jump": "Tweaks\\infinite_space_jump.ips",
-        "speedkeep": "Tweaks\\speed_keep.ips",
-        "no_ln_chozo_inventory_check": "Tweaks\\no_ln_chozo_inventory_check.ips",
-        "no_gt_code": "Fixes\\disable_gt_code.ips",
-        "fix_heat_echoes": "Fixes\\fix_heat_echoes.ips",
-        "fix_screw_attack_menu": "Fixes\\fix_screw_attack_menu.ips",
-        "fix_spacetime": "Fixes\\fix_spacetime_beam.ips",
-        "dachora_pit": "Map Changes\\dachora_pit.ips",
-        "early_supers_bridge": "Map Changes\\early_super_bridge.ips",
-        "pre_hi_jump": "Map Changes\\pre_high_jump.ips",
-        "moat": "Map Changes\\moat.ips",
-        "pre_spazer": "Map Changes\\pre_spazer.ips",
-        "red_tower": "Map Changes\\red_tower.ips",
-        "nova_boost_platform": "Map Changes\\nova_boost_platform.ips",
-        "colorblind_mode": "Accessibility\\colorblind.ips",
+        "instant_g4": "QoL/g4_skip.ips",
+        "max_ammo_display": "QoL/max_ammo_display.ips",
+        "aim_with_any_button": "QoL/aim_any_button.ips",
+        "better_decompression": "QoL/better_decompress.ips",
+        "fast_doors_and_elevators": "QoL/fast_elevators_doors.ips",
+        "backup_saves": "QoL/enable_backup_saves.ips",
+        "enable_moonwalk_by_default": "QoL/enable_moonwalk_by_default.ips",
+        "random_music": "Music/random_music.ips",
+        "no_music": "Music/no_music.ips",
+        "door_transitions": "Mandatory Patches/door_transition.ips",
+        "varia_rng": "Mandatory Patches/varia_rng.ips",
+        "varia_timer_fix": "Mandatory Patches/varia_timer_fix.ips",
+        "seed_display": "Mandatory Patches/seed_display.ips",
+        "eye_fix": "Mandatory Patches/eye_fix.ips",
+        "respin": "Tweaks/respin.ips",
+        "no_demo": "Tweaks/no_demo.ips",
+        "refill_before_save": "Tweaks/refill_before_save.ips",
+        "cant_use_supers_on_red_doors": "Tweaks/no_supers_on_red_doors.ips",
+        "cheap_charge": "Tweaks/cheap_charge.ips",
+        "nerfed_rainbow_beam": "Tweaks/nerfed_rainbow_beam.ips",
+        "mother_brain_cutscene_edits": "Tweaks/mother_brain_cutscene_edits.ips",
+        "infinite_space_jump": "Tweaks/infinite_space_jump.ips",
+        "speedkeep": "Tweaks/speed_keep.ips",
+        "no_ln_chozo_inventory_check": "Tweaks/no_ln_chozo_inventory_check.ips",
+        "no_gt_code": "Fixes/disable_gt_code.ips",
+        "fix_heat_echoes": "Fixes/fix_heat_echoes.ips",
+        "fix_screw_attack_menu": "Fixes/fix_screw_attack_menu.ips",
+        "fix_spacetime": "Fixes/fix_spacetime_beam.ips",
+        "dachora_pit": "Map Changes/dachora_pit.ips",
+        "early_supers_bridge": "Map Changes/early_super_bridge.ips",
+        "pre_hi_jump": "Map Changes/pre_high_jump.ips",
+        "moat": "Map Changes/moat.ips",
+        "pre_spazer": "Map Changes/pre_spazer.ips",
+        "red_tower": "Map Changes/red_tower.ips",
+        "nova_boost_platform": "Map Changes/nova_boost_platform.ips",
+        "colorblind_mode": "Accessibility/colorblind.ips",
     }
     return static_patch_dict
 
@@ -1382,8 +1383,8 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
 if __name__ == "__main__":
     # Build in this to make it faster to test.
     # Saves me some time.
-    if os.path.isfile(os.getcwd() + "\\romfilepath.txt"):
-        rom_path_file = open(os.getcwd() + "\\romfilepath.txt", "r")
+    if os.path.isfile(os.getcwd() + "/romfilepath.txt"):
+        rom_path_file = open(os.getcwd() + "/romfilepath.txt", "r")
         file_path = rom_path_file.readline().rstrip()
         print("Patching will be applied to ROM at:", file_path)
         rom_path_file.close()
