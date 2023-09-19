@@ -57,11 +57,11 @@ def test_add_starting_inventory():
         # Assert the presence of routines
         assert is_file_byte_range_empty(f, b"\0", 0, 0x02FFFB)
         # function_to_return_properly
-        assert not is_file_byte_range_empty(f, b"\0", 0x02FFFB, (0x02FFFB + 5))
-        assert is_file_byte_range_empty(f, b"\0", (0x02FFFB + 5), 0x08763A)
+        assert not is_file_byte_range_empty(f, b"\0", 0x02FFFB, (0x02FFFB + 4))
+        assert is_file_byte_range_empty(f, b"\0", (0x02FFFB + 4), 0x08763A)
         # award_starting_inventory_routine
-        assert not is_file_byte_range_empty(f, b"\0", 0x08763A, (0x08763A + 43))
-        assert is_file_byte_range_empty(f, b"\0", (0x08763A + 43), 0x1C0000)
+        assert not is_file_byte_range_empty(f, b"\0", 0x08763A, (0x08763A + 48))
+        assert is_file_byte_range_empty(f, b"\0", (0x08763A + 48), 0x1C0000)
         # Assert the presence of starting inventory data
         assert not is_file_byte_range_empty(f, b"\0", 0x1C0000, 0x1C0007)
         assert is_file_byte_range_empty(f, b"\0", 0x1C0007, romSize)
