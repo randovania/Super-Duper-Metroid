@@ -23,11 +23,11 @@ jobs:
           - 'macos-latest'
           - 'windows-latest'
         python:
-          - '3.7'
           - '3.8'
           - '3.9'
           - '3.10'
           - '3.11'
+          - '3.12'
 
     runs-on: ${{ matrix.os }}
     name: Wheel for ${{ matrix.os }} (${{ matrix.python }})
@@ -52,7 +52,7 @@ jobs:
 
       - name: build sdist
         run: python -m build --sdist
-        if: ${{ matrix.os == 'macos-latest' && matrix.python == '3.9' }}
+        if: ${{ matrix.os == 'macos-latest' && matrix.python == '3.12' }}
       
       - name: Store the packages
         uses: actions/upload-artifact@v2
@@ -65,11 +65,11 @@ jobs:
       fail-fast: false
       matrix:
         python:
-          - 'cp37-cp37m'
           - 'cp38-cp38'
           - 'cp39-cp39'
           - 'cp310-cp310'
           - 'cp311-cp311'
+          - 'cp312-cp312'
 
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux2014_x86_64
@@ -116,11 +116,11 @@ jobs:
           - {name: 'Windows', image: 'windows-latest', wheel: 'win_amd64'}
           - {name: 'Linux', image: 'ubuntu-latest', wheel: 'manylinux_2_17_x86_64.manylinux2014_x86_64'}
         python:
-          - {version: '3.7', wheel: 'cp37-cp37m'}
           - {version: '3.8', wheel: 'cp38-cp38'}
           - {version: '3.9', wheel: 'cp39-cp39'}
           - {version: '3.10', wheel: 'cp310-cp310'}
           - {version: '3.11', wheel: 'cp311-cp311'}
+          - {version: '3.12', wheel: 'cp312-cp312'}
 
     steps:
       - name: Checkout
