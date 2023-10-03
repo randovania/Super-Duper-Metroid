@@ -85,7 +85,8 @@ jobs:
       - run: /opt/python/${{ matrix.python }}/bin/python -m venv .venv
      
       - name: Install Python packages
-        run: .venv/bin/python -m pip install --upgrade build auditwheel
+      # setuptools upgrade needed to fix a bug with Python 3.12
+        run: .venv/bin/python -m pip install --upgrade build auditwheel setuptools
 
       - name: build wheel
         run: .venv/bin/python -m build --wheel
