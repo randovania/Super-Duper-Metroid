@@ -506,6 +506,7 @@ def get_patch_dict():
         "varia_rng": "Mandatory Patches/varia_rng.ips",
         "varia_timer_fix": "Mandatory Patches/varia_timer_fix.ips",
         "seed_display": "Mandatory Patches/seed_display.ips",
+        "eye_fix": "Mandatory Patches/eye_fix.ips",
         "respin": "Tweaks/respin.ips",
         "no_demo": "Tweaks/no_demo.ips",
         "refill_before_save": "Tweaks/refill_before_save.ips",
@@ -541,7 +542,9 @@ def get_equipment_routines():
     grapple_get = "ADA2090900408DA209ADA4090900408DA409222E9A8060"
     x_ray_get = "ADA2090900808DA209ADA4090900808DA409223E9A8060"
     equipment_get_template = "ADA20909-eqp8DA209ADA40909-eqp8DA40960"
-    beam_get_template = "A9-eqp0DA8098DA809A9-eqp0DA6098DA609A9-eqp0A2908001CA609A9-eqp4A2904001CA609228DAC9060"
+    beam_get_template = (
+        "A9-eqp0DA6098DA609A9-eqp0DA8098DA809A9-eqp0A2908001CA609A9-eqp4A2904001CA609ADDA09F004228DAC9060"
+    )
 
     # Note that if items appear more than once with different implementations, things will break horribly.
     # If you want major items with different effects, give them a new name -
@@ -575,6 +578,10 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
     # For non-vanilla ammo get routines.
     custom_ammo_get_templates = {}
 
+    # This is a command that will do nothing, used for items that are meant to go to other players.
+    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
+    item_get_routines_dict["No Effect"] = (0x60).to_bytes(1, "little")
+
     # Create individual routines from ASM templates.
     # Note that the exact effect is hardcoded in, so ex. wave beam and ice beam are two different routines.
     # This is because I'm lazy and we absolutely have room for it.
@@ -601,9 +608,6 @@ def get_all_necessary_pickup_routines(item_list, item_get_routines_dict, startin
             else:
                 raise NotImplementedError("ERROR: Custom item pickup behaviors are not yet implemented.")
 
-    # This is a command that will do nothing, used for items that are meant to go to other players.
-    # 60 is hex for the RTS instruction. In other words when called it will immediately return.
-    item_get_routines_dict["No Effect"] = (0x60).to_bytes(1, "little")
     return item_get_routines_dict
 
 
@@ -892,9 +896,9 @@ def add_starting_inventory(rom_file, pickups, item_get_routine_addresses_dict):
         rom_file.write(routine_address.to_bytes(2, "little"))
 
     award_starting_inventory_routine = (
-        "AF0080B8AAE00000F020DAE220A99048C220A9FAFF48E220A98548C2208A0AAABF0080B8486BFACA80DB6B"
+        "AF0080B8AAE00000F019DA4BF4FAFFE220A98548C2208A0AAABF0080B8486BFACA80E2A90000A20800A00300E202186B"
     )
-    function_to_return_properly = "A95FF6486B"
+    function_to_return_properly = "F458F66B"
     award_starting_inventory_routine_address = 0x08763A
     function_to_return_properly_address = 0x02FFFB
 
@@ -1124,7 +1128,7 @@ def write_seed_to_display(rom_file, seed):
 
 
 # Sets default control scheme when starting a new game
-def write_controls(controls_dict):
+def write_controls(controls_dict, rom_file):
     buttons = {
         "Select": [0x00, 0x20],
         "A": [0x80, 0x00],
@@ -1149,10 +1153,10 @@ def write_controls(controls_dict):
     for ctrl, button in controls_dict.items():
         assert ctrl in controls
         assert button in buttons
-        for addr in RomPatcher.controls[ctrl]:
+        for addr in controls[ctrl]:
             rom_file.seek(addr)
-            rom_file.write(buttons[button][0])
-            rom_file.write(buttons[button][1])
+            rom_file.write(buttons[button][0].to_bytes(1, byteorder="little"))
+            rom_file.write(buttons[button][1].to_bytes(1, byteorder="little"))
 
 
 # Places the items into the game.
@@ -1351,7 +1355,7 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
     static_patch_dict = get_patch_dict()
     patches_dir = Path(__file__).parent.joinpath("Patches")
 
-    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix"]
+    static_patches = ["door_transitions", "varia_rng", "varia_timer_fix", "eye_fix"]
     if seed != 0:
         write_seed_to_display(rom_file, seed)
         static_patches.append("seed_display")
@@ -1365,7 +1369,7 @@ def patch_rom(rom_file, output_path, item_list=None, player_name=None, recipient
 
     # Write default controls to ROM
     if "controls" in kwargs:
-        write_controls(kwargs["controls"])
+        write_controls(kwargs["controls"], rom_file)
 
     do_doors(rom_file)
 
@@ -1382,14 +1386,23 @@ if __name__ == "__main__":
     if os.path.isfile(os.getcwd() + "/romfilepath.txt"):
         rom_path_file = open(os.getcwd() + "/romfilepath.txt", "r")
         file_path = rom_path_file.readline().rstrip()
+        print("Patching will be applied to ROM at:", file_path)
         rom_path_file.close()
     else:
         print(
             "Enter full file path for your headerless Super Metroid ROM file.\nNote that the patcher DOES NOT COPY the game files - it will DIRECTLY OVERWRITE them. Make sure to create a backup before using this program.\nWARNING: Video game piracy is a crime - only use legally obtained copies of the game Super Metroid with this program."
         )
         file_path = input()
-
-    json_file = open("test_data.json", "r")
+    if os.path.isfile(os.getcwd() + "\\test_data.json"):
+        json_file = open("test_data.json", "r")
+    else:
+        print("Enter full file path for your JSON patch data file.")
+        json_path = input()
+        try:
+            assert os.path.isfile(json_path)
+        except:
+            raise ValueError("ERROR: JSON file does not exist.")
+        json_file = open(json_path)
     json = json.load(json_file)
     json_file.close()
 
